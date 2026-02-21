@@ -1,3 +1,4 @@
-*.xml
-*.txt
-*.html
+# Only ignore old wimse build artifacts
+draft-mw-wimse-*.xml
+draft-mw-wimse-*.txt
+draft-mw-wimse-*.html
