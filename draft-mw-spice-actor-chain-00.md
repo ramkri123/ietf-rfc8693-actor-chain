@@ -90,7 +90,7 @@ Actor Chain Entry:
 : A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.
 
 Chain Digest:
-: A cryptographic hash computed over relevant chain state. For the entry at index 0, it is computed over that entry's own identity claims (e.g., `sub`, `iss`, `iat`). For subsequent entries, it is computed over the canonical serialization (Deterministic JSON or Deterministic CBOR) of all preceding Actor Chain Entries (indices 0 through N-1). Each entry signs over its Chain Digest, forming a hash chain.
+: A cumulative cryptographic hash computed over the delegation history. For any entry at index `N`, the `chain_digest` is computed over the concatenation of the current entry's identity claims and the `chain_digest` of the preceding entry (at index `N-1`). For the entry at index 0, the digest is computed over that entry's identity claims alone. Each actor produces a `per-actor signature` over its `chain_digest`, cryptographically anchoring itself to the entire preceding history.
 
 Chain Depth:
 : The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
@@ -161,7 +161,7 @@ por:
 : OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in [[!I-D.draft-mw-spice-transitive-attestation]].
 
 chain_digest:
-: OPTIONAL. A Base64url-encoded cryptographic hash (SHA-256). For the entry at index 0, the hash is computed over the canonical JSON serialization of the entry's own identity claims (e.g., `sub`, `iss`, `iat`). If selective disclosure (SD-JWT) is used, the hash is computed over the `_sd` claims and salts, ensuring that the `chain_sig` remains valid regardless of whether the cleartext disclosures are provided. For entries at index 1 and above, the hash is computed over the canonical serialization (Deterministic JSON or Deterministic CBOR) of all preceding Actor Chain Entries (indices 0 through N-1). REQUIRED in Self-Attested Mode for all entries. MUST be omitted in AS-Attested Mode.
+: OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a `chain_sig` at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
 
 chain_sig:
 : OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
