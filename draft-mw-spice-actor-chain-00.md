@@ -14,20 +14,20 @@ value = "draft-mw-spice-actor-chain-00"
 status = "informational"
 
 [[author]]
-initials = "R."
-surname = "Krishnan"
-fullname = "Ram Krishnan"
-organization = "JPMorgan Chase & Co"
-  [author.address]
-  email = "ramkri123@gmail.com"
-
-[[author]]
 initials = "A."
 surname = "Prasad"
 fullname = "A Prasad"
 organization = "Oracle"
   [author.address]
   email = "a.prasad@oracle.com"
+
+[[author]]
+initials = "R."
+surname = "Krishnan"
+fullname = "Ram Krishnan"
+organization = "JPMorgan Chase & Co"
+  [author.address]
+  email = "ramkri123@gmail.com"
 
 [[author]]
 initials = "D."
@@ -75,7 +75,7 @@ This restriction creates significant gaps in modern multi-service environments, 
 
 4. **Data-Plane Debuggability**: Deeply nested JSON objects are difficult to parse, index, and query in high-throughput data-plane environments. A flat, ordered array structure is more amenable to efficient processing, logging, and forensic analysis.
 
-This document proposes the `actor_chain` claim — a Cryptographically Verifiable Actor Chain — as a backward-compatible extension to [[RFC8693]] that addresses these limitations by providing a policy-enforceable, ordered list of all actors in a delegation chain with optional per-entry cryptographic signatures.
+This document proposes the `actor_chain` claim — a Cryptographically Verifiable Actor Chain — as a backward-compatible extension to [[RFC8693]] that addresses these limitations by providing a policy-enforceable, ordered list of all actors in a delegation chain with optional per-actor cryptographic signatures. The extension is designed to be format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.
 
 # Terminology
 
@@ -84,13 +84,13 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 This document leverages the terminology defined in OAuth 2.0 Token Exchange [[RFC8693]], the SPICE Architecture [[!I-D.ietf-spice-arch]], and the RATS Architecture [[RFC9334]].
 
 Actor Chain:
-: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-entry cryptographic signatures (Self-Attested Mode).
+: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-actor cryptographic signatures (Self-Attested Mode).
 
 Actor Chain Entry:
-: A JSON object identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.
+: A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.
 
 Chain Digest:
-: A cryptographic hash computed over relevant chain state. For the entry at index 0, it is computed over that entry's own identity claims (`sub`, `iss`, `iat`). For subsequent entries, it is computed over the canonical JSON serialization of all preceding Actor Chain Entries (indices 0 through N-1). Each entry signs over its Chain Digest, forming a hash chain.
+: A cryptographic hash computed over relevant chain state. For the entry at index 0, it is computed over that entry's own identity claims (e.g., `sub`, `iss`, `iat`). For subsequent entries, it is computed over the canonical serialization (Deterministic JSON or Deterministic CBOR) of all preceding Actor Chain Entries (indices 0 through N-1). Each entry signs over its Chain Digest, forming a hash chain.
 
 Chain Depth:
 : The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
@@ -131,30 +131,31 @@ Beyond the semantic restriction, the nested object structure of `act` in [[RFC86
 3. **Size Predictability**: The depth of nesting is unbounded, making it difficult to predict token sizes and allocate parsing buffers.
 4. **No Integrity**: Each nested `act` is a plain JSON object with no signature or hash binding. Any intermediary could insert, remove, or reorder prior actors without detection.
 
+### Selective Disclosure (SD-JWT)
 # The Solution: The Cryptographically Verifiable `actor_chain` Claim
 
 ## Overview
 
-This document defines a new JWT claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. Its value is a JSON array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor (the first entity to initiate the delegation), and the last index represents the current actor.
+This document defines a new claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.
 
-The `actor_chain` claim supports two operational modes to accommodate different trust and deployment models:
+The `actor_chain` claim supports two operational modes:
 
-1. **AS-Attested Mode**: The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. The AS's JWT signature over the entire token provides integrity protection for the chain. Per-entry `chain_sig` fields are omitted. This mode is appropriate when all actors trust a single AS and non-repudiation of individual actor participation is not required.
+1. **AS-Attested Mode**: The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. The AS's signature over the entire token (JWS or COSE) provides integrity protection for the chain. Per-actor `chain_sig` fields are omitted.
 
-2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a compact JWS [[RFC7515]] signature computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure where each entry cryptographically commits to the entire preceding history, providing tamper evidence and non-repudiation independent of the AS. This mode is appropriate for federated environments, multi-AS deployments, or scenarios requiring cryptographic proof that each specific actor participated in the chain.
+2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a cryptographic signature (compact JWS [[RFC7515]] or COSE_Sign1 [[RFC9052]]) computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure providing tamper evidence and non-repudiation independent of the AS.
 
 ## Claim Definition
 
-The `actor_chain` claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members:
+The `actor_chain` claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members. To support privacy-preserving use cases, any member of an Actor Chain Entry MAY be selectively disclosed using SD-JWT [[!I-D.ietf-oauth-selective-disclosure-jwt]], in which case the cleartext member is replaced by an `_sd` claim.
 
 sub:
-: REQUIRED. A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.
+: REQUIRED (or selectively disclosed). A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.
 
 iss:
-: REQUIRED. A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.
+: REQUIRED (or selectively disclosed). A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.
 
 iat:
-: REQUIRED. The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.
+: REQUIRED (or selectively disclosed). The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.
 
 por:
 : OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in [[!I-D.draft-mw-spice-transitive-attestation]].
@@ -397,10 +398,19 @@ This proposal extends and complements several ongoing efforts:
 | Specification | Relationship |
 | :--- | :--- |
 | **RFC 8693** [[RFC8693]] | This document extends [[RFC8693]] by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
-| **Transitive Attestation** [[!I-D.draft-mw-spice-transitive-attestation]] | The PoR mechanism defined in the Transitive Attestation draft provides the hardware-rooted residency binding used in the `por` field of Actor Chain Entries. Together, the two drafts enable delegation chains where every hop is both identity-verified and residency-proven. |
+| **Transitive Attestation** [[!I-D.draft-mw-spice-transitive-attestation]] | Provides the "North-South" residency proof (agent to local WIA) that complements the "East-West" delegation proof (agent to actor-chain) provided by this document. |
 | **SPICE Architecture** [[!I-D.ietf-spice-arch]] | Defines the overarching workload identity architecture within which this extension operates. |
+| **WIMSE Architecture** [[!I-D.ietf-wimse-arch]] | This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures. |
+| **Attestation-Based Auth** [[!I-D.ietf-oauth-attestation-based-client-auth]] | Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted `por` claims in Actor Chain Entries. |
+| **SCITT** [[!I-D.ietf-scitt-architecture]] | Verifiable actor chains can be recorded in SCITT transparency logs to provide long-term, tamper-proof auditability of delegation paths. |
 | **RATS** [[RFC9334]] | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
-| **DPoP** [[RFC9449]] | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. A DPoP-bound token with an `actor_chain` proves both key possession and the full delegation history. |
+| **DPoP** [[RFC9449]] | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. |
+
+## East-West vs. North-South Security
+
+This specification addresses the **East-West** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation [[!I-D.draft-mw-spice-transitive-attestation]] addresses the **North-South** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
+
+By embedding "North-South" Proofs of Residency (PoR) within "East-West" Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.
 
 ## Backward Compatibility with RFC 8693
 
@@ -424,12 +434,12 @@ The answer depends on what each signature proves and when it is produced:
 
 The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:
 
-- **AS-Attested Mode** is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-entry signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.
+- **AS-Attested Mode** is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-actor signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.
 
 - **Self-Attested Mode** is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:
-    - **Federated/Multi-AS environments**: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-entry signatures allow the RP to verify actor participation independently of the issuing AS.
+    - **Federated/Multi-AS environments**: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-actor signatures allow the RP to verify actor participation independently of the issuing AS.
     - **Non-repudiation**: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.
-    - **Zero-trust posture**: In adversarial environments, the Relying Party may not fully trust any single AS. Per-entry signatures provide defense-in-depth.
+    - **Zero-trust posture**: In adversarial environments, the Relying Party may not fully trust any single AS. Per-actor signatures provide defense-in-depth.
     - **Forensic analysis**: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.
 
 Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.
@@ -454,11 +464,44 @@ Each actor in the chain signs its entry with its own key. The security of the en
 
 ## Privacy of Prior Actors
 
-The `actor_chain` exposes the identities of all actors in the delegation path to every Relying Party that receives the token. In scenarios where the delegation path is sensitive, deployments SHOULD consider:
+The `actor_chain` expose the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain `a -> b -> c -> d -> e`, the originating actor `a` may require its identity to be hidden from `e` while still ensuring the integrity of the delegation.
 
-- Using pseudonymous or opaque identifiers for intermediate actors.
-- Encrypting the `actor_chain` claim to specific audiences using JWE [[RFC7516]].
-- Applying Selective Disclosure mechanisms such as SD-JWT [[!I-D.ietf-oauth-selective-disclosure-jwt]] to allow progressive revelation of Actor Chain Entries.
+Deployments SHOULD consider the following anonymization and privacy-preserving techniques:
+
+### Pseudonymous Identifiers
+
+Instead of using globally unique or stable identifiers (like email addresses or client IDs), the Authorization Server (AS) can issue pairwise pseudonyms for actors. In the chain `a -> b -> c -> d -> e`:
+- The AS replaces `sub: "a"` with a pseudonym `sub: "pseudo-xyz"` that is only meaningful to the AS.
+- Relying Party `e` sees that the chain started with a verified actor, but does not know it was `a`.
+- The AS maintains a mapping to allow for forensic reconstruction if authorized.
+
+### Selective Disclosure (SD-JWT)
+
+The `actor_chain` MAY be implemented using Selective Disclosure for JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]]. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.
+
+### Identity Bridging for Anonymity
+
+An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the `actor_chain` with generic or pseudonymous identifiers, while still vouching for the chain's security properties.
+
+### Targeted Selective Disclosure
+
+A more advanced privacy model involves disclosing actor identities only to trusted intermediate parties. In the chain `a -> b -> c -> d -> e`, actor `a` may be visible to `b`, `c`, and `d`, but hidden from `e`.
+
+This is achieved through **Targeted Disclosure** using SD-JWT:
+- The AS generates the `actor_chain` with actor `a`'s identity hashed and salted.
+- Alongside the JWT, the AS provides a "Disclosure" string (the salt and cleartext value) for actor `a`.
+- When the AS issues a token for `b`, `c`, or `d`, it includes this disclosure string. This allows these "internal" actors to "unlock" the hash and see `a`'s true identity.
+- When the final token is exchanged for recipient `e`, the AS (or the last internal actor `d`) simply omits the disclosure string for actor `a`.
+- Actor `e` receives the same JWT but without the "key" to unlock `a`. `e` can verify the cryptographic integrity of the entire chain (proving that a verified, though anonymous, actor started it) without ever seeing `a`'s identity.
+
+| Recipient | JWT Payload | Disclosure provided? | Interpretation |
+| :--- | :--- | :--- | :--- |
+| **Actor b** | `_sd: [hash_a]` | **Yes** | `b` sees `sub: a` |
+| **Actor e** | `_sd: [hash_a]` | **No** | `e` sees `sub: <hidden>` |
+
+### Encryption (JWE)
+
+The entire `actor_chain` claim can be encrypted using JWE [[RFC7516]] so that only the final intended audience `e` can decrypt it, preventing intermediate actors like `b`, `c`, and `d` from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.
 
 ## Confused Deputy Mitigation
 
@@ -471,7 +514,18 @@ In both modes, a confused deputy attack—where a legitimate actor is tricked in
 This document requests registration of the following claim in the "JSON Web Token Claims" registry established by [[RFC7519]]:
 
 - **Claim Name**: `actor_chain`
-- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain in an OAuth 2.0 Token Exchange, with optional per-entry cryptographic signatures for tamper evidence and non-repudiation.
+- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+## CBOR Web Token Claims Registration
+
+This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:
+
+- **Claim Name**: `actor_chain`
+- **Claim Description**: A Cryptographically Verifiable Actor Chain.
+- **CBOR Key**: TBD (e.g., 40)
+- **Claim Type**: array
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
 
@@ -507,4 +561,25 @@ This document requests registration of the following claim in the "JSON Web Toke
     <author initials="D." surname="Fett" fullname="Daniel Fett"/>
     <date month="October" day="7" year="2024"/>
   </front>
+</reference>
+
+<reference anchor="RFC8392" target="https://www.rfc-editor.org/info/rfc8392">
+  <front>
+    <title>CBOR Web Token (CWT)</title>
+    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
+    <author initials="E." surname="Wahlstroem" fullname="Erik Wahlstroem"/>
+    <author initials="S." surname="Erdtman" fullname="Samuel Erdtman"/>
+    <author initials="H." surname="Tschofenig" fullname="Hannes Tschofenig"/>
+    <date year="2018" month="May"/>
+  </front>
+  <seriesInfo name="RFC" value="8392"/>
+</reference>
+
+<reference anchor="RFC9052" target="https://www.rfc-editor.org/info/rfc9052">
+  <front>
+    <title>CBOR Object Signing and Encryption (COSE): Structures and Process</title>
+    <author initials="J." surname="Schaad" fullname="Jim Schaad"/>
+    <date year="2022" month="August"/>
+  </front>
+  <seriesInfo name="RFC" value="9052"/>
 </reference>
