@@ -281,6 +281,17 @@ When an actor (Service B) receives a token containing an `actor_chain` and needs
     - In AS-Attested Mode: the new entry contains only the identity claims (`sub`, `iss`, `iat`) and optional `por`.
 6. The AS issues a new token with the extended `actor_chain`.
 
+### Disclosure Propagation in SD-JWT
+
+When Selective Disclosure (SD-JWT) [[!I-D.ietf-oauth-selective-disclosure-jwt]] is used for any Actor Chain Entry, the Authorization Server (AS) acts as the Discloser during token exchange. The propagation of the underlying cleartext identities is managed as follows:
+
+1. **Disclosure Inclusion**: When the AS issues a token for a downstream recipient (Service B), it determines based on policy which hidden identifiers in the `actor_chain` should be visible to that recipient. For each visible actor, the AS appends the corresponding SD-JWT Disclosure string (containing the salt and cleartext value) to the issued token.
+2. **Hop-by-Hop Visibility**: In a chain `a -> b -> c -> d -> e`, if `a` is to be visible to `b`, `c`, and `d`, the AS includes `a`'s disclosure string in the tokens issued to `b`, `c`, and `d` during their respective token exchanges.
+3. **Selective Redaction**: When the final exchange occurs for recipient `e` (the end of the trust zone), the AS simply omits the disclosure string for `a` from the issued token.
+4. **Validation**: Each recipient in the chain can independently verify the hash of any disclosed claim against the `_sd` array in the Actor Chain Entry. If a disclosure is missing, the recipient sees only the hash, but can still verify the entry's geographic and residency properties through other claims.
+
+This mechanism ensures that the "key" to unlock a hidden identity is passed only to authorized actors in the chain, while the underlying cryptographically signed JWT structure remains identical for all recipients.
+
 ### When Chain Signatures Are Produced
 
 In Self-Attested Mode, a critical distinction is that each actor's `chain_sig` is produced **during the token exchange request**, before the final issued token exists. Consider a scenario where Service A calls Service B, and Service B later needs to call Service C:
