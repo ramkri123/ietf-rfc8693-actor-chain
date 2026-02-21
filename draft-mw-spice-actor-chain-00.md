@@ -1,0 +1,510 @@
+%%%
+title = "Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange"
+abbrev = "SPICE-ACTOR-CHAIN"
+category = "info"
+docName = "draft-mw-spice-actor-chain-00"
+ipr = "trust200902"
+area = "Security"
+workgroup = "SPICE"
+keyword = ["actor chain", "spice", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents"]
+
+[seriesInfo]
+name = "Internet-Draft"
+value = "draft-mw-spice-actor-chain-00"
+status = "informational"
+
+[[author]]
+initials = "R."
+surname = "Krishnan"
+fullname = "Ram Krishnan"
+organization = "JPMorgan Chase & Co"
+  [author.address]
+  email = "ramkri123@gmail.com"
+
+[[author]]
+initials = "A."
+surname = "Prasad"
+fullname = "A Prasad"
+organization = "Oracle"
+  [author.address]
+  email = "a.prasad@oracle.com"
+
+[[author]]
+initials = "D."
+surname = "Lopez"
+fullname = "Diego R. Lopez"
+organization = "Telefonica"
+  [author.address]
+  email = "diego.r.lopez@telefonica.com"
+
+[[author]]
+initials = "S."
+surname = "Addepalli"
+fullname = "Srinivasa Addepalli"
+organization = "Aryaka"
+  [author.address]
+  email = "srinivasa.addepalli@aryaka.com"
+
+%%%
+
+.# Abstract
+
+This document proposes an extension to OAuth 2.0 Token Exchange [[RFC8693]] that replaces the informational-only nested `act` (actor) claim with a new `actor_chain` claim — a Cryptographically Verifiable Actor Chain. The `actor_chain` claim provides an ordered, tamper-evident list of all actors in a delegation chain. This extension is motivated by the emergence of dynamic AI agent-to-agent workloads where fine-grained data-plane policy enforcement and auditability require a complete, cryptographically verifiable record of every actor that has participated in a chain of delegation — not merely the identity of the current actor.
+
+{mainmatter}
+
+# Introduction
+
+OAuth 2.0 Token Exchange [[RFC8693]] provides a mechanism for exchanging one security token for another, enabling delegation and impersonation semantics. Section 4.1 of [[RFC8693]] defines the `act` (actor) claim, which identifies the party to whom authority has been delegated. A chain of delegation can be expressed by nesting `act` claims within `act` claims.
+
+However, the specification explicitly states:
+
+> For the purpose of applying access control policy, the consumer of
+> a token MUST only consider the token's top-level claims and the
+> party identified as the current actor by the `act` claim. Prior
+> actors identified by any nested `act` claims are informational only
+> and are not to be considered in access control decisions.
+
+This restriction creates significant gaps in modern multi-service environments, particularly for AI agent workloads:
+
+1. **No Cryptographic Audit Trail**: The nested `act` structure carries only self-reported `sub` claims from prior actors. There is no cryptographic binding proving that each prior actor actually participated in the delegation chain, or that the chain has not been tampered with.
+
+2. **No Data-Plane Policy Enforcement**: Because prior actors are "informational only", Resource Servers cannot write fine-grained authorization policies based on the delegation path. For example, a policy like "allow access only if the originating actor was `orchestrator.example.com` AND no actor in the chain belongs to an untrusted domain" is not supported by [[RFC8693]] semantics.
+
+3. **Dynamic AI Agent Topologies**: AI agents connect dynamically to other AI agents. An LLM-based orchestrator may delegate to a retrieval agent, which delegates to a data-access agent, which delegates to a storage service. The chain is unpredictable and can be arbitrarily deep. The security posture of the entire chain—not just the last hop—is critical.
+
+4. **Data-Plane Debuggability**: Deeply nested JSON objects are difficult to parse, index, and query in high-throughput data-plane environments. A flat, ordered array structure is more amenable to efficient processing, logging, and forensic analysis.
+
+This document proposes the `actor_chain` claim — a Cryptographically Verifiable Actor Chain — as a backward-compatible extension to [[RFC8693]] that addresses these limitations by providing a policy-enforceable, ordered list of all actors in a delegation chain with optional per-entry cryptographic signatures.
+
+# Terminology
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [[RFC2119]] [[RFC8174]] when, and only when, they appear in all capitals, as shown here.
+
+This document leverages the terminology defined in OAuth 2.0 Token Exchange [[RFC8693]], the SPICE Architecture [[!I-D.ietf-spice-arch]], and the RATS Architecture [[RFC9334]].
+
+Actor Chain:
+: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-entry cryptographic signatures (Self-Attested Mode).
+
+Actor Chain Entry:
+: A JSON object identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.
+
+Chain Digest:
+: A cryptographic hash computed over relevant chain state. For the entry at index 0, it is computed over that entry's own identity claims (`sub`, `iss`, `iat`). For subsequent entries, it is computed over the canonical JSON serialization of all preceding Actor Chain Entries (indices 0 through N-1). Each entry signs over its Chain Digest, forming a hash chain.
+
+Chain Depth:
+: The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
+
+Proof of Residency (PoR):
+: A cryptographic proof (as defined in [[!I-D.draft-mw-spice-transitive-attestation]]) binding a workload to a specific, verified local environment. When present in an Actor Chain Entry, it provides hardware-rooted assurance of the actor's execution context.
+
+# The Problem: RFC 8693 Actor Limitations
+
+## Single-Actor Semantics
+
+[[RFC8693]] Section 4.1 defines the `act` claim as a JSON object identifying **the** current actor. While nesting is permitted to represent prior actors, the specification explicitly limits their utility. Only the outermost `act` claim—representing the current actor—is relevant for access control. All prior actors exist solely for informational purposes.
+
+This design was appropriate for traditional web service delegation where chains are short (typically one or two hops) and the identity of the immediate caller is sufficient for authorization. It is insufficient for the emerging class of workloads described below.
+
+## AI Agent Delegation Chains
+
+Modern AI systems increasingly operate as networks of specialized agents. A typical interaction may involve:
+
+```
+User -> Orchestrator Agent -> Planning Agent -> Tool Agent -> Data API
+```
+
+At each hop, the agent performs a token exchange ([[RFC8693]]) to obtain credentials appropriate for calling the next service. Under current [[RFC8693]] semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have made critical decisions about what data to access and how—are invisible to policy enforcement.
+
+This creates several concrete risks:
+
+- **Lateral Movement**: A compromised agent deep in the chain can impersonate the authority of the originating actor without any cryptographic evidence of the actual delegation path.
+- **Policy Bypass**: Fine-grained policies like "only allow data access when the orchestrator is a known, trusted entity" cannot be expressed because the orchestrator's identity is not available for policy evaluation at the data plane.
+- **Audit Gaps**: Post-incident forensic analysis cannot reliably reconstruct the delegation path because the nested `act` claims are self-reported and unsigned.
+
+## Structural Limitations of Nested `act`
+
+Beyond the semantic restriction, the nested object structure of `act` in [[RFC8693]] has practical limitations:
+
+1. **Parsing Complexity**: Each prior actor requires traversing one additional level of JSON nesting. In high-throughput data-plane proxies (e.g., Envoy, Istio sidecars), deep nesting imposes parsing overhead.
+2. **Indexing**: It is not possible to efficiently query "the actor at position N" without recursively unwinding the nested structure.
+3. **Size Predictability**: The depth of nesting is unbounded, making it difficult to predict token sizes and allocate parsing buffers.
+4. **No Integrity**: Each nested `act` is a plain JSON object with no signature or hash binding. Any intermediary could insert, remove, or reorder prior actors without detection.
+
+# The Solution: The Cryptographically Verifiable `actor_chain` Claim
+
+## Overview
+
+This document defines a new JWT claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. Its value is a JSON array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor (the first entity to initiate the delegation), and the last index represents the current actor.
+
+The `actor_chain` claim supports two operational modes to accommodate different trust and deployment models:
+
+1. **AS-Attested Mode**: The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. The AS's JWT signature over the entire token provides integrity protection for the chain. Per-entry `chain_sig` fields are omitted. This mode is appropriate when all actors trust a single AS and non-repudiation of individual actor participation is not required.
+
+2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a compact JWS [[RFC7515]] signature computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure where each entry cryptographically commits to the entire preceding history, providing tamper evidence and non-repudiation independent of the AS. This mode is appropriate for federated environments, multi-AS deployments, or scenarios requiring cryptographic proof that each specific actor participated in the chain.
+
+## Claim Definition
+
+The `actor_chain` claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members:
+
+sub:
+: REQUIRED. A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.
+
+iss:
+: REQUIRED. A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.
+
+iat:
+: REQUIRED. The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.
+
+por:
+: OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in [[!I-D.draft-mw-spice-transitive-attestation]].
+
+chain_digest:
+: OPTIONAL. A Base64url-encoded cryptographic hash (SHA-256). For the entry at index 0, the hash is computed over the canonical JSON serialization of the entry's own identity claims (`sub`, `iss`, `iat`). For entries at index 1 and above, the hash is computed over the canonical JSON serialization of all preceding Actor Chain Entries (indices 0 through N-1). REQUIRED in Self-Attested Mode for all entries. MUST be omitted in AS-Attested Mode.
+
+chain_sig:
+: OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
+
+chain_mode:
+: OPTIONAL. A top-level string claim (sibling to `actor_chain`) indicating the operational mode. Values are `as_attested` or `self_attested`. If omitted, the mode is inferred from the presence or absence of `chain_sig` fields in the Actor Chain Entries.
+
+## Example Tokens
+
+### AS-Attested Mode
+
+In this mode, the AS constructs the `actor_chain` array and the JWT's own signature provides integrity. No per-entry `chain_sig` or `chain_digest` fields are present. This is the simplest deployment model.
+
+```json
+{
+  "aud": "https://data-api.example.com",
+  "iss": "https://auth.example.com",
+  "exp": 1700000100,
+  "nbf": 1700000000,
+  "sub": "user@example.com",
+  "actor_chain": [
+    {
+      "sub": "https://orchestrator.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000010,
+      "por": {
+        "wia_kid": "spiffe://example.com/wia/node-1",
+        "env_hash": "sha256:abc123..."
+      }
+    },
+    {
+      "sub": "https://planner.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000030
+    },
+    {
+      "sub": "https://tool-agent.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000050,
+      "por": {
+        "wia_kid": "spiffe://example.com/wia/node-3",
+        "env_hash": "sha256:ghi789..."
+      }
+    }
+  ]
+}
+```
+
+The integrity of the chain rests on the AS's JWT signature. The Relying Party trusts the AS to have correctly validated each actor at the time of each token exchange.
+
+### Self-Attested Mode
+
+In this mode, each Actor Chain Entry additionally carries a `chain_digest` and `chain_sig`, forming a hash chain with per-actor non-repudiation. This mode is appropriate for federated deployments, multi-AS environments, or when Relying Parties require cryptographic proof of each actor's participation independent of any single AS.
+
+```json
+{
+  "aud": "https://data-api.example.com",
+  "iss": "https://auth.example.com",
+  "exp": 1700000100,
+  "nbf": 1700000000,
+  "sub": "user@example.com",
+  "actor_chain": [
+    {
+      "sub": "https://orchestrator.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000010,
+      "por": {
+        "wia_kid": "spiffe://example.com/wia/node-1",
+        "env_hash": "sha256:abc123..."
+      },
+      "chain_digest": "sha256:mno345...",
+      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
+    },
+    {
+      "sub": "https://planner.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000030,
+      "chain_digest": "sha256:def456...",
+      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
+    },
+    {
+      "sub": "https://tool-agent.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000050,
+      "por": {
+        "wia_kid": "spiffe://example.com/wia/node-3",
+        "env_hash": "sha256:ghi789..."
+      },
+      "chain_digest": "sha256:jkl012...",
+      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
+    }
+  ]
+}
+```
+
+In the Self-Attested example:
+
+- **Index 0** (Orchestrator): The originating actor. Its `chain_digest` is `SHA-256(canonical_json({sub, iss, iat}))` — a self-hash of its own identity claims. Its `chain_sig` is computed over this digest. It includes a PoR binding it to `node-1`.
+- **Index 1** (Planning Agent): Its `chain_digest` is `SHA-256(canonical_json(actor_chain[0]))`. Its `chain_sig` is produced by the Planning Agent's key over this digest. No PoR is present (the agent may be running in a non-TEE environment).
+- **Index 2** (Tool Agent): Its `chain_digest` is `SHA-256(canonical_json(actor_chain[0..1]))`. Its `chain_sig` is produced by the Tool Agent's key over this digest. It includes a PoR for `node-3`.
+
+## Token Exchange Flow
+
+When an actor (Service B) receives a token containing an `actor_chain` and needs to call a downstream service (Service C), the following token exchange flow occurs:
+
+1. **Service B** sends a token exchange request to the Authorization Server (AS) per [[RFC8693]] Section 2.1.
+2. The `subject_token` contains the existing `actor_chain`.
+3. The `actor_token` identifies Service B.
+4. The AS validates the existing `actor_chain`:
+    - In Self-Attested Mode: verifies each `chain_sig` against the corresponding actor's public key and each `chain_digest` against the hash of preceding entries.
+    - In AS-Attested Mode: verifies the JWT signature and validates the actor identities through its own policy (e.g., client registration, mTLS certificate).
+    - In both modes: enforces any `max_chain_depth` policy.
+5. The AS constructs a new `actor_chain` for the issued token by:
+    - Copying all existing Actor Chain Entries from the `subject_token`.
+    - Appending a new Actor Chain Entry for Service B.
+    - In Self-Attested Mode: the new entry's `chain_digest` is computed over all preceding entries, and its `chain_sig` is produced by Service B's key (provided via the `actor_token` or client credentials).
+    - In AS-Attested Mode: the new entry contains only the identity claims (`sub`, `iss`, `iat`) and optional `por`.
+6. The AS issues a new token with the extended `actor_chain`.
+
+### When Chain Signatures Are Produced
+
+In Self-Attested Mode, a critical distinction is that each actor's `chain_sig` is produced **during the token exchange request**, before the final issued token exists. Consider a scenario where Service A calls Service B, and Service B later needs to call Service C:
+
+1. Service A calls Service B, presenting a token containing `actor_chain` with chain `[A]`.
+2. Service B receives the token and performs its work.
+3. **When Service B needs to call downstream Service C**, it initiates a token exchange with the AS. At this point — not before — Service B:
+    - Computes `chain_digest` over the existing chain entries from the received token.
+    - Signs this `chain_digest` with its own key, producing `chain_sig`.
+    - Submits both values to the AS as part of the token exchange request, alongside the `subject_token` (containing chain `[A]`) and its own `actor_token`.
+4. The AS validates the existing chain, then assembles the new `actor_chain` (prior entries + Service B's signed entry) into the issued JWT.
+5. The AS signs the **entire JWT** (including the `actor_chain`) with the AS's own key and returns the token to Service B.
+6. Service B uses this new token (containing chain `[A, B]`) to call Service C.
+
+Consequently, each `chain_sig` covers only the **actor chain state** at that actor's point of participation — not the enclosing JWT's other claims such as `aud`, `exp`, or `sub`. This is by design: the actor chain and the token are concerns of different parties. The actor signs the chain to prove its participation; the AS signs the token to assert the token's validity. This separation allows the AS to set audience, expiry, and other claims independently without invalidating any actor's chain signature.
+
+```
+  Svc A        Auth Server        Svc B        Svc C
+    |               |               |             |
+    |-- token ------>|               |             |
+    |  (chain=[A])   |               |             |
+    |               |-- issued tok ->|             |
+    |               |  (chain=[A])   |             |
+    |               |               |             |
+    |               |<- exchange req-|             |
+    |               |  subj_tok:     |             |
+    |               |   chain=[A]    |             |
+    |               |  actor_tok=B   |             |
+    |               |               |             |
+    |               |-- issued tok ->|             |
+    |               |  (chain=[A,B]) |             |
+    |               |               |             |
+    |               |               |-- request ->|
+    |               |               | token has   |
+    |               |               | chain=[A,B] |
+```
+
+## Data-Plane Policy Enforcement
+
+Unlike the nested `act` claim in [[RFC8693]], the `actor_chain` claim is explicitly designed to be used in access control decisions. Resource Servers and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
+
+### Policy Examples
+
+The following are illustrative examples of policies that become expressible with the `actor_chain` claim:
+
+**Origin-Based Policy**: Allow access only if the originating actor (index 0) is a trusted orchestrator:
+
+```
+actor_chain[0].sub == "https://orchestrator.example.com"
+```
+
+**Domain Restriction**: Deny access if any actor in the chain belongs to an untrusted domain:
+
+```
+for_all(entry in actor_chain):
+  entry.iss in ["https://auth.example.com",
+                 "https://auth.partner.com"]
+```
+
+**Chain Depth Limit**: Reject tokens with delegation chains longer than a configured maximum:
+
+```
+len(actor_chain) <= 5
+```
+
+**Residency Requirement**: Require that all actors in the chain have a valid Proof of Residency:
+
+```
+for_all(entry in actor_chain):
+  entry.por is present AND entry.por is valid
+```
+
+**Path-Based Policy**: Allow access only through a specific delegation path:
+
+```
+actor_chain[0].sub == "https://orchestrator.example.com" AND
+actor_chain[1].sub == "https://planner.example.com"
+```
+
+### Integration with Data-Plane Proxies
+
+The flat array structure of `actor_chain` is designed for efficient processing by data-plane proxies such as Envoy, Istio sidecars, and API gateways. Proxies can:
+
+1. Extract the `actor_chain` array from the JWT payload with a single JSON path expression.
+2. Iterate linearly over the entries without recursive descent.
+3. Index specific entries by position (e.g., `actor_chain[0]` for the originator).
+4. Compute `len(actor_chain)` for depth-based policies without parsing nested structures.
+5. Emit structured log entries per Actor Chain Entry for distributed tracing and forensic analysis.
+
+# Chain Integrity Verification
+
+A Relying Party receiving a token with the `actor_chain` claim MUST perform the following verification steps:
+
+1. **JWT Signature Verification**: Verify the outer JWT signature per standard JWT processing rules. This is REQUIRED in both modes and provides baseline integrity for the entire token, including the `actor_chain`.
+
+2. **Structural Validation**: Verify that `actor_chain` is a JSON array with at least one element. Verify that each element contains the required identity fields (`sub`, `iss`, `iat`).
+
+3. **Per-Entry Signature Verification** (Self-Attested Mode only). For each entry at index `i`:
+    - **Compute expected digest**: If `i == 0`, compute `expected_digest = SHA-256(canonical_json({sub, iss, iat}))` from the entry's own identity claims. If `i > 0`, compute `expected_digest = SHA-256(canonical_json(actor_chain[0..i-1]))`.
+    - **Verify chain_digest**: Confirm that the entry's `chain_digest` matches `expected_digest`.
+    - **Verify chain_sig**: Verify `chain_sig` against `chain_digest` using the actor's public key.
+
+4. **PoR Verification** (if present):
+    - Verify each PoR assertion according to [[!I-D.draft-mw-spice-transitive-attestation]].
+
+5. **Policy Evaluation**:
+    - Apply local authorization policy against the verified actor chain.
+
+If any verification step fails, the Relying Party MUST reject the token.
+
+# Relation to Other IETF Work
+
+This proposal extends and complements several ongoing efforts:
+
+| Specification | Relationship |
+| :--- | :--- |
+| **RFC 8693** [[RFC8693]] | This document extends [[RFC8693]] by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
+| **Transitive Attestation** [[!I-D.draft-mw-spice-transitive-attestation]] | The PoR mechanism defined in the Transitive Attestation draft provides the hardware-rooted residency binding used in the `por` field of Actor Chain Entries. Together, the two drafts enable delegation chains where every hop is both identity-verified and residency-proven. |
+| **SPICE Architecture** [[!I-D.ietf-spice-arch]] | Defines the overarching workload identity architecture within which this extension operates. |
+| **RATS** [[RFC9334]] | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
+| **DPoP** [[RFC9449]] | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. A DPoP-bound token with an `actor_chain` proves both key possession and the full delegation history. |
+
+## Backward Compatibility with RFC 8693
+
+An Authorization Server implementing this extension SHOULD populate both the `act` claim (per [[RFC8693]] Section 4.1) and the `actor_chain` claim in issued tokens. This ensures that:
+
+- **Legacy consumers** that understand only `act` continue to function correctly, seeing the current actor in the top-level `act` claim.
+- **Chain-aware consumers** can use `actor_chain` for fine-grained policy enforcement and audit.
+
+The `act` claim, when present alongside `actor_chain`, MUST identify the same entity as the last entry in the `actor_chain` array.
+
+# Security Considerations
+
+## Token Signature vs. Per-Entry Chain Signatures
+
+A natural question arises: since the JWT containing the `actor_chain` is already signed by the Authorization Server (AS), is per-entry `chain_sig` redundant?
+
+The answer depends on what each signature proves and when it is produced:
+
+- The **JWT outer signature** is produced by the AS when the final token is issued. It proves that the AS issued this specific token with this specific payload. It covers the entire token: `sub`, `aud`, `exp`, `actor_chain`, and all other claims.
+- Each **`chain_sig`** is produced by an individual actor during token exchange, before the final token exists (see Section "When Chain Signatures Are Produced"). It covers only the `chain_digest`—the hash of the actor chain state at that actor's point of participation. It proves that this specific actor participated in this specific chain.
+
+The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:
+
+- **AS-Attested Mode** is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-entry signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.
+
+- **Self-Attested Mode** is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:
+    - **Federated/Multi-AS environments**: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-entry signatures allow the RP to verify actor participation independently of the issuing AS.
+    - **Non-repudiation**: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.
+    - **Zero-trust posture**: In adversarial environments, the Relying Party may not fully trust any single AS. Per-entry signatures provide defense-in-depth.
+    - **Forensic analysis**: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.
+
+Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.
+
+## Chain Integrity
+
+In AS-Attested Mode, chain integrity is provided by the JWT outer signature. The Relying Party trusts the AS to have correctly constructed the chain.
+
+In Self-Attested Mode, the hash-chain structure provides additional tamper evidence. Insertion, deletion, or reordering of entries invalidates the `chain_digest` and `chain_sig` fields of all subsequent entries. An attacker who compromises a single actor in the chain cannot retroactively alter the entries of prior actors without possessing their signing keys.
+
+## Replay Protection
+
+Each Actor Chain Entry includes an `iat` (issued-at) timestamp. Relying Parties SHOULD enforce a maximum age on Actor Chain Entries to prevent replay of stale chains. Additionally, the standard JWT claims `exp` and `nbf` on the enclosing token provide overall token-level freshness.
+
+## Chain Depth Limits
+
+Unbounded actor chains pose a risk of token size explosion and processing overhead. Authorization Servers SHOULD enforce a configurable maximum chain depth (`max_chain_depth`). A RECOMMENDED default maximum is 10 entries. Relying Parties MAY independently enforce their own chain depth limits.
+
+## Key Management
+
+Each actor in the chain signs its entry with its own key. The security of the entire chain depends on the security of each actor's key material. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The use of PoR in Actor Chain Entries provides additional assurance that the signing key is bound to a verified execution environment.
+
+## Privacy of Prior Actors
+
+The `actor_chain` exposes the identities of all actors in the delegation path to every Relying Party that receives the token. In scenarios where the delegation path is sensitive, deployments SHOULD consider:
+
+- Using pseudonymous or opaque identifiers for intermediate actors.
+- Encrypting the `actor_chain` claim to specific audiences using JWE [[RFC7516]].
+- Applying Selective Disclosure mechanisms such as SD-JWT [[!I-D.ietf-oauth-selective-disclosure-jwt]] to allow progressive revelation of Actor Chain Entries.
+
+## Confused Deputy Mitigation
+
+In both modes, a confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. In Self-Attested Mode, the malicious actor's own cryptographic signature provides non-repudiable evidence of its participation.
+
+# IANA Considerations
+
+## JSON Web Token Claims Registration
+
+This document requests registration of the following claim in the "JSON Web Token Claims" registry established by [[RFC7519]]:
+
+- **Claim Name**: `actor_chain`
+- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain in an OAuth 2.0 Token Exchange, with optional per-entry cryptographic signatures for tamper evidence and non-repudiation.
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+{backmatter}
+
+<reference anchor="I-D.ietf-spice-arch" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch">
+  <front>
+    <title>Secure Patterns for Internet CrEdentials (SPICE) Architecture</title>
+    <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
+    <date month="October" day="21" year="2024"/>
+  </front>
+</reference>
+
+<reference anchor="I-D.ietf-spice-s2s-protocol" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-s2s-protocol">
+  <front>
+    <title>SPICE Service to Service Authentication</title>
+    <author initials="P." surname="Howard" fullname="Pieter Howard"/>
+    <date month="October" day="21" year="2024"/>
+  </front>
+</reference>
+
+<reference anchor="I-D.draft-mw-spice-transitive-attestation" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-transitive-attestation">
+  <front>
+    <title>Transitive Attestation for Workload Proof of Residency</title>
+    <author initials="R." surname="Krishnan" fullname="Ram Krishnan"/>
+    <date month="February" day="21" year="2025"/>
+  </front>
+</reference>
+
+<reference anchor="I-D.ietf-oauth-selective-disclosure-jwt" target="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt">
+  <front>
+    <title>Selective Disclosure for JWTs (SD-JWT)</title>
+    <author initials="D." surname="Fett" fullname="Daniel Fett"/>
+    <date month="October" day="7" year="2024"/>
+  </front>
+</reference>
