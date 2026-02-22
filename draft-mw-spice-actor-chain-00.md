@@ -148,7 +148,7 @@ The `actor_chain` claim supports two operational modes:
 
 The `actor_chain` claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members. To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
 - **Per-Actor**: An Authorization Server MAY choose to hide entire Actor Chain Entries or only specific actors in the chain.
-- **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext.
+- **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext. These fields typically correspond to the identity claims present in the **Actor Token** or client credentials used during the token exchange flow.
 
 sub:
 : REQUIRED (or selectively disclosed). A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.
