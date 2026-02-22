@@ -161,7 +161,10 @@ por:
 : OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in [[!I-D.draft-mw-spice-transitive-attestation]].
 
 chain_digest:
-: OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a `chain_sig` at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
+: OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a `chain_sig` at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode. 
+
+  > [!IMPORTANT]
+  > When Selective Disclosure is used, the SD-JWT **Disclosure strings** (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The `chain_digest` is computed exclusively over the Actor Chain Entry object, which contains the stable `_sd` hashes. This ensures the signature remains valid regardless of which disclosures are subsequently provided to different recipients.
 
 chain_sig:
 : OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
