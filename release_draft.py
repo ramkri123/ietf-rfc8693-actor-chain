@@ -61,14 +61,18 @@ Usage Examples:
    $ ./release_draft.py --source draft.md
 
 3. Create a new version and push to GitHub:
-   $ ./release_draft.py --source draft.md --push
+   $ ./release_draft.py --push
 
-4. Manually specify the draft prefix (if it can't be inferred):
-   $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation --source draft.md
+4. Force a specific version number (e.g., 00):
+   $ ./release_draft.py --version 00
+
+5. Manually specify the draft prefix (if it can't be inferred):
+   $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation
 """
     )
     parser.add_argument("--source", default="draft", help="The non-versioned master .md file to copy from (default: draft).")
     parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
+    parser.add_argument("--version", help="Explicitly set the version number (e.g., 00, 01). Overrides auto-increment.")
     parser.add_argument("--push", action="store_true", help="Push changes to git.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it.")
     
@@ -94,12 +98,15 @@ Usage Examples:
             print("Error: No versioned .md files found. Please specify --prefix.")
             sys.exit(1)
 
-    current_version = get_latest_version(args.prefix)
-    next_version = current_version + 1
-    next_version_str = f"{next_version:02d}"
+    if args.version:
+        next_version_str = args.version
+    else:
+        current_version = get_latest_version(args.prefix)
+        next_version = current_version + 1
+        next_version_str = f"{next_version:02d}"
     
     new_filename = f"{args.prefix}-{next_version_str}.md"
-    print(f"Next version: {next_version_str} ({new_filename})")
+    print(f"Target version: {next_version_str} ({new_filename})")
 
     if args.dry_run:
         print("Dry run: Skipping file operations and git commands.")
