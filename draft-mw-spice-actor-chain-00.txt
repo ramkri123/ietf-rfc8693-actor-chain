@@ -14,7 +14,7 @@ Expires: 27 August 2026                              JPMorgan Chase & Co
 
 
  Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange
-                     draft-mw-spice-actor-chain-01
+                     draft-mw-spice-actor-chain-00
 
 Abstract
 

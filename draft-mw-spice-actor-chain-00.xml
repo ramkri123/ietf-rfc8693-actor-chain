@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.miek.nl" -->
-<rfc version="3" ipr="trust200902" docName="draft-mw-spice-actor-chain-01" submissionType="IETF" category="info" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" indexInclude="true">
+<rfc version="3" ipr="trust200902" docName="draft-mw-spice-actor-chain-00" submissionType="IETF" category="info" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" indexInclude="true">
 
 <front>
-<title abbrev="SPICE-ACTOR-CHAIN">Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange</title><seriesInfo value="draft-mw-spice-actor-chain-01" status="informational" name="Internet-Draft"></seriesInfo>
+<title abbrev="SPICE-ACTOR-CHAIN">Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange</title><seriesInfo value="draft-mw-spice-actor-chain-00" status="informational" name="Internet-Draft"></seriesInfo>
 <author initials="A." surname="Prasad" fullname="A Prasad"><organization>Oracle</organization><address><postal><street></street>
 </postal><email>a.prasad@oracle.com</email>
 </address></author><author initials="R." surname="Krishnan" fullname="Ram Krishnan"><organization>JPMorgan Chase &amp; Co</organization><address><postal><street></street>

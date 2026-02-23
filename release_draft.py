@@ -11,18 +11,20 @@ VERSION = ""    # Set explicitly (e.g., "00") to target a version, or leave empt
 SOURCE = ""     # Master file (e.g. "draft-mw-spice.md"). If empty, uses [prefix].md.
 AUTO_BUMP = False # Set to True to automatically increment the version on every run.
 PUSH = True      # Set to False to commit locally only by default.
-CLEANUP = True   # Set to True to remove old generated files (.xml, .html, .txt) of previous versions.
+CLEANUP = True   # Set to True to remove redundant versioned source (.md) and old versions.
 # ---------------------------------------------
 
 def get_latest_version(prefix):
     """Finds the latest version number for files starting with the prefix."""
-    files = list(Path('.').glob(f"{prefix}-*.md"))
+    # Look for any versioned files (e.g. .md, .xml, .txt, .html)
+    files = list(Path('.').glob(f"{prefix}-*"))
     if not files:
         return -1
     
     versions = []
     for f in files:
-        match = re.search(r'-(\d+)\.md$', f.name)
+        # Match - followed by exactly 2 or more digits at the end before extension
+        match = re.search(r'-(\d+)(\.\w+)?$', f.name)
         if match:
             versions.append(int(match.group(1)))
     
@@ -55,19 +57,38 @@ def run_command(command, description):
         print(e.stderr)
         sys.exit(1)
 
-def perform_cleanup(prefix, current_version_str):
-    """Removes generated files (.xml, .html, .txt) and old versioned sources (.md)."""
+def perform_cleanup(prefix, target_version_str, remove_current_md=True):
+    """Removes old generated files and optionally the current versioned .md."""
     print("Cleaning up redundant versioned files...")
     extensions = ['.xml', '.html', '.txt', '.md']
+    
+    # 1. Remove artifacts from ALL other versions
     for f in Path('.').glob(f"{prefix}-*"):
-        # Don't delete the version we just created or the master
-        if current_version_str in f.name:
+        # Don't delete the master
+        if f.name == f"{prefix}.md":
             continue
+            
+        # Is this a versioned file?
+        match = re.search(r'-(\d+)(\.\w+)?$', f.name)
+        if not match:
+            continue
+            
+        version_in_file = match.group(1)
         
-        if f.suffix in extensions:
+        # If it's a different version, delete it if it matches our target extensions
+        if version_in_file != target_version_str:
+            if f.suffix in extensions:
+                try:
+                    f.unlink()
+                    print(f"Removed old version file: {f.name}")
+                except Exception as e:
+                    print(f"Warning: Could not remove {f.name}: {e}")
+        
+        # If it's the CURRENT versioned .md, delete it (we have the artifacts and the master)
+        elif remove_current_md and f.suffix == '.md':
             try:
                 f.unlink()
-                print(f"Removed redundant file: {f.name}")
+                print(f"Removed current versioned source (redundant): {f.name}")
             except Exception as e:
                 print(f"Warning: Could not remove {f.name}: {e}")
 
