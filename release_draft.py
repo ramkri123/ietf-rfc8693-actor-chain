@@ -6,6 +6,11 @@ import sys
 import argparse
 from pathlib import Path
 
+# --- Configuration (User can edit these) ---
+VERSION = ""  # Set explicitly (e.g., "00") to bypass auto-increment, or leave empty "" to auto-increment.
+SOURCE = "draft" # The default master file to copy from.
+# ---------------------------------------------
+
 def get_latest_version(prefix):
     """Finds the latest version number for files starting with the prefix."""
     files = list(Path('.').glob(f"{prefix}-*.md"))
@@ -58,7 +63,7 @@ Usage Examples:
    $ ./release_draft.py --dry-run
 
 2. Create a new version from a master 'draft.md' file and commit locally:
-   $ ./release_draft.py --source draft.md
+   $ ./release_draft.py
 
 3. Create a new version and push to GitHub:
    $ ./release_draft.py --push
@@ -70,9 +75,9 @@ Usage Examples:
    $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation
 """
     )
-    parser.add_argument("--source", default="draft", help="The non-versioned master .md file to copy from (default: draft).")
+    parser.add_argument("--source", default=SOURCE, help=f"The non-versioned master .md file to copy from (default: {SOURCE}).")
     parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
-    parser.add_argument("--version", help="Explicitly set the version number (e.g., 00, 01). Overrides auto-increment.")
+    parser.add_argument("--version", default=VERSION, help="Explicitly set the version number (e.g., 00, 01). Overrides auto-increment.")
     parser.add_argument("--push", action="store_true", help="Push changes to git.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it.")
     
