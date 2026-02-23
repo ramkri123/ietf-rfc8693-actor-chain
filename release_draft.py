@@ -8,9 +8,10 @@ from pathlib import Path
 
 # --- Configuration (User can edit these) ---
 VERSION = ""    # Set explicitly (e.g., "00") to target a version, or leave empty "" for latest.
-SOURCE = "draft" # The default master file to copy from.
+SOURCE = ""     # Master file (e.g. "draft-mw-spice.md"). If empty, uses [prefix].md.
 AUTO_BUMP = False # Set to True to automatically increment the version on every run.
 PUSH = True      # Set to False to commit locally only by default.
+CLEANUP = True   # Set to True to remove old generated files (.xml, .html, .txt) of previous versions.
 # ---------------------------------------------
 
 def get_latest_version(prefix):
@@ -54,6 +55,22 @@ def run_command(command, description):
         print(e.stderr)
         sys.exit(1)
 
+def perform_cleanup(prefix, current_version_str):
+    """Removes generated files (.xml, .html, .txt) of previous versions."""
+    print("Performing cleanup of old generated files...")
+    extensions = ['.xml', '.html', '.txt']
+    for f in Path('.').glob(f"{prefix}-*"):
+        # Don't delete the version we just created
+        if current_version_str in f.name:
+            continue
+        
+        if f.suffix in extensions:
+            try:
+                f.unlink()
+                print(f"Removed old file: {f.name}")
+            except Exception as e:
+                print(f"Warning: Could not remove {f.name}: {e}")
+
 def main():
     parser = argparse.ArgumentParser(
         description="Automate IETF draft release (Compile & Push).",
@@ -61,39 +78,32 @@ def main():
         epilog="""
 Usage Examples:
 
-1. Compile 'draft.md', update the current version file, commit, and push:
+1. Compile master file, update current version, commit, and push:
    $ ./release_draft.py
 
 2. Increment the version (bump), build, commit, and push:
    $ ./release_draft.py --bump
 
-3. Dry run to see what version would be targeted:
+3. Dry run to see what would be targeted:
    $ ./release_draft.py --dry-run
-
-4. Compile and commit locally, but do not push:
-   $ ./release_draft.py --no-push
-
-5. Force a specific version number (e.g., 00):
-   $ ./release_draft.py --version 00
 """
     )
-    parser.add_argument("--source", default=SOURCE, help=f"The non-versioned master .md file to copy from (default: {SOURCE}).")
-    parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
-    parser.add_argument("--version", default=VERSION, help="Explicitly set the version number (e.g., 00, 01). Overrides logic.")
-    parser.add_argument("--bump", action="store_true", default=AUTO_BUMP, help=f"Increment the version number (default: {AUTO_BUMP}).")
-    parser.add_argument("--no-push", action="store_true", help="Disable automatic git push.")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it.")
+    parser.add_argument("--source", default=SOURCE, help=f"The master .md file (default: {SOURCE}).")
+    parser.add_argument("--prefix", help="The draft prefix.")
+    parser.add_argument("--version", default=VERSION, help="Explicitly set the version number.")
+    parser.add_argument("--bump", action="store_true", default=AUTO_BUMP, help=f"Increment version (default: {AUTO_BUMP}).")
+    parser.add_argument("--no-push", action="store_true", help="Disable git push.")
+    parser.add_argument("--cleanup", action="store_true", default=CLEANUP, help=f"Clean old generated files (default: {CLEANUP}).")
+    parser.add_argument("--no-cleanup", action="store_false", dest="cleanup", help="Disable cleanup.")
+    parser.add_argument("--dry-run", action="store_true", help="Dry run.")
     
     args = parser.parse_args()
-    
-    # Logic for push default
     should_push = PUSH and not args.no_push
+    should_cleanup = args.cleanup
 
     if not args.prefix:
-        # Try to infer prefix from existing files
         md_files = list(Path('.').glob("draft-*.md"))
         if md_files:
-            # Extract common prefix
             prefixes = set()
             for f in md_files:
                 match = re.match(r'(draft-.*?)-\d+\.md', f.name)
@@ -103,10 +113,10 @@ Usage Examples:
                 args.prefix = list(prefixes)[0]
                 print(f"Inferred prefix: {args.prefix}")
             else:
-                print("Error: Could not infer a single unique prefix. Please specify --prefix.")
+                print("Error: Could not infer prefix. Specify --prefix.")
                 sys.exit(1)
         else:
-            print("Error: No versioned .md files found. Please specify --prefix.")
+            print("Error: No versioned .md files found.")
             sys.exit(1)
 
     if args.version:
@@ -115,17 +125,16 @@ Usage Examples:
         current_version = get_latest_version(args.prefix)
         if current_version < 0:
             target_version = 0
-            print("No existing version found. Starting at 00.")
+            print("Starting at 00.")
         else:
             target_version = current_version + (1 if args.bump else 0)
-        
         target_version_str = f"{target_version:02d}"
     
     new_filename = f"{args.prefix}-{target_version_str}.md"
     print(f"Target version: {target_version_str} ({new_filename})")
 
     if args.dry_run:
-        print("Dry run: Skipping file operations and git commands.")
+        print("Dry run: Skipping operations.")
         return
 
     # 1. Copy source to versioned file
@@ -135,17 +144,20 @@ Usage Examples:
             source_file = args.source
         elif not args.source.endswith(".md") and os.path.exists(args.source + ".md"):
             source_file = args.source + ".md"
-        else:
-            print(f"Error: Source file '{args.source}' not found.")
-            sys.exit(1)
+    
+    if not source_file and args.prefix:
+        potential = args.prefix + ".md"
+        if os.path.exists(potential):
+            source_file = potential
+            print(f"Using source: {source_file}")
 
     if source_file:
         run_command(f"cp {source_file} {new_filename}", f"copying {source_file} to {new_filename}")
     elif current_version >= 0:
-        prev_filename = f"{args.prefix}-{current_version:02d}.md"
-        run_command(f"cp {prev_filename} {new_filename}", f"copying previous version {prev_filename} to {new_filename}")
+        prev = f"{args.prefix}-{current_version:02d}.md"
+        run_command(f"cp {prev} {new_filename}", f"copying {prev}")
     else:
-        print("Error: No source or previous version found.")
+        print("Error: No source found.")
         sys.exit(1)
 
     # 2. Update metadata
@@ -154,8 +166,10 @@ Usage Examples:
     # 3. Build
     if os.path.exists("Makefile"):
         run_command("make", "running make")
+        if should_cleanup:
+            perform_cleanup(args.prefix, target_version_str)
     else:
-        print("Warning: Makefile not found, skipping build.")
+        print("Warning: Makefile not found.")
 
     # 4. Git operations
     run_command("git add .", "staging changes")
