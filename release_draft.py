@@ -106,8 +106,18 @@ Usage Examples:
         return
 
     # 1. Copy source to versioned file
-    if args.source and os.path.exists(args.source):
-        run_command(f"cp {args.source} {new_filename}", f"copying {args.source} to {new_filename}")
+    source_file = None
+    if args.source:
+        if os.path.exists(args.source):
+            source_file = args.source
+        elif not args.source.endswith(".md") and os.path.exists(args.source + ".md"):
+            source_file = args.source + ".md"
+        else:
+            print(f"Error: Source file '{args.source}' not found.")
+            sys.exit(1)
+
+    if source_file:
+        run_command(f"cp {source_file} {new_filename}", f"copying {source_file} to {new_filename}")
     elif current_version >= 0:
         prev_filename = f"{args.prefix}-{current_version:02d}.md"
         run_command(f"cp {prev_filename} {new_filename}", f"copying previous version {prev_filename} to {new_filename}")
