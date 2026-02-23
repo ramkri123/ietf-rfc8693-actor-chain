@@ -56,18 +56,18 @@ def run_command(command, description):
         sys.exit(1)
 
 def perform_cleanup(prefix, current_version_str):
-    """Removes generated files (.xml, .html, .txt) of previous versions."""
-    print("Performing cleanup of old generated files...")
-    extensions = ['.xml', '.html', '.txt']
+    """Removes generated files (.xml, .html, .txt) and old versioned sources (.md)."""
+    print("Cleaning up redundant versioned files...")
+    extensions = ['.xml', '.html', '.txt', '.md']
     for f in Path('.').glob(f"{prefix}-*"):
-        # Don't delete the version we just created
+        # Don't delete the version we just created or the master
         if current_version_str in f.name:
             continue
         
         if f.suffix in extensions:
             try:
                 f.unlink()
-                print(f"Removed old file: {f.name}")
+                print(f"Removed redundant file: {f.name}")
             except Exception as e:
                 print(f"Warning: Could not remove {f.name}: {e}")
 
@@ -165,7 +165,8 @@ Usage Examples:
 
     # 3. Build
     if os.path.exists("Makefile"):
-        run_command("make", "running make")
+        draft_base = f"{args.prefix}-{target_version_str}"
+        run_command(f"make DRAFT={draft_base}", f"running make for {draft_base}")
         if should_cleanup:
             perform_cleanup(args.prefix, target_version_str)
     else:
