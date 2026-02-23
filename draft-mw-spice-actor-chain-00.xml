@@ -24,7 +24,7 @@
 <keyword>AI agents</keyword>
 
 <abstract>
-<t>This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of <strong>Delegation Auditability Gaps</strong> in multi-hop service environments. Current standards treat prior actors in a delegation chain as &quot;informational only,&quot; providing no cryptographic proof of the actual delegation path. This document proposes a new <tt>actor_chain</tt> claim — a <strong>Cryptographically Verifiable Actor Chain</strong> — that replaces the informational-only nested <tt>act</tt> claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where the security posture of the entire delegation chain is critical for authorization decisions.</t>
+<t>This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of <strong>Delegation Auditability Gaps</strong> in multi-hop service environments. Current standards treat prior actors in a delegation chain as &quot;informational only,&quot; providing no cryptographic proof of the actual delegation path. This document proposes a new <tt>actor_chain</tt> claim — a <strong>Cryptographically Verifiable Actor Chain</strong> — that replaces the informational-only nested <tt>act</tt> claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads—where susceptibility to <strong>prompt injection attacks</strong> can lead to unauthorized delegation paths—the security posture of the entire delegation chain is critical for authorization decisions.</t>
 </abstract>
 
 </front>
@@ -33,7 +33,7 @@
 
 <section anchor="introduction"><name>Introduction</name>
 <t>This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance <strong>East-West</strong> identity delegation through cryptographically verifiable actor chains.</t>
-<t>In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the <tt>act</tt> (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be &quot;informational only,&quot; excluding them from access control considerations. This creates a significant <strong>Delegation Auditability Gap</strong>: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement within unverified informational claims.</t>
+<t>In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the <tt>act</tt> (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be &quot;informational only,&quot; excluding them from access control considerations. This creates a significant <strong>Delegation Auditability Gap</strong>: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement or <strong>prompt injection-induced hijacking</strong> within unverified informational claims.</t>
 <t>By providing a standardized <strong>Cryptographically Verifiable Actor Chain</strong>, this extension replaces the informal nested <tt>act</tt> structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an <strong>&quot;East-West&quot;</strong> axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.</t>
 <t>This solution addresses several critical gaps in [[RFC8693]]:</t>
 
@@ -76,7 +76,7 @@
 
 <artwork><![CDATA[User -> Orchestrator Agent -> Planning Agent -> Tool Agent -> Data API
 ]]></artwork>
-<t>At each hop, the agent performs a token exchange ([[RFC8693]]) to obtain credentials appropriate for calling the next service. Under current [[RFC8693]] semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have made critical decisions about what data to access and how—are invisible to policy enforcement.</t>
+<t>At each hop, the agent performs a token exchange ([[RFC8693]]) to obtain credentials appropriate for calling the next service. Under current [[RFC8693]] semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have been manipulated via <strong>prompt injection</strong> into delegating authority they should not have—are invisible to policy enforcement.</t>
 <t>This creates several concrete risks:</t>
 
 <ul spacing="compact">

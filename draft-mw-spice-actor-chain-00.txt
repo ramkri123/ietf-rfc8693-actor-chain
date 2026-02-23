@@ -27,9 +27,10 @@ Abstract
    Actor Chain* — that replaces the informational-only nested act claim
    with a tamper-evident, ordered record of all actors.  This solution
    enables high-assurance data-plane policy enforcement and forensic
-   auditability, particularly for dynamic AI agent-to-agent workloads
-   where the security posture of the entire delegation chain is critical
-   for authorization decisions.
+   auditability, particularly for dynamic AI agent-to-agent
+   workloads—where susceptibility to *prompt injection attacks* can lead
+   to unauthorized delegation paths—the security posture of the entire
+   delegation chain is critical for authorization decisions.
 
 Status of This Memo
 
@@ -47,7 +48,6 @@ Status of This Memo
    material or to cite them other than as "work in progress."
 
    This Internet-Draft will expire on 27 August 2026.
-
 
 
 
@@ -76,7 +76,7 @@ Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
    2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   4
-   3.  The Problem: RFC 8693 Actor Limitations . . . . . . . . . . .   4
+   3.  The Problem: RFC 8693 Actor Limitations . . . . . . . . . . .   5
      3.1.  Single-Actor Semantics  . . . . . . . . . . . . . . . . .   5
      3.2.  AI Agent Delegation Chains  . . . . . . . . . . . . . . .   5
      3.3.  Structural Limitations of Nested act  . . . . . . . . . .   5
@@ -137,8 +137,9 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    nested chain to be "informational only," excluding them from access
    control considerations.  This creates a significant *Delegation
    Auditability Gap*: Resource Servers cannot verify the full path of
-   authority, and attackers can potentially hide lateral movement within
-   unverified informational claims.
+   authority, and attackers can potentially hide lateral movement or
+   *prompt injection-induced hijacking* within unverified informational
+   claims.
 
    By providing a standardized *Cryptographically Verifiable Actor
    Chain*, this extension replaces the informal nested act structure
@@ -159,9 +160,8 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    3.  *Dynamic AI Agent Topologies*: Provides a scalable architecture
        for the unpredictable and deep delegation chains common in
        autonomous agent networks.
-   4.  *Data-Plane Efficiency*: Uses a flat, ordered array structure
-       optimized for high-throughput parsing and indexing in cloud-
-       native proxies (e.g., Envoy).
+
+
 
 
 
@@ -169,6 +169,10 @@ Prasad, et al.           Expires 27 August 2026                 [Page 3]
 
 Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
+
+   4.  *Data-Plane Efficiency*: Uses a flat, ordered array structure
+       optimized for high-throughput parsing and indexing in cloud-
+       native proxies (e.g., Envoy).
 
    This extension is designed to be backward-compatible and format-
    agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE
@@ -213,10 +217,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
       Chain Entry, it provides hardware-rooted assurance of the actor's
       execution context.
 
-3.  The Problem: RFC 8693 Actor Limitations
-
-
-
 
 
 
@@ -225,6 +225,8 @@ Prasad, et al.           Expires 27 August 2026                 [Page 4]
 
 Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
+
+3.  The Problem: RFC 8693 Actor Limitations
 
 3.1.  Single-Actor Semantics
 
@@ -251,9 +253,9 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    obtain credentials appropriate for calling the next service.  Under
    current [[RFC8693]] semantics, by the time the request reaches the
    Data API, only the Tool Agent is identified as the actor.  The
-   Orchestrator Agent and Planning Agent—which may have made critical
-   decisions about what data to access and how—are invisible to policy
-   enforcement.
+   Orchestrator Agent and Planning Agent—which may have been manipulated
+   via *prompt injection* into delegating authority they should not
+   have—are invisible to policy enforcement.
 
    This creates several concrete risks:
 
@@ -272,8 +274,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    Beyond the semantic restriction, the nested object structure of act
    in [[RFC8693]] has practical limitations:
-
-
 
 
 
