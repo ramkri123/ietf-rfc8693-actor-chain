@@ -48,7 +48,25 @@ def run_command(command, description):
         sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Automate IETF draft release.")
+    parser = argparse.ArgumentParser(
+        description="Automate IETF draft release.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Usage Examples:
+
+1. Dry run to see what version would be created:
+   $ ./release_draft.py --dry-run
+
+2. Create a new version from a master 'draft.md' file and commit locally:
+   $ ./release_draft.py --source draft.md
+
+3. Create a new version and push to GitHub:
+   $ ./release_draft.py --source draft.md --push
+
+4. Manually specify the draft prefix (if it can't be inferred):
+   $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation --source draft.md
+"""
+    )
     parser.add_argument("--source", help="The non-versioned master .md file to copy from.")
     parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
     parser.add_argument("--push", action="store_true", help="Push changes to git.")
