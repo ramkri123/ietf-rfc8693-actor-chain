@@ -29,7 +29,7 @@ Abstract
    enables high-assurance data-plane policy enforcement and forensic
    auditability, particularly for dynamic AI agent-to-agent
    workloads—where susceptibility to *prompt injection attacks* can lead
-   to unauthorized delegation paths—the security posture of the entire
+   to unauthorized delegation paths — the security posture of the entire
    delegation chain is critical for authorization decisions.
 
 Status of This Memo
