@@ -7,8 +7,10 @@ import argparse
 from pathlib import Path
 
 # --- Configuration (User can edit these) ---
-VERSION = ""  # Set explicitly (e.g., "00") to bypass auto-increment, or leave empty "" to auto-increment.
+VERSION = ""    # Set explicitly (e.g., "00") to target a version, or leave empty "" for latest.
 SOURCE = "draft" # The default master file to copy from.
+AUTO_BUMP = False # Set to True to automatically increment the version on every run.
+PUSH = True      # Set to False to commit locally only by default.
 # ---------------------------------------------
 
 def get_latest_version(prefix):
@@ -54,35 +56,39 @@ def run_command(command, description):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Automate IETF draft release.",
+        description="Automate IETF draft release (Compile & Push).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Examples:
 
-1. Dry run to see what version would be created:
-   $ ./release_draft.py --dry-run
-
-2. Create a new version from a master 'draft.md' file and commit locally:
+1. Compile 'draft.md', update the current version file, commit, and push:
    $ ./release_draft.py
 
-3. Create a new version and push to GitHub:
-   $ ./release_draft.py --push
+2. Increment the version (bump), build, commit, and push:
+   $ ./release_draft.py --bump
 
-4. Force a specific version number (e.g., 00):
+3. Dry run to see what version would be targeted:
+   $ ./release_draft.py --dry-run
+
+4. Compile and commit locally, but do not push:
+   $ ./release_draft.py --no-push
+
+5. Force a specific version number (e.g., 00):
    $ ./release_draft.py --version 00
-
-5. Manually specify the draft prefix (if it can't be inferred):
-   $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation
 """
     )
     parser.add_argument("--source", default=SOURCE, help=f"The non-versioned master .md file to copy from (default: {SOURCE}).")
     parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
-    parser.add_argument("--version", default=VERSION, help="Explicitly set the version number (e.g., 00, 01). Overrides auto-increment.")
-    parser.add_argument("--push", action="store_true", help="Push changes to git.")
+    parser.add_argument("--version", default=VERSION, help="Explicitly set the version number (e.g., 00, 01). Overrides logic.")
+    parser.add_argument("--bump", action="store_true", default=AUTO_BUMP, help=f"Increment the version number (default: {AUTO_BUMP}).")
+    parser.add_argument("--no-push", action="store_true", help="Disable automatic git push.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it.")
     
     args = parser.parse_args()
     
+    # Logic for push default
+    should_push = PUSH and not args.no_push
+
     if not args.prefix:
         # Try to infer prefix from existing files
         md_files = list(Path('.').glob("draft-*.md"))
@@ -104,14 +110,19 @@ Usage Examples:
             sys.exit(1)
 
     if args.version:
-        next_version_str = args.version
+        target_version_str = args.version
     else:
         current_version = get_latest_version(args.prefix)
-        next_version = current_version + 1
-        next_version_str = f"{next_version:02d}"
+        if current_version < 0:
+            target_version = 0
+            print("No existing version found. Starting at 00.")
+        else:
+            target_version = current_version + (1 if args.bump else 0)
+        
+        target_version_str = f"{target_version:02d}"
     
-    new_filename = f"{args.prefix}-{next_version_str}.md"
-    print(f"Target version: {next_version_str} ({new_filename})")
+    new_filename = f"{args.prefix}-{target_version_str}.md"
+    print(f"Target version: {target_version_str} ({new_filename})")
 
     if args.dry_run:
         print("Dry run: Skipping file operations and git commands.")
@@ -138,7 +149,7 @@ Usage Examples:
         sys.exit(1)
 
     # 2. Update metadata
-    update_metadata(new_filename, next_version_str, args.prefix)
+    update_metadata(new_filename, target_version_str, args.prefix)
 
     # 3. Build
     if os.path.exists("Makefile"):
@@ -148,14 +159,14 @@ Usage Examples:
 
     # 4. Git operations
     run_command("git add .", "staging changes")
-    commit_msg = f"Release version {next_version_str}"
-    run_command(f'git commit -m "{commit_msg}"', f"committing release {next_version_str}")
+    commit_msg = f"Update version {target_version_str}"
+    run_command(f'git commit -m "{commit_msg}"', f"committing update {target_version_str}")
     
-    if args.push:
+    if should_push:
         run_command("git push", "pushing to remote")
         print("Release pushed successfully.")
     else:
-        print("Release committed locally (not pushed).")
+        print("Changes committed locally (not pushed).")
 
 if __name__ == "__main__":
     main()
