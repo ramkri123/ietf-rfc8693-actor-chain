@@ -67,7 +67,7 @@ Usage Examples:
    $ ./release_draft.py --prefix draft-mw-wimse-transitive-attestation --source draft.md
 """
     )
-    parser.add_argument("--source", help="The non-versioned master .md file to copy from.")
+    parser.add_argument("--source", default="draft", help="The non-versioned master .md file to copy from (default: draft).")
     parser.add_argument("--prefix", help="The draft prefix (e.g., draft-mw-wimse-transitive-attestation).")
     parser.add_argument("--push", action="store_true", help="Push changes to git.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it.")
