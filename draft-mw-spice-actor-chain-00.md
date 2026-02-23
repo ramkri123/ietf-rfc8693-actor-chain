@@ -49,33 +49,26 @@ organization = "Aryaka"
 
 .# Abstract
 
-This document proposes an extension to OAuth 2.0 Token Exchange [[RFC8693]] that replaces the informational-only nested `act` (actor) claim with a new `actor_chain` claim — a Cryptographically Verifiable Actor Chain. The `actor_chain` claim provides an ordered, tamper-evident list of all actors in a delegation chain. This extension is motivated by the emergence of dynamic AI agent-to-agent workloads where fine-grained data-plane policy enforcement and auditability require a complete, cryptographically verifiable record of every actor that has participated in a chain of delegation — not merely the identity of the current actor.
+This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where the security posture of the entire delegation chain is critical for authorization decisions.
 
 {mainmatter}
 
 # Introduction
 
-OAuth 2.0 Token Exchange [[RFC8693]] provides a mechanism for exchanging one security token for another, enabling delegation and impersonation semantics. Section 4.1 of [[RFC8693]] defines the `act` (actor) claim, which identifies the party to whom authority has been delegated. A chain of delegation can be expressed by nesting `act` claims within `act` claims.
+This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance **East-West** identity delegation through cryptographically verifiable actor chains. 
 
-However, the specification explicitly states:
+In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement within unverified informational claims.
 
-> For the purpose of applying access control policy, the consumer of
-> a token MUST only consider the token's top-level claims and the
-> party identified as the current actor by the `act` claim. Prior
-> actors identified by any nested `act` claims are informational only
-> and are not to be considered in access control decisions.
+By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an **"East-West"** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
 
-This restriction creates significant gaps in modern multi-service environments, particularly for AI agent workloads:
+This solution addresses several critical gaps in [[RFC8693]]:
 
-1. **No Cryptographic Audit Trail**: The nested `act` structure carries only self-reported `sub` claims from prior actors. There is no cryptographic binding proving that each prior actor actually participated in the delegation chain, or that the chain has not been tampered with.
+1. **Cryptographic Audit Trail**: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.
+2. **Data-Plane Policy Enforcement**: Enables Resource Servers to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").
+3. **Dynamic AI Agent Topologies**: Provides a scalable architecture for the unpredictable and deep delegation chains common in autonomous agent networks.
+4. **Data-Plane Efficiency**: Uses a flat, ordered array structure optimized for high-throughput parsing and indexing in cloud-native proxies (e.g., Envoy).
 
-2. **No Data-Plane Policy Enforcement**: Because prior actors are "informational only", Resource Servers cannot write fine-grained authorization policies based on the delegation path. For example, a policy like "allow access only if the originating actor was `orchestrator.example.com` AND no actor in the chain belongs to an untrusted domain" is not supported by [[RFC8693]] semantics.
-
-3. **Dynamic AI Agent Topologies**: AI agents connect dynamically to other AI agents. An LLM-based orchestrator may delegate to a retrieval agent, which delegates to a data-access agent, which delegates to a storage service. The chain is unpredictable and can be arbitrarily deep. The security posture of the entire chain—not just the last hop—is critical.
-
-4. **Data-Plane Debuggability**: Deeply nested JSON objects are difficult to parse, index, and query in high-throughput data-plane environments. A flat, ordered array structure is more amenable to efficient processing, logging, and forensic analysis.
-
-This document proposes the `actor_chain` claim — a Cryptographically Verifiable Actor Chain — as a backward-compatible extension to [[RFC8693]] that addresses these limitations by providing a policy-enforceable, ordered list of all actors in a delegation chain with optional per-actor cryptographic signatures. The extension is designed to be format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.
+This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.
 
 # Terminology
 

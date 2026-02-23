@@ -5,13 +5,13 @@
 <meta content="Common,Latin" name="scripts">
 <meta content="initial-scale=1.0" name="viewport">
 <title>Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange</title>
-<meta content="Ram Krishnan" name="author">
 <meta content="A Prasad" name="author">
+<meta content="Ram Krishnan" name="author">
 <meta content="Diego R. Lopez" name="author">
 <meta content="Srinivasa Addepalli" name="author">
-<meta content="
-       This document proposes an extension to OAuth 2.0 Token Exchange [[RFC8693]] that replaces the informational-only nested  act  (actor) claim with a new  actor_chain  claim — a Cryptographically Verifiable Actor Chain. The  actor_chain  claim provides an ordered, tamper-evident list of all actors in a delegation chain. This extension is motivated by the emergence of dynamic AI agent-to-agent workloads where fine-grained data-plane policy enforcement and auditability require a complete, cryptographically verifiable record of every actor that has participated in a chain of delegation — not merely the identity of the current actor. 
-    " name="description">
+<meta content='
+       This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of  Delegation Auditability Gaps  in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new  actor_chain  claim — a  Cryptographically Verifiable Actor Chain  — that replaces the informational-only nested  act  claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where the security posture of the entire delegation chain is critical for authorization decisions. 
+    ' name="description">
 <meta content="xml2rfc 3.31.0" name="generator">
 <meta content="actor chain" name="keyword">
 <meta content="spice" name="keyword">
@@ -1227,8 +1227,8 @@ li > p:last-of-type:only-child {
 <td class="right">February 2026</td>
 </tr></thead>
 <tfoot><tr>
-<td class="left">Krishnan, et al.</td>
-<td class="center">Expires 25 August 2026</td>
+<td class="left">Prasad, et al.</td>
+<td class="center">Expires 27 August 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1241,21 +1241,21 @@ li > p:last-of-type:only-child {
 <dd class="internet-draft">draft-mw-spice-actor-chain-00</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-02-21" class="published">21 February 2026</time>
+<time datetime="2026-02-23" class="published">23 February 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-08-25">25 August 2026</time></dd>
+<dd class="expires"><time datetime="2026-08-27">27 August 2026</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
-      <div class="author-name">R. Krishnan</div>
-<div class="org">JPMorgan Chase &amp; Co</div>
-</div>
-<div class="author">
       <div class="author-name">A. Prasad</div>
 <div class="org">Oracle</div>
+</div>
+<div class="author">
+      <div class="author-name">R. Krishnan</div>
+<div class="org">JPMorgan Chase &amp; Co</div>
 </div>
 <div class="author">
       <div class="author-name">D. Lopez</div>
@@ -1271,7 +1271,7 @@ li > p:last-of-type:only-child {
 <h1 id="title">Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document proposes an extension to OAuth 2.0 Token Exchange [[RFC8693]] that replaces the informational-only nested <code>act</code> (actor) claim with a new <code>actor_chain</code> claim — a Cryptographically Verifiable Actor Chain. The <code>actor_chain</code> claim provides an ordered, tamper-evident list of all actors in a delegation chain. This extension is motivated by the emergence of dynamic AI agent-to-agent workloads where fine-grained data-plane policy enforcement and auditability require a complete, cryptographically verifiable record of every actor that has participated in a chain of delegation — not merely the identity of the current actor.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of <strong>Delegation Auditability Gaps</strong> in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new <code>actor_chain</code> claim — a <strong>Cryptographically Verifiable Actor Chain</strong> — that replaces the informational-only nested <code>act</code> claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where the security posture of the entire delegation chain is critical for authorization decisions.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1292,7 +1292,7 @@ li > p:last-of-type:only-child {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 25 August 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 27 August 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1338,6 +1338,11 @@ li > p:last-of-type:only-child {
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
                 <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-structural-limitations-of-n" class="internal xref">Structural Limitations of Nested <code>act</code></a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3.2.1">
+                    <p id="section-toc.1-1.3.2.3.2.1.1"><a href="#section-3.3.1" class="auto internal xref">3.3.1</a>.  <a href="#name-selective-disclosure-sd-jwt" class="internal xref">Selective Disclosure (SD-JWT)</a></p>
+</li>
+                </ul>
 </li>
             </ul>
 </li>
@@ -1365,7 +1370,10 @@ li > p:last-of-type:only-child {
                 <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-token-exchange-flow" class="internal xref">Token Exchange Flow</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
-                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-when-chain-signatures-are-p" class="internal xref">When Chain Signatures Are Produced</a></p>
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-disclosure-propagation-in-s" class="internal xref">Disclosure Propagation in SD-JWT</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-when-chain-signatures-are-p" class="internal xref">When Chain Signatures Are Produced</a></p>
 </li>
                 </ul>
 </li>
@@ -1389,7 +1397,10 @@ li > p:last-of-type:only-child {
             <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-relation-to-other-ietf-work" class="internal xref">Relation to Other IETF Work</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
-                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-backward-compatibility-with" class="internal xref">Backward Compatibility with RFC 8693</a></p>
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-east-west-vs-north-south-se" class="internal xref">East-West vs. North-South Security</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-backward-compatibility-with" class="internal xref">Backward Compatibility with RFC 8693</a></p>
 </li>
             </ul>
 </li>
@@ -1413,6 +1424,23 @@ li > p:last-of-type:only-child {
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6">
                 <p id="section-toc.1-1.7.2.6.1"><a href="#section-7.6" class="auto internal xref">7.6</a>.  <a href="#name-privacy-of-prior-actors" class="internal xref">Privacy of Prior Actors</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.1">
+                    <p id="section-toc.1-1.7.2.6.2.1.1"><a href="#section-7.6.1" class="auto internal xref">7.6.1</a>.  <a href="#name-pseudonymous-identifiers" class="internal xref">Pseudonymous Identifiers</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.2">
+                    <p id="section-toc.1-1.7.2.6.2.2.1"><a href="#section-7.6.2" class="auto internal xref">7.6.2</a>.  <a href="#name-selective-disclosure-sd-jwt-2" class="internal xref">Selective Disclosure (SD-JWT)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.3">
+                    <p id="section-toc.1-1.7.2.6.2.3.1"><a href="#section-7.6.3" class="auto internal xref">7.6.3</a>.  <a href="#name-identity-bridging-for-anony" class="internal xref">Identity Bridging for Anonymity</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.4">
+                    <p id="section-toc.1-1.7.2.6.2.4.1"><a href="#section-7.6.4" class="auto internal xref">7.6.4</a>.  <a href="#name-targeted-selective-disclosu" class="internal xref">Targeted Selective Disclosure</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.5">
+                    <p id="section-toc.1-1.7.2.6.2.5.1"><a href="#section-7.6.5" class="auto internal xref">7.6.5</a>.  <a href="#name-encryption-jwe" class="internal xref">Encryption (JWE)</a></p>
+</li>
+                </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.7">
                 <p id="section-toc.1-1.7.2.7.1"><a href="#section-7.7" class="auto internal xref">7.7</a>.  <a href="#name-confused-deputy-mitigation" class="internal xref">Confused Deputy Mitigation</a></p>
@@ -1424,6 +1452,9 @@ li > p:last-of-type:only-child {
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
                 <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-json-web-token-claims-regis" class="internal xref">JSON Web Token Claims Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-cbor-web-token-claims-regis" class="internal xref">CBOR Web Token Claims Registration</a></p>
 </li>
             </ul>
 </li>
@@ -1439,31 +1470,25 @@ li > p:last-of-type:only-child {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">OAuth 2.0 Token Exchange [[RFC8693]] provides a mechanism for exchanging one security token for another, enabling delegation and impersonation semantics. Section 4.1 of [[RFC8693]] defines the <code>act</code> (actor) claim, which identifies the party to whom authority has been delegated. A chain of delegation can be expressed by nesting <code>act</code> claims within <code>act</code> claims.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">However, the specification explicitly states:<a href="#section-1-2" class="pilcrow">¶</a></p>
-<blockquote id="section-1-3">
-        <p id="section-1-3.1">For the purpose of applying access control policy, the consumer of
-a token MUST only consider the token's top-level claims and the
-party identified as the current actor by the <code>act</code> claim. Prior
-actors identified by any nested <code>act</code> claims are informational only
-and are not to be considered in access control decisions.<a href="#section-1-3.1" class="pilcrow">¶</a></p>
-</blockquote>
-<p id="section-1-4">This restriction creates significant gaps in modern multi-service environments, particularly for AI agent workloads:<a href="#section-1-4" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-1-5">
+<p id="section-1-1">This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance <strong>East-West</strong> identity delegation through cryptographically verifiable actor chains.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the <code>act</code> (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant <strong>Delegation Auditability Gap</strong>: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement within unverified informational claims.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">By providing a standardized <strong>Cryptographically Verifiable Actor Chain</strong>, this extension replaces the informal nested <code>act</code> structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an <strong>"East-West"</strong> axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This solution addresses several critical gaps in [[RFC8693]]:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-1-5">
 <li id="section-1-5.1">
-          <p id="section-1-5.1.1"><strong>No Cryptographic Audit Trail</strong>: The nested <code>act</code> structure carries only self-reported <code>sub</code> claims from prior actors. There is no cryptographic binding proving that each prior actor actually participated in the delegation chain, or that the chain has not been tampered with.<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+          <strong>Cryptographic Audit Trail</strong>: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.<a href="#section-1-5.1" class="pilcrow">¶</a>
 </li>
         <li id="section-1-5.2">
-          <p id="section-1-5.2.1"><strong>No Data-Plane Policy Enforcement</strong>: Because prior actors are "informational only", Resource Servers cannot write fine-grained authorization policies based on the delegation path. For example, a policy like "allow access only if the originating actor was <code>orchestrator.example.com</code> AND no actor in the chain belongs to an untrusted domain" is not supported by [[RFC8693]] semantics.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+          <strong>Data-Plane Policy Enforcement</strong>: Enables Resource Servers to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").<a href="#section-1-5.2" class="pilcrow">¶</a>
 </li>
         <li id="section-1-5.3">
-          <p id="section-1-5.3.1"><strong>Dynamic AI Agent Topologies</strong>: AI agents connect dynamically to other AI agents. An LLM-based orchestrator may delegate to a retrieval agent, which delegates to a data-access agent, which delegates to a storage service. The chain is unpredictable and can be arbitrarily deep. The security posture of the entire chain—not just the last hop—is critical.<a href="#section-1-5.3.1" class="pilcrow">¶</a></p>
+          <strong>Dynamic AI Agent Topologies</strong>: Provides a scalable architecture for the unpredictable and deep delegation chains common in autonomous agent networks.<a href="#section-1-5.3" class="pilcrow">¶</a>
 </li>
         <li id="section-1-5.4">
-          <p id="section-1-5.4.1"><strong>Data-Plane Debuggability</strong>: Deeply nested JSON objects are difficult to parse, index, and query in high-throughput data-plane environments. A flat, ordered array structure is more amenable to efficient processing, logging, and forensic analysis.<a href="#section-1-5.4.1" class="pilcrow">¶</a></p>
+          <strong>Data-Plane Efficiency</strong>: Uses a flat, ordered array structure optimized for high-throughput parsing and indexing in cloud-native proxies (e.g., Envoy).<a href="#section-1-5.4" class="pilcrow">¶</a>
 </li>
       </ol>
-<p id="section-1-6">This document proposes the <code>actor_chain</code> claim — a Cryptographically Verifiable Actor Chain — as a backward-compatible extension to [[RFC8693]] that addresses these limitations by providing a policy-enforceable, ordered list of all actors in a delegation chain with optional per-entry cryptographic signatures.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-6">This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.<a href="#section-1-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="terminology">
@@ -1475,15 +1500,15 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
 <p id="section-2-2">This document leverages the terminology defined in OAuth 2.0 Token Exchange [[RFC8693]], the SPICE Architecture [[!I-D.ietf-spice-arch]], and the RATS Architecture [[RFC9334]].<a href="#section-2-2" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlCompact dlParallel" id="section-2-3">
         <dt id="section-2-3.1">Actor Chain:</dt>
-        <dd style="margin-left: 1.5em" id="section-2-3.2">A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-entry cryptographic signatures (Self-Attested Mode).<a href="#section-2-3.2" class="pilcrow">¶</a>
+        <dd style="margin-left: 1.5em" id="section-2-3.2">A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-actor cryptographic signatures (Self-Attested Mode).<a href="#section-2-3.2" class="pilcrow">¶</a>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-3.3">Actor Chain Entry:</dt>
-        <dd style="margin-left: 1.5em" id="section-2-3.4">A JSON object identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.<a href="#section-2-3.4" class="pilcrow">¶</a>
+        <dd style="margin-left: 1.5em" id="section-2-3.4">A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.<a href="#section-2-3.4" class="pilcrow">¶</a>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-3.5">Chain Digest:</dt>
-        <dd style="margin-left: 1.5em" id="section-2-3.6">A cryptographic hash computed over relevant chain state. For the entry at index 0, it is computed over that entry's own identity claims (<code>sub</code>, <code>iss</code>, <code>iat</code>). For subsequent entries, it is computed over the canonical JSON serialization of all preceding Actor Chain Entries (indices 0 through N-1). Each entry signs over its Chain Digest, forming a hash chain.<a href="#section-2-3.6" class="pilcrow">¶</a>
+        <dd style="margin-left: 1.5em" id="section-2-3.6">A cumulative cryptographic hash computed over the delegation history. For any entry at index <code>N</code>, the <code>chain_digest</code> is computed over the concatenation of the current entry's identity claims and the <code>chain_digest</code> of the preceding entry (at index <code>N-1</code>). For the entry at index 0, the digest is computed over that entry's identity claims alone. Each actor produces a <code>per-actor signature</code> over its <code>chain_digest</code>, cryptographically anchoring itself to the entire preceding history.<a href="#section-2-3.6" class="pilcrow">¶</a>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-3.7">Chain Depth:</dt>
@@ -1556,6 +1581,13 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
             <strong>No Integrity</strong>: Each nested <code>act</code> is a plain JSON object with no signature or hash binding. Any intermediary could insert, remove, or reorder prior actors without detection.<a href="#section-3.3-2.4" class="pilcrow">¶</a>
 </li>
         </ol>
+<div id="selective-disclosure-sd-jwt">
+<section id="section-3.3.1">
+          <h4 id="name-selective-disclosure-sd-jwt">
+<a href="#section-3.3.1" class="section-number selfRef">3.3.1. </a><a href="#name-selective-disclosure-sd-jwt" class="section-name selfRef">Selective Disclosure (SD-JWT)</a>
+        </h4>
+</section>
+</div>
 </section>
 </div>
 </section>
@@ -1570,14 +1602,14 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
         <h3 id="name-overview">
 <a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-overview" class="section-name selfRef">Overview</a>
         </h3>
-<p id="section-4.1-1">This document defines a new JWT claim, <code>actor_chain</code>, that provides a Cryptographically Verifiable Actor Chain. Its value is a JSON array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor (the first entity to initiate the delegation), and the last index represents the current actor.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
-<p id="section-4.1-2">The <code>actor_chain</code> claim supports two operational modes to accommodate different trust and deployment models:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-1">This document defines a new claim, <code>actor_chain</code>, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">The <code>actor_chain</code> claim supports two operational modes:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-4.1-3">
 <li id="section-4.1-3.1">
-            <p id="section-4.1-3.1.1"><strong>AS-Attested Mode</strong>: The Authorization Server (AS) validates each actor at token exchange time and constructs the <code>actor_chain</code>. The AS's JWT signature over the entire token provides integrity protection for the chain. Per-entry <code>chain_sig</code> fields are omitted. This mode is appropriate when all actors trust a single AS and non-repudiation of individual actor participation is not required.<a href="#section-4.1-3.1.1" class="pilcrow">¶</a></p>
+            <p id="section-4.1-3.1.1"><strong>AS-Attested Mode</strong>: The Authorization Server (AS) validates each actor at token exchange time and constructs the <code>actor_chain</code>. The AS's signature over the entire token (JWS or COSE) provides integrity protection for the chain. Per-actor <code>chain_sig</code> fields are omitted.<a href="#section-4.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-4.1-3.2">
-            <p id="section-4.1-3.2.1"><strong>Self-Attested Mode</strong>: Each Actor Chain Entry additionally includes a <code>chain_sig</code> field: a compact JWS [[RFC7515]] signature computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure where each entry cryptographically commits to the entire preceding history, providing tamper evidence and non-repudiation independent of the AS. This mode is appropriate for federated environments, multi-AS deployments, or scenarios requiring cryptographic proof that each specific actor participated in the chain.<a href="#section-4.1-3.2.1" class="pilcrow">¶</a></p>
+            <p id="section-4.1-3.2.1"><strong>Self-Attested Mode</strong>: Each Actor Chain Entry additionally includes a <code>chain_sig</code> field: a cryptographic signature (compact JWS [[RFC7515]] or COSE_Sign1 [[RFC9052]]) computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure providing tamper evidence and non-repudiation independent of the AS.<a href="#section-4.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 </section>
@@ -1587,18 +1619,20 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
         <h3 id="name-claim-definition">
 <a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-claim-definition" class="section-name selfRef">Claim Definition</a>
         </h3>
-<p id="section-4.2-1">The <code>actor_chain</code> claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members:<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-1">The <code>actor_chain</code> claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members. To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
+- <strong>Per-Actor</strong>: An Authorization Server MAY choose to hide entire Actor Chain Entries or only specific actors in the chain.
+- <strong>Per-Field</strong>: Within a single Actor Chain Entry, a subset of members (e.g., <code>sub</code>) MAY be hidden using an <code>_sd</code> claim while others (e.g., <code>iat</code> or <code>por</code>) remain in cleartext. These fields typically correspond to the identity claims present in the <strong>Actor Token</strong> or client credentials used during the token exchange flow.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlCompact dlParallel" id="section-4.2-2">
           <dt id="section-4.2-2.1">sub:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.2">REQUIRED. A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.<a href="#section-4.2-2.2" class="pilcrow">¶</a>
+          <dd style="margin-left: 1.5em" id="section-4.2-2.2">REQUIRED (or selectively disclosed). A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.<a href="#section-4.2-2.2" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
 <dt id="section-4.2-2.3">iss:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.4">REQUIRED. A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.<a href="#section-4.2-2.4" class="pilcrow">¶</a>
+          <dd style="margin-left: 1.5em" id="section-4.2-2.4">REQUIRED (or selectively disclosed). A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.<a href="#section-4.2-2.4" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
 <dt id="section-4.2-2.5">iat:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.6">REQUIRED. The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.<a href="#section-4.2-2.6" class="pilcrow">¶</a>
+          <dd style="margin-left: 1.5em" id="section-4.2-2.6">REQUIRED (or selectively disclosed). The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.<a href="#section-4.2-2.6" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
 <dt id="section-4.2-2.7">por:</dt>
@@ -1606,15 +1640,21 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
 </dd>
           <dd class="break"></dd>
 <dt id="section-4.2-2.9">chain_digest:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.10">OPTIONAL. A Base64url-encoded cryptographic hash (SHA-256). For the entry at index 0, the hash is computed over the canonical JSON serialization of the entry's own identity claims (<code>sub</code>, <code>iss</code>, <code>iat</code>). For entries at index 1 and above, the hash is computed over the canonical JSON serialization of all preceding Actor Chain Entries (indices 0 through N-1). REQUIRED in Self-Attested Mode for all entries. MUST be omitted in AS-Attested Mode.<a href="#section-4.2-2.10" class="pilcrow">¶</a>
+          <dd style="margin-left: 1.5em" id="section-4.2-2.10">OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index <code>N</code>, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., <code>sub</code>, <code>iss</code>, <code>iat</code>, <code>_sd</code> hashes) and the <code>chain_digest</code> of the preceding entry (index <code>N-1</code>). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a <code>chain_sig</code> at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.<a href="#section-4.2-2.10" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<blockquote id="section-4.2-3">
+          <p id="section-4.2-3.1">[!IMPORTANT]
+When Selective Disclosure is used, the SD-JWT <strong>Disclosure strings</strong> (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The <code>chain_digest</code> is computed exclusively over the Actor Chain Entry object, which contains the stable <code>_sd</code> hashes. This ensures the signature remains valid regardless of which disclosures are subsequently provided to different recipients.<a href="#section-4.2-3.1" class="pilcrow">¶</a></p>
+</blockquote>
+<span class="break"></span><dl class="dlCompact dlParallel" id="section-4.2-4">
+          <dt id="section-4.2-4.1">chain_sig:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.2">OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the <code>chain_digest</code> value. The JWS header MUST include the <code>jwk</code> or <code>kid</code> member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.<a href="#section-4.2-4.2" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
-<dt id="section-4.2-2.11">chain_sig:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.12">OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the <code>chain_digest</code> value. The JWS header MUST include the <code>jwk</code> or <code>kid</code> member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.<a href="#section-4.2-2.12" class="pilcrow">¶</a>
-</dd>
-          <dd class="break"></dd>
-<dt id="section-4.2-2.13">chain_mode:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-2.14">OPTIONAL. A top-level string claim (sibling to <code>actor_chain</code>) indicating the operational mode. Values are <code>as_attested</code> or <code>self_attested</code>. If omitted, the mode is inferred from the presence or absence of <code>chain_sig</code> fields in the Actor Chain Entries.<a href="#section-4.2-2.14" class="pilcrow">¶</a>
+<dt id="section-4.2-4.3">chain_mode:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-4.4">OPTIONAL. A top-level string claim (sibling to <code>actor_chain</code>) indicating the operational mode. Values are <code>as_attested</code> or <code>self_attested</code>. If omitted, the mode is inferred from the presence or absence of <code>chain_sig</code> fields in the Actor Chain Entries.<a href="#section-4.2-4.4" class="pilcrow">¶</a>
 </dd>
         <dd class="break"></dd>
 </dl>
@@ -1773,37 +1813,60 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
           <li id="section-4.4-2.6">The AS issues a new token with the extended <code>actor_chain</code>.<a href="#section-4.4-2.6" class="pilcrow">¶</a>
 </li>
         </ol>
-<div id="when-chain-signatures-are-produced">
+<div id="disclosure-propagation-in-sd-jwt">
 <section id="section-4.4.1">
-          <h4 id="name-when-chain-signatures-are-p">
-<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-when-chain-signatures-are-p" class="section-name selfRef">When Chain Signatures Are Produced</a>
+          <h4 id="name-disclosure-propagation-in-s">
+<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-disclosure-propagation-in-s" class="section-name selfRef">Disclosure Propagation in SD-JWT</a>
           </h4>
-<p id="section-4.4.1-1">In Self-Attested Mode, a critical distinction is that each actor's <code>chain_sig</code> is produced <strong>during the token exchange request</strong>, before the final issued token exists. Consider a scenario where Service A calls Service B, and Service B later needs to call Service C:<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1-1">When Selective Disclosure (SD-JWT) [[!I-D.ietf-oauth-selective-disclosure-jwt]] is used for any Actor Chain Entry, the Authorization Server (AS) acts as the Discloser during token exchange. The propagation of the underlying cleartext identities is managed as follows:<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-4.4.1-2">
-<li id="section-4.4.1-2.1">Service A calls Service B, presenting a token containing <code>actor_chain</code> with chain <code>[A]</code>.<a href="#section-4.4.1-2.1" class="pilcrow">¶</a>
+<li id="section-4.4.1-2.1">
+              <strong>Disclosure Inclusion</strong>: When the AS issues a token for a downstream recipient (Service B), it determines based on policy which hidden identifiers in the <code>actor_chain</code> should be visible to that recipient. For each visible actor, the AS appends the corresponding SD-JWT Disclosure string (containing the salt and cleartext value) to the issued token.<a href="#section-4.4.1-2.1" class="pilcrow">¶</a>
 </li>
-            <li id="section-4.4.1-2.2">Service B receives the token and performs its work.<a href="#section-4.4.1-2.2" class="pilcrow">¶</a>
+            <li id="section-4.4.1-2.2">
+              <strong>Hop-by-Hop Visibility</strong>: In a chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, if <code>a</code> is to be visible to <code>b</code>, <code>c</code>, and <code>d</code>, the AS includes <code>a</code>'s disclosure string in the tokens issued to <code>b</code>, <code>c</code>, and <code>d</code> during their respective token exchanges.<a href="#section-4.4.1-2.2" class="pilcrow">¶</a>
 </li>
             <li id="section-4.4.1-2.3">
-              <p id="section-4.4.1-2.3.1"><strong>When Service B needs to call downstream Service C</strong>, it initiates a token exchange with the AS. At this point — not before — Service B:<a href="#section-4.4.1-2.3.1" class="pilcrow">¶</a></p>
+              <strong>Selective Redaction</strong>: When the final exchange occurs for recipient <code>e</code> (the end of the trust zone), the AS simply omits the disclosure string for <code>a</code> from the issued token.<a href="#section-4.4.1-2.3" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.4.1-2.4">
+              <strong>Validation</strong>: Each recipient in the chain can independently verify the hash of any disclosed claim against the <code>_sd</code> array in the Actor Chain Entry. If a disclosure is missing, the recipient sees only the hash, but can still verify the entry's geographic and residency properties through other claims.<a href="#section-4.4.1-2.4" class="pilcrow">¶</a>
+</li>
+          </ol>
+<p id="section-4.4.1-3">This mechanism ensures that the "key" to unlock a hidden identity is passed only to authorized actors in the chain, while the underlying cryptographically signed JWT structure remains identical for all recipients.<a href="#section-4.4.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="when-chain-signatures-are-produced">
+<section id="section-4.4.2">
+          <h4 id="name-when-chain-signatures-are-p">
+<a href="#section-4.4.2" class="section-number selfRef">4.4.2. </a><a href="#name-when-chain-signatures-are-p" class="section-name selfRef">When Chain Signatures Are Produced</a>
+          </h4>
+<p id="section-4.4.2-1">In Self-Attested Mode, a critical distinction is that each actor's <code>chain_sig</code> is produced <strong>during the token exchange request</strong>, before the final issued token exists. Consider a scenario where Service A calls Service B, and Service B later needs to call Service C:<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-4.4.2-2">
+<li id="section-4.4.2-2.1">Service A calls Service B, presenting a token containing <code>actor_chain</code> with chain <code>[A]</code>.<a href="#section-4.4.2-2.1" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.4.2-2.2">Service B receives the token and performs its work.<a href="#section-4.4.2-2.2" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.4.2-2.3">
+              <p id="section-4.4.2-2.3.1"><strong>When Service B needs to call downstream Service C</strong>, it initiates a token exchange with the AS. At this point — not before — Service B:<a href="#section-4.4.2-2.3.1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.4.1-2.3.2.1">Computes <code>chain_digest</code> over the existing chain entries from the received token.<a href="#section-4.4.1-2.3.2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.4.2-2.3.2.1">Computes <code>chain_digest</code> over the existing chain entries from the received token.<a href="#section-4.4.2-2.3.2.1" class="pilcrow">¶</a>
 </li>
-                <li class="compact" id="section-4.4.1-2.3.2.2">Signs this <code>chain_digest</code> with its own key, producing <code>chain_sig</code>.<a href="#section-4.4.1-2.3.2.2" class="pilcrow">¶</a>
+                <li class="compact" id="section-4.4.2-2.3.2.2">Signs this <code>chain_digest</code> with its own key, producing <code>chain_sig</code>.<a href="#section-4.4.2-2.3.2.2" class="pilcrow">¶</a>
 </li>
-                <li class="compact" id="section-4.4.1-2.3.2.3">Submits both values to the AS as part of the token exchange request, alongside the <code>subject_token</code> (containing chain <code>[A]</code>) and its own <code>actor_token</code>.<a href="#section-4.4.1-2.3.2.3" class="pilcrow">¶</a>
+                <li class="compact" id="section-4.4.2-2.3.2.3">Submits both values to the AS as part of the token exchange request, alongside the <code>subject_token</code> (containing chain <code>[A]</code>) and its own <code>actor_token</code>.<a href="#section-4.4.2-2.3.2.3" class="pilcrow">¶</a>
 </li>
               </ul>
 </li>
-            <li id="section-4.4.1-2.4">The AS validates the existing chain, then assembles the new <code>actor_chain</code> (prior entries + Service B's signed entry) into the issued JWT.<a href="#section-4.4.1-2.4" class="pilcrow">¶</a>
+            <li id="section-4.4.2-2.4">The AS validates the existing chain, then assembles the new <code>actor_chain</code> (prior entries + Service B's signed entry) into the issued JWT.<a href="#section-4.4.2-2.4" class="pilcrow">¶</a>
 </li>
-            <li id="section-4.4.1-2.5">The AS signs the <strong>entire JWT</strong> (including the <code>actor_chain</code>) with the AS's own key and returns the token to Service B.<a href="#section-4.4.1-2.5" class="pilcrow">¶</a>
+            <li id="section-4.4.2-2.5">The AS signs the <strong>entire JWT</strong> (including the <code>actor_chain</code>) with the AS's own key and returns the token to Service B.<a href="#section-4.4.2-2.5" class="pilcrow">¶</a>
 </li>
-            <li id="section-4.4.1-2.6">Service B uses this new token (containing chain <code>[A, B]</code>) to call Service C.<a href="#section-4.4.1-2.6" class="pilcrow">¶</a>
+            <li id="section-4.4.2-2.6">Service B uses this new token (containing chain <code>[A, B]</code>) to call Service C.<a href="#section-4.4.2-2.6" class="pilcrow">¶</a>
 </li>
           </ol>
-<p id="section-4.4.1-3">Consequently, each <code>chain_sig</code> covers only the <strong>actor chain state</strong> at that actor's point of participation — not the enclosing JWT's other claims such as <code>aud</code>, <code>exp</code>, or <code>sub</code>. This is by design: the actor chain and the token are concerns of different parties. The actor signs the chain to prove its participation; the AS signs the token to assert the token's validity. This separation allows the AS to set audience, expiry, and other claims independently without invalidating any actor's chain signature.<a href="#section-4.4.1-3" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-4.4.1-4">
+<p id="section-4.4.2-3">Consequently, each <code>chain_sig</code> covers only the <strong>actor chain state</strong> at that actor's point of participation — not the enclosing JWT's other claims such as <code>aud</code>, <code>exp</code>, or <code>sub</code>. This is by design: the actor chain and the token are concerns of different parties. The actor signs the chain to prove its participation; the AS signs the token to assert the token's validity. This separation allows the AS to set audience, expiry, and other claims independently without invalidating any actor's chain signature.<a href="#section-4.4.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.4.2-4">
 <pre>  Svc A        Auth Server        Svc B        Svc C
     |               |               |             |
     |-- token ------&gt;|               |             |
@@ -1822,7 +1885,7 @@ and are not to be considered in access control decisions.<a href="#section-1-3.1
     |               |               |-- request -&gt;|
     |               |               | token has   |
     |               |               | chain=[A,B] |
-</pre><a href="#section-4.4.1-4" class="pilcrow">¶</a>
+</pre><a href="#section-4.4.2-4" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
@@ -1963,12 +2026,27 @@ actor_chain[1].sub == "https://planner.example.com"
           <tr>
             <td class="text-left" rowspan="1" colspan="1">
               <strong>Transitive Attestation</strong> [[!I-D.draft-mw-spice-transitive-attestation]]</td>
-            <td class="text-left" rowspan="1" colspan="1">The PoR mechanism defined in the Transitive Attestation draft provides the hardware-rooted residency binding used in the <code>por</code> field of Actor Chain Entries. Together, the two drafts enable delegation chains where every hop is both identity-verified and residency-proven.</td>
+            <td class="text-left" rowspan="1" colspan="1">Provides the "North-South" residency proof (agent to local WIA) that complements the "East-West" delegation proof (agent to actor-chain) provided by this document.</td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">
               <strong>SPICE Architecture</strong> [[!I-D.ietf-spice-arch]]</td>
             <td class="text-left" rowspan="1" colspan="1">Defines the overarching workload identity architecture within which this extension operates.</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <strong>WIMSE Architecture</strong> [[!I-D.ietf-wimse-arch]]</td>
+            <td class="text-left" rowspan="1" colspan="1">This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures.</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <strong>Attestation-Based Auth</strong> [[!I-D.ietf-oauth-attestation-based-client-auth]]</td>
+            <td class="text-left" rowspan="1" colspan="1">Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted <code>por</code> claims in Actor Chain Entries.</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <strong>SCITT</strong> [[!I-D.ietf-scitt-architecture]]</td>
+            <td class="text-left" rowspan="1" colspan="1">Verifiable actor chains can be recorded in SCITT transparency logs to provide long-term, tamper-proof auditability of delegation paths.</td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">
@@ -1979,25 +2057,34 @@ actor_chain[1].sub == "https://planner.example.com"
             <td class="text-left" rowspan="1" colspan="1">
               <strong>DPoP</strong> [[RFC9449]]</td>
             <td class="text-left" rowspan="1" colspan="1">
-              <code>actor_chain</code> complements DPoP by providing delegation-chain context alongside proof-of-possession. A DPoP-bound token with an <code>actor_chain</code> proves both key possession and the full delegation history.</td>
+              <code>actor_chain</code> complements DPoP by providing delegation-chain context alongside proof-of-possession.</td>
           </tr>
         </tbody>
       </table>
-<div id="backward-compatibility-with-rfc-8693">
+<div id="east-west-vs-north-south-security">
 <section id="section-6.1">
-        <h3 id="name-backward-compatibility-with">
-<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-backward-compatibility-with" class="section-name selfRef">Backward Compatibility with RFC 8693</a>
+        <h3 id="name-east-west-vs-north-south-se">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-east-west-vs-north-south-se" class="section-name selfRef">East-West vs. North-South Security</a>
         </h3>
-<p id="section-6.1-1">An Authorization Server implementing this extension SHOULD populate both the <code>act</code> claim (per [[RFC8693]] Section 4.1) and the <code>actor_chain</code> claim in issued tokens. This ensures that:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-1">This specification addresses the <strong>East-West</strong> axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation [[!I-D.draft-mw-spice-transitive-attestation]] addresses the <strong>North-South</strong> axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node).<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">By embedding "North-South" Proofs of Residency (PoR) within "East-West" Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="backward-compatibility-with-rfc-8693">
+<section id="section-6.2">
+        <h3 id="name-backward-compatibility-with">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-backward-compatibility-with" class="section-name selfRef">Backward Compatibility with RFC 8693</a>
+        </h3>
+<p id="section-6.2-1">An Authorization Server implementing this extension SHOULD populate both the <code>act</code> claim (per [[RFC8693]] Section 4.1) and the <code>actor_chain</code> claim in issued tokens. This ensures that:<a href="#section-6.2-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-6.1-2.1">
-            <strong>Legacy consumers</strong> that understand only <code>act</code> continue to function correctly, seeing the current actor in the top-level <code>act</code> claim.<a href="#section-6.1-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-6.2-2.1">
+            <strong>Legacy consumers</strong> that understand only <code>act</code> continue to function correctly, seeing the current actor in the top-level <code>act</code> claim.<a href="#section-6.2-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-6.1-2.2">
-            <strong>Chain-aware consumers</strong> can use <code>actor_chain</code> for fine-grained policy enforcement and audit.<a href="#section-6.1-2.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-6.2-2.2">
+            <strong>Chain-aware consumers</strong> can use <code>actor_chain</code> for fine-grained policy enforcement and audit.<a href="#section-6.2-2.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-6.1-3">The <code>act</code> claim, when present alongside <code>actor_chain</code>, MUST identify the same entity as the last entry in the <code>actor_chain</code> array.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.2-3">The <code>act</code> claim, when present alongside <code>actor_chain</code>, MUST identify the same entity as the last entry in the <code>actor_chain</code> array.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2023,19 +2110,19 @@ actor_chain[1].sub == "https://planner.example.com"
 <p id="section-7.1-4">The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:<a href="#section-7.1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-7.1-5.1">
-            <p id="section-7.1-5.1.1"><strong>AS-Attested Mode</strong> is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-entry signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.<a href="#section-7.1-5.1.1" class="pilcrow">¶</a></p>
+            <p id="section-7.1-5.1.1"><strong>AS-Attested Mode</strong> is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-actor signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.<a href="#section-7.1-5.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-7.1-5.2">
             <p id="section-7.1-5.2.1"><strong>Self-Attested Mode</strong> is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:<a href="#section-7.1-5.2.1" class="pilcrow">¶</a></p>
 <ul class="compact normal">
 <li class="compact normal" id="section-7.1-5.2.2.1">
-                <strong>Federated/Multi-AS environments</strong>: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-entry signatures allow the RP to verify actor participation independently of the issuing AS.<a href="#section-7.1-5.2.2.1" class="pilcrow">¶</a>
+                <strong>Federated/Multi-AS environments</strong>: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-actor signatures allow the RP to verify actor participation independently of the issuing AS.<a href="#section-7.1-5.2.2.1" class="pilcrow">¶</a>
 </li>
               <li class="compact normal" id="section-7.1-5.2.2.2">
                 <strong>Non-repudiation</strong>: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.<a href="#section-7.1-5.2.2.2" class="pilcrow">¶</a>
 </li>
               <li class="compact normal" id="section-7.1-5.2.2.3">
-                <strong>Zero-trust posture</strong>: In adversarial environments, the Relying Party may not fully trust any single AS. Per-entry signatures provide defense-in-depth.<a href="#section-7.1-5.2.2.3" class="pilcrow">¶</a>
+                <strong>Zero-trust posture</strong>: In adversarial environments, the Relying Party may not fully trust any single AS. Per-actor signatures provide defense-in-depth.<a href="#section-7.1-5.2.2.3" class="pilcrow">¶</a>
 </li>
               <li class="compact normal" id="section-7.1-5.2.2.4">
                 <strong>Forensic analysis</strong>: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.<a href="#section-7.1-5.2.2.4" class="pilcrow">¶</a>
@@ -2084,15 +2171,98 @@ actor_chain[1].sub == "https://planner.example.com"
         <h3 id="name-privacy-of-prior-actors">
 <a href="#section-7.6" class="section-number selfRef">7.6. </a><a href="#name-privacy-of-prior-actors" class="section-name selfRef">Privacy of Prior Actors</a>
         </h3>
-<p id="section-7.6-1">The <code>actor_chain</code> exposes the identities of all actors in the delegation path to every Relying Party that receives the token. In scenarios where the delegation path is sensitive, deployments SHOULD consider:<a href="#section-7.6-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-7.6-2.1">Using pseudonymous or opaque identifiers for intermediate actors.<a href="#section-7.6-2.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-7.6-2.2">Encrypting the <code>actor_chain</code> claim to specific audiences using JWE [[RFC7516]].<a href="#section-7.6-2.2" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-7.6-2.3">Applying Selective Disclosure mechanisms such as SD-JWT [[!I-D.ietf-oauth-selective-disclosure-jwt]] to allow progressive revelation of Actor Chain Entries.<a href="#section-7.6-2.3" class="pilcrow">¶</a>
-</li>
-        </ul>
+<p id="section-7.6-1">The <code>actor_chain</code> expose the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, the originating actor <code>a</code> may require its identity to be hidden from <code>e</code> while still ensuring the integrity of the delegation.<a href="#section-7.6-1" class="pilcrow">¶</a></p>
+<p id="section-7.6-2">Deployments SHOULD consider the following anonymization and privacy-preserving techniques:<a href="#section-7.6-2" class="pilcrow">¶</a></p>
+<div id="pseudonymous-identifiers">
+<section id="section-7.6.1">
+          <h4 id="name-pseudonymous-identifiers">
+<a href="#section-7.6.1" class="section-number selfRef">7.6.1. </a><a href="#name-pseudonymous-identifiers" class="section-name selfRef">Pseudonymous Identifiers</a>
+          </h4>
+<p id="section-7.6.1-1">Instead of using globally unique or stable identifiers (like email addresses or client IDs), the Authorization Server (AS) can issue pairwise pseudonyms for actors. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>:
+- The AS replaces <code>sub: "a"</code> with a pseudonym <code>sub: "pseudo-xyz"</code> that is only meaningful to the AS.
+- Relying Party <code>e</code> sees that the chain started with a verified actor, but does not know it was <code>a</code>.
+- The AS maintains a mapping to allow for forensic reconstruction if authorized.<a href="#section-7.6.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="selective-disclosure-sd-jwt-1">
+<section id="section-7.6.2">
+          <h4 id="name-selective-disclosure-sd-jwt-2">
+<a href="#section-7.6.2" class="section-number selfRef">7.6.2. </a><a href="#name-selective-disclosure-sd-jwt-2" class="section-name selfRef">Selective Disclosure (SD-JWT)</a>
+          </h4>
+<p id="section-7.6.2-1">The <code>actor_chain</code> MAY be implemented using Selective Disclosure for JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]]. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.<a href="#section-7.6.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="identity-bridging-for-anonymity">
+<section id="section-7.6.3">
+          <h4 id="name-identity-bridging-for-anony">
+<a href="#section-7.6.3" class="section-number selfRef">7.6.3. </a><a href="#name-identity-bridging-for-anony" class="section-name selfRef">Identity Bridging for Anonymity</a>
+          </h4>
+<p id="section-7.6.3-1">An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the <code>actor_chain</code> with generic or pseudonymous identifiers, while still vouching for the chain's security properties.<a href="#section-7.6.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="targeted-selective-disclosure">
+<section id="section-7.6.4">
+          <h4 id="name-targeted-selective-disclosu">
+<a href="#section-7.6.4" class="section-number selfRef">7.6.4. </a><a href="#name-targeted-selective-disclosu" class="section-name selfRef">Targeted Selective Disclosure</a>
+          </h4>
+<p id="section-7.6.4-1">A more advanced privacy model involves disclosing actor identities only to trusted intermediate parties. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, actor <code>a</code> may be visible to <code>b</code>, <code>c</code>, and <code>d</code>, but hidden from <code>e</code>.<a href="#section-7.6.4-1" class="pilcrow">¶</a></p>
+<p id="section-7.6.4-2">This is achieved through <strong>Targeted Disclosure</strong> using SD-JWT:
+- The AS generates the <code>actor_chain</code> with actor <code>a</code>'s identity hashed and salted.
+- Alongside the JWT, the AS provides a "Disclosure" string (the salt and cleartext value) for actor <code>a</code>.
+- When the AS issues a token for <code>b</code>, <code>c</code>, or <code>d</code>, it includes this disclosure string. This allows these "internal" actors to "unlock" the hash and see <code>a</code>'s true identity.
+- When the final token is exchanged for recipient <code>e</code>, the AS (or the last internal actor <code>d</code>) simply omits the disclosure string for actor <code>a</code>.
+- Actor <code>e</code> receives the same JWT but without the "key" to unlock <code>a</code>. <code>e</code> can verify the cryptographic integrity of the entire chain (proving that a verified, though anonymous, actor started it) without ever seeing <code>a</code>'s identity.<a href="#section-7.6.4-2" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+            <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Recipient</th>
+                <th class="text-left" rowspan="1" colspan="1">JWT Payload</th>
+                <th class="text-left" rowspan="1" colspan="1">Disclosure provided?</th>
+                <th class="text-left" rowspan="1" colspan="1">Interpretation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <strong>Actor b</strong>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <code>_sd: [hash_a]</code>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <strong>Yes</strong>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <code>b</code> sees <code>sub: a</code>
+</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <strong>Actor e</strong>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <code>_sd: [hash_a]</code>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <strong>No</strong>
+</td>
+                <td class="text-left" rowspan="1" colspan="1">
+                  <code>e</code> sees <code>sub: &lt;hidden&gt;</code>
+</td>
+              </tr>
+            </tbody>
+          </table>
+</section>
+</div>
+<div id="encryption-jwe">
+<section id="section-7.6.5">
+          <h4 id="name-encryption-jwe">
+<a href="#section-7.6.5" class="section-number selfRef">7.6.5. </a><a href="#name-encryption-jwe" class="section-name selfRef">Encryption (JWE)</a>
+          </h4>
+<p id="section-7.6.5-1">The entire <code>actor_chain</code> claim can be encrypted using JWE [[RFC7516]] so that only the final intended audience <code>e</code> can decrypt it, preventing intermediate actors like <code>b</code>, <code>c</code>, and <code>d</code> from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.<a href="#section-7.6.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 <div id="confused-deputy-mitigation">
@@ -2121,13 +2291,41 @@ actor_chain[1].sub == "https://planner.example.com"
             <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-8.1-2.1" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.1-2.2">
-            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain in an OAuth 2.0 Token Exchange, with optional per-entry cryptographic signatures for tamper evidence and non-repudiation.<a href="#section-8.1-2.2" class="pilcrow">¶</a>
+            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.<a href="#section-8.1-2.2" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.1-2.3">
             <strong>Change Controller</strong>: IETF<a href="#section-8.1-2.3" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.1-2.4">
             <strong>Specification Document(s)</strong>: [this document]<a href="#section-8.1-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="cbor-web-token-claims-registration">
+<section id="section-8.2">
+        <h3 id="name-cbor-web-token-claims-regis">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-cbor-web-token-claims-regis" class="section-name selfRef">CBOR Web Token Claims Registration</a>
+        </h3>
+<p id="section-8.2-1">This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.2-2.1">
+            <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-8.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-2.2">
+            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain.<a href="#section-8.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-2.3">
+            <strong>CBOR Key</strong>: TBD (e.g., 40)<a href="#section-8.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-2.4">
+            <strong>Claim Type</strong>: array<a href="#section-8.2-2.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-2.5">
+            <strong>Change Controller</strong>: IETF<a href="#section-8.2-2.5" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-2.6">
+            <strong>Specification Document(s)</strong>: [this document]<a href="#section-8.2-2.6" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
@@ -2140,19 +2338,19 @@ actor_chain[1].sub == "https://planner.example.com"
 <a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
       </h2>
 <address class="vcard">
-        <div dir="auto" class="left"><span class="fn nameRole">Ram Krishnan</span></div>
-<div dir="auto" class="left"><span class="org">JPMorgan Chase &amp; Co</span></div>
-<div class="email">
-<span>Email:</span>
-<a href="mailto:ramkri123@gmail.com" class="email">ramkri123@gmail.com</a>
-</div>
-</address>
-<address class="vcard">
         <div dir="auto" class="left"><span class="fn nameRole">A Prasad</span></div>
 <div dir="auto" class="left"><span class="org">Oracle</span></div>
 <div class="email">
 <span>Email:</span>
 <a href="mailto:a.prasad@oracle.com" class="email">a.prasad@oracle.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ram Krishnan</span></div>
+<div dir="auto" class="left"><span class="org">JPMorgan Chase &amp; Co</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ramkri123@gmail.com" class="email">ramkri123@gmail.com</a>
 </div>
 </address>
 <address class="vcard">
