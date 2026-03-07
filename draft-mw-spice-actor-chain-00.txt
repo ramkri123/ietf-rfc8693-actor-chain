@@ -5,12 +5,12 @@
 SPICE                                                          A. Prasad
 Internet-Draft                                                    Oracle
 Intended status: Informational                               R. Krishnan
-Expires: 27 August 2026                              JPMorgan Chase & Co
+Expires: 9 September 2026                            JPMorgan Chase & Co
                                                                 D. Lopez
                                                               Telefonica
                                                             S. Addepalli
                                                                   Aryaka
-                                                        23 February 2026
+                                                            8 March 2026
 
 
  Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange
@@ -47,15 +47,15 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 27 August 2026.
+   This Internet-Draft will expire on 9 September 2026.
 
 
 
 
 
-Prasad, et al.           Expires 27 August 2026                 [Page 1]
+Prasad, et al.          Expires 9 September 2026                [Page 1]
 
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
 
 
 Copyright Notice
@@ -75,54 +75,60 @@ Copyright Notice
 Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
-   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   4
-   3.  The Problem: RFC 8693 Actor Limitations . . . . . . . . . . .   5
-     3.1.  Single-Actor Semantics  . . . . . . . . . . . . . . . . .   5
-     3.2.  AI Agent Delegation Chains  . . . . . . . . . . . . . . .   5
-     3.3.  Structural Limitations of Nested act  . . . . . . . . . .   5
-       3.3.1.  Selective Disclosure (SD-JWT) . . . . . . . . . . . .   6
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   5
+   3.  The Problem: RFC 8693 Actor Limitations . . . . . . . . . . .   6
+     3.1.  Single-Actor Semantics  . . . . . . . . . . . . . . . . .   6
+     3.2.  AI Agent Delegation Chains  . . . . . . . . . . . . . . .   6
+     3.3.  Structural Limitations of Nested act  . . . . . . . . . .   7
+       3.3.1.  Selective Disclosure (SD-JWT) . . . . . . . . . . . .   7
    4.  The Solution: The Cryptographically Verifiable actor_chain
-           Claim . . . . . . . . . . . . . . . . . . . . . . . . . .   6
-     4.1.  Overview  . . . . . . . . . . . . . . . . . . . . . . . .   6
-     4.2.  Claim Definition  . . . . . . . . . . . . . . . . . . . .   6
-     4.3.  Example Tokens  . . . . . . . . . . . . . . . . . . . . .   8
-       4.3.1.  AS-Attested Mode  . . . . . . . . . . . . . . . . . .   8
-       4.3.2.  Self-Attested Mode  . . . . . . . . . . . . . . . . .   9
-     4.4.  Token Exchange Flow . . . . . . . . . . . . . . . . . . .  10
-       4.4.1.  Disclosure Propagation in SD-JWT  . . . . . . . . . .  11
-       4.4.2.  When Chain Signatures Are Produced  . . . . . . . . .  11
-     4.5.  Data-Plane Policy Enforcement . . . . . . . . . . . . . .  12
-       4.5.1.  Policy Examples . . . . . . . . . . . . . . . . . . .  13
-       4.5.2.  Integration with Data-Plane Proxies . . . . . . . . .  13
-   5.  Chain Integrity Verification  . . . . . . . . . . . . . . . .  14
-   6.  Relation to Other IETF Work . . . . . . . . . . . . . . . . .  14
-     6.1.  East-West vs. North-South Security  . . . . . . . . . . .  16
-     6.2.  Backward Compatibility with RFC 8693  . . . . . . . . . .  16
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  16
-     7.1.  Token Signature vs. Per-Entry Chain Signatures  . . . . .  16
-     7.2.  Chain Integrity . . . . . . . . . . . . . . . . . . . . .  17
-     7.3.  Replay Protection . . . . . . . . . . . . . . . . . . . .  18
-     7.4.  Chain Depth Limits  . . . . . . . . . . . . . . . . . . .  18
-     7.5.  Key Management  . . . . . . . . . . . . . . . . . . . . .  18
-     7.6.  Privacy of Prior Actors . . . . . . . . . . . . . . . . .  18
-       7.6.1.  Pseudonymous Identifiers  . . . . . . . . . . . . . .  19
+           Claim . . . . . . . . . . . . . . . . . . . . . . . . . .   7
+     4.1.  Overview  . . . . . . . . . . . . . . . . . . . . . . . .   7
+     4.2.  Claim Definition  . . . . . . . . . . . . . . . . . . . .   8
+     4.3.  Example Tokens  . . . . . . . . . . . . . . . . . . . . .   9
+       4.3.1.  AS-Attested Mode  . . . . . . . . . . . . . . . . . .   9
+       4.3.2.  Self-Attested Mode  . . . . . . . . . . . . . . . . .  10
+     4.4.  Token Exchange Flow . . . . . . . . . . . . . . . . . . .  12
+       4.4.1.  Disclosure Propagation in SD-JWT  . . . . . . . . . .  12
+       4.4.2.  When Chain Signatures Are Produced  . . . . . . . . .  13
+     4.5.  Data-Plane Policy Enforcement . . . . . . . . . . . . . .  14
+       4.5.1.  Policy Examples . . . . . . . . . . . . . . . . . . .  14
+       4.5.2.  Integration with Data-Plane Proxies . . . . . . . . .  15
+   5.  Chain Integrity Verification  . . . . . . . . . . . . . . . .  15
+   6.  Relation to Other IETF Work . . . . . . . . . . . . . . . . .  16
+     6.1.  East-West vs. North-South Security  . . . . . . . . . . .  17
+     6.2.  Backward Compatibility with RFC 8693  . . . . . . . . . .  18
+   7.  Scalability Considerations  . . . . . . . . . . . . . . . . .  18
+     7.1.  Token Size  . . . . . . . . . . . . . . . . . . . . . . .  18
+     7.2.  Signature Verification Cost . . . . . . . . . . . . . . .  18
+     7.3.  Verification Caching  . . . . . . . . . . . . . . . . . .  19
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  19
+     8.1.  Token Signature vs. Per-Entry Chain Signatures  . . . . .  19
+       8.1.1.  Recommended Mode  . . . . . . . . . . . . . . . . . .  20
+       8.1.2.  Multi-AS Identity Federation  . . . . . . . . . . . .  21
 
 
 
-Prasad, et al.           Expires 27 August 2026                 [Page 2]
+Prasad, et al.          Expires 9 September 2026                [Page 2]
 
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
 
 
-       7.6.2.  Selective Disclosure (SD-JWT) . . . . . . . . . . . .  19
-       7.6.3.  Identity Bridging for Anonymity . . . . . . . . . . .  19
-       7.6.4.  Targeted Selective Disclosure . . . . . . . . . . . .  19
-       7.6.5.  Encryption (JWE)  . . . . . . . . . . . . . . . . . .  20
-     7.7.  Confused Deputy Mitigation  . . . . . . . . . . . . . . .  20
-   8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  20
-     8.1.  JSON Web Token Claims Registration  . . . . . . . . . . .  20
-     8.2.  CBOR Web Token Claims Registration  . . . . . . . . . . .  20
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  21
+     8.2.  Chain Integrity . . . . . . . . . . . . . . . . . . . . .  22
+     8.3.  Replay Protection . . . . . . . . . . . . . . . . . . . .  22
+     8.4.  Chain Depth Limits  . . . . . . . . . . . . . . . . . . .  22
+     8.5.  Key Management  . . . . . . . . . . . . . . . . . . . . .  22
+     8.6.  Privacy of Prior Actors . . . . . . . . . . . . . . . . .  23
+       8.6.1.  Pseudonymous Identifiers  . . . . . . . . . . . . . .  23
+       8.6.2.  Selective Disclosure (SD-JWT) . . . . . . . . . . . .  23
+       8.6.3.  Identity Bridging for Anonymity . . . . . . . . . . .  23
+       8.6.4.  Targeted Selective Disclosure . . . . . . . . . . . .  23
+       8.6.5.  Encryption (JWE)  . . . . . . . . . . . . . . . . . .  24
+     8.7.  Confused Deputy Mitigation  . . . . . . . . . . . . . . .  24
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  24
+     9.1.  JSON Web Token Claims Registration  . . . . . . . . . . .  24
+     9.2.  CBOR Web Token Claims Registration  . . . . . . . . . . .  25
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  25
 
 1.  Introduction
 
@@ -136,7 +142,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    represent delegation, it explicitly restricts prior actors in a
    nested chain to be "informational only," excluding them from access
    control considerations.  This creates a significant *Delegation
-   Auditability Gap*: Resource Servers cannot verify the full path of
+   Auditability Gap*: Relying Parties cannot verify the full path of
    authority, and attackers can potentially hide lateral movement or
    *prompt injection-induced hijacking* within unverified informational
    claims.
@@ -154,25 +160,90 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    1.  *Cryptographic Audit Trail*: Proves that each prior actor
        actually participated in the delegation chain and that the
        sequence has not been tampered with.
-   2.  *Data-Plane Policy Enforcement*: Enables Resource Servers to
-       write fine-grained authorization policies based on any actor in
-       the path (e.g., "originating actor must be X").
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 3]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+   2.  *Data-Plane Policy Enforcement*: Enables Relying Parties to write
+       fine-grained authorization policies based on any actor in the
+       path (e.g., "originating actor must be X").
    3.  *Dynamic AI Agent Topologies*: Provides a scalable architecture
        for the unpredictable and deep delegation chains common in
        autonomous agent networks.
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 3]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    4.  *Data-Plane Efficiency*: Uses a flat, ordered array structure
        optimized for high-throughput parsing and indexing in cloud-
        native proxies (e.g., Envoy).
+
+   This specification is part of a three-axis "Truth Stack" for AI agent
+   governance:
+
+   +===================+=============+==============+==================+
+   | Specification     | Axis        | Question     | STRIDE Coverage  |
+   |                   |             | Answered     |                  |
+   +===================+=============+==============+==================+
+   | *Actor Chain*     | Identity    | WHO          | Spoofing,        |
+   | (this document)   |             | delegated to | Repudiation,     |
+   |                   |             | whom?        | Elevation of     |
+   |                   |             |              | Privilege        |
+   +-------------------+-------------+--------------+------------------+
+   | *Intent Chain*    | Content     | WHAT was     | Repudiation,     |
+   | ([[!I-D.draft-    |             | produced and | Tampering        |
+   | mw-spice-intent-  |             | transformed? |                  |
+   | chain]])          |             |              |                  |
+   +-------------------+-------------+--------------+------------------+
+   | *Inference        | Computation | HOW was the  | Spoofing         |
+   | Chain* ([[!I-     |             | output       | (computational), |
+   | D.draft-mw-       |             | computed?    | Tampering        |
+   | spice-inference-  |             |              | (model)          |
+   | chain]])          |             |              |                  |
+   +-------------------+-------------+--------------+------------------+
+
+                                  Table 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 4]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+    +=============+=======+============+==========+==================+
+    | Chain       | Plane | Token      | Full     | Primary Consumer |
+    |             |       | Content    | Chain    |                  |
+    +=============+=======+============+==========+==================+
+    | *Actor*     | Data  | Full chain | In token | Every Relying    |
+    |             | Plane | inline     |          | Party (real-time |
+    |             |       |            |          | authorization)   |
+    +-------------+-------+------------+----------+------------------+
+    | *Intent*    | Audit | Merkle     | External | Audit systems,   |
+    |             | Plane | root only  | registry | forensic         |
+    |             |       |            |          | investigators    |
+    +-------------+-------+------------+----------+------------------+
+    | *Inference* | Audit | Merkle     | External | Auditors,        |
+    |             | Plane | root only  | registry | compliance       |
+    |             |       |            |          | systems          |
+    +-------------+-------+------------+----------+------------------+
+
+                                 Table 2
 
    This extension is designed to be backward-compatible and format-
    agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE
@@ -201,6 +272,16 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
       cryptographic signature binding it to the chain state at the point
       of its participation.
    Chain Digest:  A cumulative cryptographic hash computed over the
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 5]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
       delegation history.  For any entry at index N, the chain_digest is
       computed over the concatenation of the current entry's identity
       claims and the chain_digest of the preceding entry (at index N-1).
@@ -216,15 +297,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
       specific, verified local environment.  When present in an Actor
       Chain Entry, it provides hardware-rooted assurance of the actor's
       execution context.
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 4]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
 3.  The Problem: RFC 8693 Actor Limitations
 
@@ -259,6 +331,13 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    This creates several concrete risks:
 
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 6]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    *  *Lateral Movement*: A compromised agent deep in the chain can
       impersonate the authority of the originating actor without any
       cryptographic evidence of the actual delegation path.
@@ -274,13 +353,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    Beyond the semantic restriction, the nested object structure of act
    in [[RFC8693]] has practical limitations:
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 5]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
    1.  *Parsing Complexity*: Each prior actor requires traversing one
        additional level of JSON nesting.  In high-throughput data-plane
@@ -315,6 +387,13 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
        integrity protection for the chain.  Per-actor chain_sig fields
        are omitted.
 
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 7]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    2.  *Self-Attested Mode*: Each Actor Chain Entry additionally
        includes a chain_sig field: a cryptographic signature (compact
        JWS [[RFC7515]] or COSE_Sign1 [[RFC9052]]) computed by that actor
@@ -330,14 +409,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    is configurable at two levels of granularity: - *Per-Actor*: An
    Authorization Server MAY choose to hide entire Actor Chain Entries or
    only specific actors in the chain. - *Per-Field*: Within a single
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 6]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    Actor Chain Entry, a subset of members (e.g., sub) MAY be hidden
    using an _sd claim while others (e.g., iat or por) remain in
    cleartext.  These fields typically correspond to the identity claims
@@ -371,6 +442,14 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    |  *Disclosure strings* (the cleartext salts/values) MUST NOT be
    |  included in the canonical serialization used for hashing.  The
    |  chain_digest is computed exclusively over the Actor Chain Entry
+
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 8]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    |  object, which contains the stable _sd hashes.  This ensures the
    |  signature remains valid regardless of which disclosures are
    |  subsequently provided to different recipients.
@@ -386,14 +465,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
       from the presence or absence of chain_sig fields in the Actor
       Chain Entries.
 
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 7]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
 4.3.  Example Tokens
 
 4.3.1.  AS-Attested Mode
@@ -402,6 +473,38 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    own signature provides integrity.  No per-entry chain_sig or
    chain_digest fields are present.  This is the simplest deployment
    model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026                [Page 9]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    {
      "aud": "https://data-api.example.com",
@@ -440,16 +543,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Relying Party trusts the AS to have correctly validated each actor at
    the time of each token exchange.
 
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 8]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
 4.3.2.  Self-Attested Mode
 
    In this mode, each Actor Chain Entry additionally carries a
@@ -457,6 +550,17 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    repudiation.  This mode is appropriate for federated deployments,
    multi-AS environments, or when Relying Parties require cryptographic
    proof of each actor's participation independent of any single AS.
+
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 10]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    {
      "aud": "https://data-api.example.com",
@@ -499,17 +603,21 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    In the Self-Attested example:
 
-
-
-Prasad, et al.           Expires 27 August 2026                 [Page 9]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    *  *Index 0* (Orchestrator): The originating actor.  Its chain_digest
       is SHA-256(canonical_json({sub, iss, iat})) — a self-hash of its
       own identity claims.  Its chain_sig is computed over this digest.
       It includes a PoR binding it to node-1.
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 11]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    *  *Index 1* (Planning Agent): Its chain_digest is SHA-
       256(canonical_json(actor_chain[0])).  Its chain_sig is produced by
       the Planning Agent's key over this digest.  No PoR is present (the
@@ -549,19 +657,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
           claims (sub, iss, iat) and optional por.
    6.  The AS issues a new token with the extended actor_chain.
 
-
-
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 10]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
 4.4.1.  Disclosure Propagation in SD-JWT
 
    When Selective Disclosure (SD-JWT) [[!I-D.ietf-oauth-selective-
@@ -569,6 +664,15 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Server (AS) acts as the Discloser during token exchange.  The
    propagation of the underlying cleartext identities is managed as
    follows:
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 12]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    1.  *Disclosure Inclusion*: When the AS issues a token for a
        downstream recipient (Service B), it determines based on policy
@@ -610,14 +714,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
        *  Computes chain_digest over the existing chain entries from the
           received token.
        *  Signs this chain_digest with its own key, producing chain_sig.
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 11]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
        *  Submits both values to the AS as part of the token exchange
           request, alongside the subject_token (containing chain [A])
           and its own actor_token.
@@ -626,6 +722,14 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
        issued JWT.
    5.  The AS signs the *entire JWT* (including the actor_chain) with
        the AS's own key and returns the token to Service B.
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 13]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    6.  Service B uses this new token (containing chain [A, B]) to call
        Service C.
 
@@ -660,19 +764,9 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 4.5.  Data-Plane Policy Enforcement
 
    Unlike the nested act claim in [[RFC8693]], the actor_chain claim is
-   explicitly designed to be used in access control decisions.  Resource
-   Servers and data-plane proxies MAY apply authorization policies based
+   explicitly designed to be used in access control decisions.  Relying
+   Parties and data-plane proxies MAY apply authorization policies based
    on any entry in the actor chain.
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 12]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
 4.5.1.  Policy Examples
 
@@ -683,6 +777,14 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    (index 0) is a trusted orchestrator:
 
    actor_chain[0].sub == "https://orchestrator.example.com"
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 14]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    *Domain Restriction*: Deny access if any actor in the chain belongs
    to an untrusted domain:
@@ -721,15 +823,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
        originator).
    4.  Compute len(actor_chain) for depth-based policies without parsing
        nested structures.
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 13]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    5.  Emit structured log entries per Actor Chain Entry for distributed
        tracing and forensic analysis.
 
@@ -737,6 +830,17 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    A Relying Party receiving a token with the actor_chain claim MUST
    perform the following verification steps:
+
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 15]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    1.  *JWT Signature Verification*: Verify the outer JWT signature per
        standard JWT processing rules.  This is REQUIRED in both modes
@@ -776,16 +880,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
 
    This proposal extends and complements several ongoing efforts:
 
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 14]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    +================+=================================================+
    | Specification  | Relationship                                    |
    +================+=================================================+
@@ -796,6 +890,14 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    |                | MAY populate both act (for legacy consumers)    |
    |                | and actor_chain (for chain-aware consumers).    |
    +----------------+-------------------------------------------------+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 16]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    | *Transitive    | Provides the "North-South" residency proof      |
    | Attestation*   | (agent to local WIA) that complements the       |
    | [[!I-D.draft-  | "East-West" delegation proof (agent to actor-   |
@@ -833,14 +935,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    |                | possession.                                     |
    +----------------+-------------------------------------------------+
 
-                                 Table 1
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 15]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
+                                 Table 3
 
 6.1.  East-West vs. North-South Security
 
@@ -851,6 +946,13 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    addresses the *North-South* axis of an agent's relationship with its
    local hosting environment (e.g., a Workload Identity Agent on a TEE-
    enabled node).
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 17]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
 
    By embedding "North-South" Proofs of Residency (PoR) within "East-
    West" Actor Chain Entries, a Relying Party gains end-to-end assurance
@@ -871,9 +973,54 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    The act claim, when present alongside actor_chain, MUST identify the
    same entity as the last entry in the actor_chain array.
 
-7.  Security Considerations
+7.  Scalability Considerations
 
-7.1.  Token Signature vs. Per-Entry Chain Signatures
+7.1.  Token Size
+
+   The actor_chain is embedded inline in the JWT.  Each Actor Chain
+   Entry adds approximately 150-300 bytes (AS-Attested) or 400-600 bytes
+   (Self-Attested, including chain_digest and chain_sig).  For a chain
+   of depth 5, this adds 0.75-3KB to the token.  Authorization Servers
+   SHOULD enforce max_chain_depth to bound token size.  A RECOMMENDED
+   default maximum of 10 entries limits the actor chain contribution to
+   approximately 6KB.
+
+7.2.  Signature Verification Cost
+
+   *  *AS-Attested Mode*: O(1) — the Relying Party verifies only the
+      outer JWT signature.  The actor chain is trusted as part of the
+      signed payload.
+   *  *Self-Attested Mode*: O(n) — the Relying Party verifies one
+      chain_sig per entry.  For a chain of depth 5, this requires 5
+      signature verifications (typically ECDSA P-256, ~0.5ms each on
+      modern hardware).
+
+   Deployments with strict latency budgets on the data plane SHOULD
+   prefer AS-Attested Mode when the trust model permits it.
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 18]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+7.3.  Verification Caching
+
+   Relying Parties MAY cache actor chain verification results, keyed by
+   the chain_digest of the last entry (which covers the entire chain).
+   A cached verification result is valid for the lifetime of the
+   enclosing JWT (exp claim).  This reduces repeated O(n) verification
+   to O(1) lookup on subsequent requests within the same session.
+
+8.  Security Considerations
+
+8.1.  Token Signature vs. Per-Entry Chain Signatures
 
    A natural question arises: since the JWT containing the actor_chain
    is already signed by the Authorization Server (AS), is per-entry
@@ -886,18 +1033,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
       token is issued.  It proves that the AS issued this specific token
       with this specific payload.  It covers the entire token: sub, aud,
       exp, actor_chain, and all other claims.
-
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 16]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
    *  Each *chain_sig* is produced by an individual actor during token
       exchange, before the final token exists (see Section "When Chain
       Signatures Are Produced").  It covers only the chain_digest—the
@@ -921,6 +1056,16 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    *  *Self-Attested Mode* is appropriate when the chain crosses trust
       boundaries or when stronger guarantees are needed:
 
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 19]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
       -  *Federated/Multi-AS environments*: The token may be issued by
          AS-1 but consumed by a Relying Party that trusts AS-2.  Per-
          actor signatures allow the RP to verify actor participation
@@ -939,20 +1084,113 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Deployments SHOULD select the mode that matches their trust model.
    An AS MAY enforce a specific mode via policy.
 
-7.2.  Chain Integrity
+8.1.1.  Recommended Mode
+
+    +=======================+===============+=========================+
+    | Deployment Scenario   | Recommended   | Rationale               |
+    |                       | Mode          |                         |
+    +=======================+===============+=========================+
+    | Single AS, all agents | AS-Attested   | AS is trusted; smaller  |
+    | internal              |               | tokens, single          |
+    |                       |               | signature verification  |
+    +-----------------------+---------------+-------------------------+
+    | Multi-AS or federated | Self-Attested | No single AS can vouch  |
+    |                       |               | for the full chain      |
+    |                       |               | across trust boundaries |
+    +-----------------------+---------------+-------------------------+
+    | Zero-trust or         | Self-Attested | Non-repudiation and     |
+    | regulatory compliance |               | independent forensic    |
+    |                       |               | verification required   |
+    +-----------------------+---------------+-------------------------+
+    | Performance-sensitive | AS-Attested   | O(1) signature          |
+    | data plane            |               | verification vs. O(n)   |
+    |                       |               | per-entry verification  |
+    +-----------------------+---------------+-------------------------+
+    | Multi-AS,             | Federated AS- | Cross-AS verifiability  |
+    | performance-sensitive | Attested      | with O(k) AS            |
+    |                       |               | signatures, k ≤ n       |
+    +-----------------------+---------------+-------------------------+
+    | Mixed trust zones     | Self-Attested | Agents crossing trust   |
+    |                       |               | boundaries need         |
+    |                       |               | independent attestation |
+    +-----------------------+---------------+-------------------------+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 20]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+                                  Table 4
+
+8.1.2.  Multi-AS Identity Federation
+
+   In federated deployments, a delegation chain may span multiple
+   Authorization Servers.  For example, Agent A authenticates to AS-1,
+   delegates to Agent B which authenticates to AS-2, which delegates to
+   Agent C targeting a Resource Server that trusts AS-3.
+
+   In this scenario, single-AS-Attested Mode is insufficient: the outer
+   JWT is signed by whichever AS issued the final token, but the Relying
+   Party may not trust that AS to have correctly validated actors
+   authenticated by other ASes.
+
+   Two approaches address this:
+
+   *Self-Attested Mode* makes each actor's participation independently
+   verifiable.  The Relying Party verifies each chain_sig against the
+   corresponding actor's public key — discoverable via the actor's iss
+   claim (e.g., JWKS endpoint) or SPIFFE ID (e.g., SPIFFE trust bundle).
+   Verification cost is O(n) where n is the number of actors.
+
+   *Federated AS-Attested Mode* offers a more compact alternative.
+   Instead of each actor signing individually, each AS signs the chain
+   segment it validated.  When the chain crosses from AS-1 to AS-2, AS-2
+   verifies AS-1's segment signature and appends its own segment
+   signature covering the new actors it validated.  The Relying Party
+   verifies k AS signatures (where k is the number of ASes in the path)
+   rather than n actor signatures.  This preserves cross-AS
+   verifiability while reducing token size and verification cost.
+
+   +===============+==========+============+========+=================+
+   | Approach      |Signatures|Verification|Token   | Non-Repudiation |
+   |               |          |Cost        |Overhead|                 |
+   +===============+==========+============+========+=================+
+   | Self-Attested |Per-actor |O(n)        |Higher  | Per-actor       |
+   +---------------+----------+------------+--------+-----------------+
+   | Federated AS- |Per-AS    |O(k), k ≤ n |Lower   | Per-AS          |
+   | Attested      |          |            |        |                 |
+   +---------------+----------+------------+--------+-----------------+
+
+                                 Table 5
+
+   Federated deployments SHOULD:
+
+   *  Publish signing keys via standard discovery mechanisms (JWKS for
+      ASes, SPIFFE trust bundles for actors).
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 21]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+   *  Include kid or jwk in each chain_sig JWS header for key
+      resolution.
+   *  Enforce cross-domain trust policies on the iss field of each Actor
+      Chain Entry.
+   *  Select Self-Attested Mode when per-actor non-repudiation is
+      required (e.g., regulatory), or Federated AS-Attested Mode when
+      compactness and performance are prioritized.
+
+8.2.  Chain Integrity
 
    In AS-Attested Mode, chain integrity is provided by the JWT outer
    signature.  The Relying Party trusts the AS to have correctly
    constructed the chain.
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 17]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
    In Self-Attested Mode, the hash-chain structure provides additional
    tamper evidence.  Insertion, deletion, or reordering of entries
@@ -961,7 +1199,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    cannot retroactively alter the entries of prior actors without
    possessing their signing keys.
 
-7.3.  Replay Protection
+8.3.  Replay Protection
 
    Each Actor Chain Entry includes an iat (issued-at) timestamp.
    Relying Parties SHOULD enforce a maximum age on Actor Chain Entries
@@ -969,7 +1207,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    claims exp and nbf on the enclosing token provide overall token-level
    freshness.
 
-7.4.  Chain Depth Limits
+8.4.  Chain Depth Limits
 
    Unbounded actor chains pose a risk of token size explosion and
    processing overhead.  Authorization Servers SHOULD enforce a
@@ -977,7 +1215,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    default maximum is 10 entries.  Relying Parties MAY independently
    enforce their own chain depth limits.
 
-7.5.  Key Management
+8.5.  Key Management
 
    Each actor in the chain signs its entry with its own key.  The
    security of the entire chain depends on the security of each actor's
@@ -986,7 +1224,17 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Actor Chain Entries provides additional assurance that the signing
    key is bound to a verified execution environment.
 
-7.6.  Privacy of Prior Actors
+
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 22]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
+8.6.  Privacy of Prior Actors
 
    The actor_chain expose the identities of all actors in the delegation
    path to every Relying Party that receives the token.  While this is
@@ -998,19 +1246,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Deployments SHOULD consider the following anonymization and privacy-
    preserving techniques:
 
-
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 18]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
-
-7.6.1.  Pseudonymous Identifiers
+8.6.1.  Pseudonymous Identifiers
 
    Instead of using globally unique or stable identifiers (like email
    addresses or client IDs), the Authorization Server (AS) can issue
@@ -1021,7 +1257,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    maintains a mapping to allow for forensic reconstruction if
    authorized.
 
-7.6.2.  Selective Disclosure (SD-JWT)
+8.6.2.  Selective Disclosure (SD-JWT)
 
    The actor_chain MAY be implemented using Selective Disclosure for
    JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]].  This allows
@@ -1029,7 +1265,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    enabling verification of the entry's integrity without revealing its
    cleartext content unless a corresponding disclosure is provided.
 
-7.6.3.  Identity Bridging for Anonymity
+8.6.3.  Identity Bridging for Anonymity
 
    An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an
    "Anonymizer" by performing a token exchange that replaces sensitive
@@ -1037,7 +1273,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    identifiers, while still vouching for the chain's security
    properties.
 
-7.6.4.  Targeted Selective Disclosure
+8.6.4.  Targeted Selective Disclosure
 
    A more advanced privacy model involves disclosing actor identities
    only to trusted intermediate parties.  In the chain a -> b -> c -> d
@@ -1046,6 +1282,14 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    This is achieved through *Targeted Disclosure* using SD-JWT: - The AS
    generates the actor_chain with actor a's identity hashed and salted.
    - Alongside the JWT, the AS provides a "Disclosure" string (the salt
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 23]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    and cleartext value) for actor a. - When the AS issues a token for b,
    c, or d, it includes this disclosure string.  This allows these
    "internal" actors to "unlock" the hash and see a's true identity. -
@@ -1055,16 +1299,6 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    e can verify the cryptographic integrity of the entire chain (proving
    that a verified, though anonymous, actor started it) without ever
    seeing a's identity.
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 19]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
    +===========+===============+======================+================+
    | Recipient | JWT Payload   | Disclosure provided? | Interpretation |
@@ -1076,9 +1310,9 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    |           | [hash_a]      |                      | <hidden>       |
    +-----------+---------------+----------------------+----------------+
 
-                                  Table 2
+                                  Table 6
 
-7.6.5.  Encryption (JWE)
+8.6.5.  Encryption (JWE)
 
    The entire actor_chain claim can be encrypted using JWE [[RFC7516]]
    so that only the final intended audience e can decrypt it, preventing
@@ -1086,7 +1320,7 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    predecessors.  Alternatively, the chain can be nestedly encrypted for
    different parties in the path.
 
-7.7.  Confused Deputy Mitigation
+8.7.  Confused Deputy Mitigation
 
    In both modes, a confused deputy attack—where a legitimate actor is
    tricked into delegating to a malicious downstream—is detectable
@@ -1095,32 +1329,33 @@ Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
    Attested Mode, the malicious actor's own cryptographic signature
    provides non-repudiable evidence of its participation.
 
-8.  IANA Considerations
+9.  IANA Considerations
 
-8.1.  JSON Web Token Claims Registration
+9.1.  JSON Web Token Claims Registration
 
    This document requests registration of the following claim in the
    "JSON Web Token Claims" registry established by [[RFC7519]]:
 
    *  *Claim Name*: actor_chain
+
+
+
+
+Prasad, et al.          Expires 9 September 2026               [Page 24]
+
+Internet-Draft              SPICE-ACTOR-CHAIN                 March 2026
+
+
    *  *Claim Description*: A Cryptographically Verifiable Actor Chain —
       an ordered array of actor entries representing the complete
       delegation chain with optional per-entry cryptographic signatures.
    *  *Change Controller*: IETF
    *  *Specification Document(s)*: [this document]
 
-8.2.  CBOR Web Token Claims Registration
+9.2.  CBOR Web Token Claims Registration
 
    This document requests registration of the following claim in the
    "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 20]
-
-Internet-Draft              SPICE-ACTOR-CHAIN              February 2026
-
 
    *  *Claim Name*: actor_chain
    *  *Claim Description*: A Cryptographically Verifiable Actor Chain.
@@ -1162,15 +1397,4 @@ Authors' Addresses
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.           Expires 27 August 2026                [Page 21]
+Prasad, et al.          Expires 9 September 2026               [Page 25]

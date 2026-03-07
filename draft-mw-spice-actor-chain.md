@@ -11,6 +11,7 @@ keyword = ["actor chain", "spice", "rfc8693", "token exchange", "workload identi
 [seriesInfo]
 name = "Internet-Draft"
 value = "draft-mw-spice-actor-chain-00"
+stream = "IETF"
 status = "informational"
 
 [[author]]
@@ -57,16 +58,30 @@ This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that 
 
 This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance **East-West** identity delegation through cryptographically verifiable actor chains. 
 
-In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
+In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
 
 By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an **"East-West"** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
 
 This solution addresses several critical gaps in [[RFC8693]]:
 
 1. **Cryptographic Audit Trail**: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.
-2. **Data-Plane Policy Enforcement**: Enables Resource Servers to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").
+2. **Data-Plane Policy Enforcement**: Enables Relying Parties to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").
 3. **Dynamic AI Agent Topologies**: Provides a scalable architecture for the unpredictable and deep delegation chains common in autonomous agent networks.
 4. **Data-Plane Efficiency**: Uses a flat, ordered array structure optimized for high-throughput parsing and indexing in cloud-native proxies (e.g., Envoy).
+
+This specification is part of a three-axis "Truth Stack" for AI agent governance:
+
+| Specification | Axis | Question Answered | STRIDE Coverage |
+| :--- | :--- | :--- | :--- |
+| **Actor Chain** (this document) | Identity | WHO delegated to whom? | Spoofing, Repudiation, Elevation of Privilege |
+| **Intent Chain** ([[!I-D.draft-mw-spice-intent-chain]]) | Content | WHAT was produced and transformed? | Repudiation, Tampering |
+| **Inference Chain** ([[!I-D.draft-mw-spice-inference-chain]]) | Computation | HOW was the output computed? | Spoofing (computational), Tampering (model) |
+
+| Chain | Plane | Token Content | Full Chain | Primary Consumer |
+| :--- | :--- | :--- | :--- | :--- |
+| **Actor** | Data Plane | Full chain inline | In token | Every Relying Party (real-time authorization) |
+| **Intent** | Audit Plane | Merkle root only | External registry | Audit systems, forensic investigators |
+| **Inference** | Audit Plane | Merkle root only | External registry | Auditors, compliance systems |
 
 This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.
 
@@ -329,7 +344,7 @@ Consequently, each `chain_sig` covers only the **actor chain state** at that act
 
 ## Data-Plane Policy Enforcement
 
-Unlike the nested `act` claim in [[RFC8693]], the `actor_chain` claim is explicitly designed to be used in access control decisions. Resource Servers and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
+Unlike the nested `act` claim in [[RFC8693]], the `actor_chain` claim is explicitly designed to be used in access control decisions. Relying Parties and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
 
 ### Policy Examples
 
@@ -430,6 +445,23 @@ An Authorization Server implementing this extension SHOULD populate both the `ac
 
 The `act` claim, when present alongside `actor_chain`, MUST identify the same entity as the last entry in the `actor_chain` array.
 
+# Scalability Considerations
+
+## Token Size
+
+The `actor_chain` is embedded inline in the JWT. Each Actor Chain Entry adds approximately 150-300 bytes (AS-Attested) or 400-600 bytes (Self-Attested, including `chain_digest` and `chain_sig`). For a chain of depth 5, this adds 0.75-3KB to the token. Authorization Servers SHOULD enforce `max_chain_depth` to bound token size. A RECOMMENDED default maximum of 10 entries limits the actor chain contribution to approximately 6KB.
+
+## Signature Verification Cost
+
+- **AS-Attested Mode**: O(1) — the Relying Party verifies only the outer JWT signature. The actor chain is trusted as part of the signed payload.
+- **Self-Attested Mode**: O(n) — the Relying Party verifies one `chain_sig` per entry. For a chain of depth 5, this requires 5 signature verifications (typically ECDSA P-256, ~0.5ms each on modern hardware).
+
+Deployments with strict latency budgets on the data plane SHOULD prefer AS-Attested Mode when the trust model permits it.
+
+## Verification Caching
+
+Relying Parties MAY cache actor chain verification results, keyed by the `chain_digest` of the last entry (which covers the entire chain). A cached verification result is valid for the lifetime of the enclosing JWT (`exp` claim). This reduces repeated O(n) verification to O(1) lookup on subsequent requests within the same session.
+
 # Security Considerations
 
 ## Token Signature vs. Per-Entry Chain Signatures
@@ -452,6 +484,41 @@ The JWT outer signature does NOT prove that each individual actor actually parti
     - **Forensic analysis**: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.
 
 Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.
+
+### Recommended Mode
+
+| Deployment Scenario | Recommended Mode | Rationale |
+| :--- | :--- | :--- |
+| Single AS, all agents internal | AS-Attested | AS is trusted; smaller tokens, single signature verification |
+| Multi-AS or federated | Self-Attested | No single AS can vouch for the full chain across trust boundaries |
+| Zero-trust or regulatory compliance | Self-Attested | Non-repudiation and independent forensic verification required |
+| Performance-sensitive data plane | AS-Attested | O(1) signature verification vs. O(n) per-entry verification |
+| Multi-AS, performance-sensitive | Federated AS-Attested | Cross-AS verifiability with O(k) AS signatures, k ≤ n |
+| Mixed trust zones | Self-Attested | Agents crossing trust boundaries need independent attestation |
+
+### Multi-AS Identity Federation
+
+In federated deployments, a delegation chain may span multiple Authorization Servers. For example, Agent A authenticates to AS-1, delegates to Agent B which authenticates to AS-2, which delegates to Agent C targeting a Resource Server that trusts AS-3.
+
+In this scenario, single-AS-Attested Mode is insufficient: the outer JWT is signed by whichever AS issued the final token, but the Relying Party may not trust that AS to have correctly validated actors authenticated by other ASes.
+
+Two approaches address this:
+
+**Self-Attested Mode** makes each actor's participation independently verifiable. The Relying Party verifies each `chain_sig` against the corresponding actor's public key — discoverable via the actor's `iss` claim (e.g., JWKS endpoint) or SPIFFE ID (e.g., SPIFFE trust bundle). Verification cost is O(n) where n is the number of actors.
+
+**Federated AS-Attested Mode** offers a more compact alternative. Instead of each actor signing individually, each AS signs the chain segment it validated. When the chain crosses from AS-1 to AS-2, AS-2 verifies AS-1's segment signature and appends its own segment signature covering the new actors it validated. The Relying Party verifies k AS signatures (where k is the number of ASes in the path) rather than n actor signatures. This preserves cross-AS verifiability while reducing token size and verification cost.
+
+| Approach | Signatures | Verification Cost | Token Overhead | Non-Repudiation |
+| :--- | :--- | :--- | :--- | :--- |
+| Self-Attested | Per-actor | O(n) | Higher | Per-actor |
+| Federated AS-Attested | Per-AS | O(k), k ≤ n | Lower | Per-AS |
+
+Federated deployments SHOULD:
+
+- Publish signing keys via standard discovery mechanisms (JWKS for ASes, SPIFFE trust bundles for actors).
+- Include `kid` or `jwk` in each `chain_sig` JWS header for key resolution.
+- Enforce cross-domain trust policies on the `iss` field of each Actor Chain Entry.
+- Select Self-Attested Mode when per-actor non-repudiation is required (e.g., regulatory), or Federated AS-Attested Mode when compactness and performance are prioritized.
 
 ## Chain Integrity
 
@@ -545,6 +612,22 @@ This document requests registration of the following claim in the "CBOR Web Toke
     <title>Secure Patterns for Internet CrEdentials (SPICE) Architecture</title>
     <author initials="Y." surname="Sheffer" fullname="Yaron Sheffer"/>
     <date month="October" day="21" year="2024"/>
+  </front>
+</reference>
+
+<reference anchor="I-D.draft-mw-spice-intent-chain" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-intent-chain">
+  <front>
+    <title>Cryptographically Verifiable Intent Chain for AI Agent Content Provenance</title>
+    <author initials="R." surname="Krishnan" fullname="Ram Krishnan"/>
+    <date month="March" day="7" year="2026"/>
+  </front>
+</reference>
+
+<reference anchor="I-D.draft-mw-spice-inference-chain" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-inference-chain">
+  <front>
+    <title>Cryptographically Verifiable Inference Chain for AI Agent Computational Provenance</title>
+    <author initials="R." surname="Krishnan" fullname="Ram Krishnan"/>
+    <date month="March" day="7" year="2026"/>
   </front>
 </reference>
 

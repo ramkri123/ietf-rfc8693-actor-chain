@@ -1224,11 +1224,11 @@ li > p:last-of-type:only-child {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">SPICE-ACTOR-CHAIN</td>
-<td class="right">February 2026</td>
+<td class="right">March 2026</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Prasad, et al.</td>
-<td class="center">Expires 27 August 2026</td>
+<td class="center">Expires 8 September 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1241,12 +1241,12 @@ li > p:last-of-type:only-child {
 <dd class="internet-draft">draft-mw-spice-actor-chain-00</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-02-23" class="published">23 February 2026</time>
+<time datetime="2026-03-07" class="published">7 March 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-08-27">27 August 2026</time></dd>
+<dd class="expires"><time datetime="2026-09-08">8 September 2026</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
@@ -1292,7 +1292,7 @@ li > p:last-of-type:only-child {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 27 August 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 8 September 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1405,61 +1405,83 @@ li > p:last-of-type:only-child {
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-scalability-considerations" class="internal xref">Scalability Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
-                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-token-signature-vs-per-entr" class="internal xref">Token Signature vs. Per-Entry Chain Signatures</a></p>
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-token-size" class="internal xref">Token Size</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
-                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-chain-integrity" class="internal xref">Chain Integrity</a></p>
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-signature-verification-cost" class="internal xref">Signature Verification Cost</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
-                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-replay-protection" class="internal xref">Replay Protection</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
-                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-chain-depth-limits" class="internal xref">Chain Depth Limits</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.5">
-                <p id="section-toc.1-1.7.2.5.1"><a href="#section-7.5" class="auto internal xref">7.5</a>.  <a href="#name-key-management" class="internal xref">Key Management</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6">
-                <p id="section-toc.1-1.7.2.6.1"><a href="#section-7.6" class="auto internal xref">7.6</a>.  <a href="#name-privacy-of-prior-actors" class="internal xref">Privacy of Prior Actors</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.1">
-                    <p id="section-toc.1-1.7.2.6.2.1.1"><a href="#section-7.6.1" class="auto internal xref">7.6.1</a>.  <a href="#name-pseudonymous-identifiers" class="internal xref">Pseudonymous Identifiers</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.2">
-                    <p id="section-toc.1-1.7.2.6.2.2.1"><a href="#section-7.6.2" class="auto internal xref">7.6.2</a>.  <a href="#name-selective-disclosure-sd-jwt-2" class="internal xref">Selective Disclosure (SD-JWT)</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.3">
-                    <p id="section-toc.1-1.7.2.6.2.3.1"><a href="#section-7.6.3" class="auto internal xref">7.6.3</a>.  <a href="#name-identity-bridging-for-anony" class="internal xref">Identity Bridging for Anonymity</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.4">
-                    <p id="section-toc.1-1.7.2.6.2.4.1"><a href="#section-7.6.4" class="auto internal xref">7.6.4</a>.  <a href="#name-targeted-selective-disclosu" class="internal xref">Targeted Selective Disclosure</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.6.2.5">
-                    <p id="section-toc.1-1.7.2.6.2.5.1"><a href="#section-7.6.5" class="auto internal xref">7.6.5</a>.  <a href="#name-encryption-jwe" class="internal xref">Encryption (JWE)</a></p>
-</li>
-                </ul>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.7">
-                <p id="section-toc.1-1.7.2.7.1"><a href="#section-7.7" class="auto internal xref">7.7</a>.  <a href="#name-confused-deputy-mitigation" class="internal xref">Confused Deputy Mitigation</a></p>
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-verification-caching" class="internal xref">Verification Caching</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
-                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-json-web-token-claims-regis" class="internal xref">JSON Web Token Claims Registration</a></p>
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-token-signature-vs-per-entr" class="internal xref">Token Signature vs. Per-Entry Chain Signatures</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.1">
+                    <p id="section-toc.1-1.8.2.1.2.1.1"><a href="#section-8.1.1" class="auto internal xref">8.1.1</a>.  <a href="#name-recommended-mode" class="internal xref">Recommended Mode</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.2">
+                    <p id="section-toc.1-1.8.2.1.2.2.1"><a href="#section-8.1.2" class="auto internal xref">8.1.2</a>.  <a href="#name-multi-as-identity-federatio" class="internal xref">Multi-AS Identity Federation</a></p>
+</li>
+                </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
-                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-cbor-web-token-claims-regis" class="internal xref">CBOR Web Token Claims Registration</a></p>
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-chain-integrity" class="internal xref">Chain Integrity</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-replay-protection" class="internal xref">Replay Protection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4">
+                <p id="section-toc.1-1.8.2.4.1"><a href="#section-8.4" class="auto internal xref">8.4</a>.  <a href="#name-chain-depth-limits" class="internal xref">Chain Depth Limits</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.5">
+                <p id="section-toc.1-1.8.2.5.1"><a href="#section-8.5" class="auto internal xref">8.5</a>.  <a href="#name-key-management" class="internal xref">Key Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6">
+                <p id="section-toc.1-1.8.2.6.1"><a href="#section-8.6" class="auto internal xref">8.6</a>.  <a href="#name-privacy-of-prior-actors" class="internal xref">Privacy of Prior Actors</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6.2.1">
+                    <p id="section-toc.1-1.8.2.6.2.1.1"><a href="#section-8.6.1" class="auto internal xref">8.6.1</a>.  <a href="#name-pseudonymous-identifiers" class="internal xref">Pseudonymous Identifiers</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6.2.2">
+                    <p id="section-toc.1-1.8.2.6.2.2.1"><a href="#section-8.6.2" class="auto internal xref">8.6.2</a>.  <a href="#name-selective-disclosure-sd-jwt-2" class="internal xref">Selective Disclosure (SD-JWT)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6.2.3">
+                    <p id="section-toc.1-1.8.2.6.2.3.1"><a href="#section-8.6.3" class="auto internal xref">8.6.3</a>.  <a href="#name-identity-bridging-for-anony" class="internal xref">Identity Bridging for Anonymity</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6.2.4">
+                    <p id="section-toc.1-1.8.2.6.2.4.1"><a href="#section-8.6.4" class="auto internal xref">8.6.4</a>.  <a href="#name-targeted-selective-disclosu" class="internal xref">Targeted Selective Disclosure</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6.2.5">
+                    <p id="section-toc.1-1.8.2.6.2.5.1"><a href="#section-8.6.5" class="auto internal xref">8.6.5</a>.  <a href="#name-encryption-jwe" class="internal xref">Encryption (JWE)</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7">
+                <p id="section-toc.1-1.8.2.7.1"><a href="#section-8.7" class="auto internal xref">8.7</a>.  <a href="#name-confused-deputy-mitigation" class="internal xref">Confused Deputy Mitigation</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-json-web-token-claims-regis" class="internal xref">JSON Web Token Claims Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-cbor-web-token-claims-regis" class="internal xref">CBOR Web Token Claims Registration</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
 </li>
         </ul>
 </nav>
@@ -1471,7 +1493,7 @@ li > p:last-of-type:only-child {
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
 <p id="section-1-1">This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance <strong>East-West</strong> identity delegation through cryptographically verifiable actor chains.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the <code>act</code> (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant <strong>Delegation Auditability Gap</strong>: Resource Servers cannot verify the full path of authority, and attackers can potentially hide lateral movement or <strong>prompt injection-induced hijacking</strong> within unverified informational claims.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-2">In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the <code>act</code> (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant <strong>Delegation Auditability Gap</strong>: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or <strong>prompt injection-induced hijacking</strong> within unverified informational claims.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">By providing a standardized <strong>Cryptographically Verifiable Actor Chain</strong>, this extension replaces the informal nested <code>act</code> structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an <strong>"East-West"</strong> axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.<a href="#section-1-3" class="pilcrow">¶</a></p>
 <p id="section-1-4">This solution addresses several critical gaps in [[RFC8693]]:<a href="#section-1-4" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-1-5">
@@ -1479,7 +1501,7 @@ li > p:last-of-type:only-child {
           <strong>Cryptographic Audit Trail</strong>: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.<a href="#section-1-5.1" class="pilcrow">¶</a>
 </li>
         <li id="section-1-5.2">
-          <strong>Data-Plane Policy Enforcement</strong>: Enables Resource Servers to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").<a href="#section-1-5.2" class="pilcrow">¶</a>
+          <strong>Data-Plane Policy Enforcement</strong>: Enables Relying Parties to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").<a href="#section-1-5.2" class="pilcrow">¶</a>
 </li>
         <li id="section-1-5.3">
           <strong>Dynamic AI Agent Topologies</strong>: Provides a scalable architecture for the unpredictable and deep delegation chains common in autonomous agent networks.<a href="#section-1-5.3" class="pilcrow">¶</a>
@@ -1896,7 +1918,7 @@ When Selective Disclosure is used, the SD-JWT <strong>Disclosure strings</strong
         <h3 id="name-data-plane-policy-enforceme">
 <a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-data-plane-policy-enforceme" class="section-name selfRef">Data-Plane Policy Enforcement</a>
         </h3>
-<p id="section-4.5-1">Unlike the nested <code>act</code> claim in [[RFC8693]], the <code>actor_chain</code> claim is explicitly designed to be used in access control decisions. Resource Servers and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-1">Unlike the nested <code>act</code> claim in [[RFC8693]], the <code>actor_chain</code> claim is explicitly designed to be used in access control decisions. Relying Parties and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
 <div id="policy-examples">
 <section id="section-4.5.1">
           <h4 id="name-policy-examples">
@@ -2089,131 +2111,270 @@ actor_chain[1].sub == "https://planner.example.com"
 </div>
 </section>
 </div>
-<div id="security-considerations">
+<div id="scalability-considerations">
 <section id="section-7">
-      <h2 id="name-security-considerations">
-<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      <h2 id="name-scalability-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-scalability-considerations" class="section-name selfRef">Scalability Considerations</a>
       </h2>
-<div id="token-signature-vs-per-entry-chain-signatures">
+<div id="token-size">
 <section id="section-7.1">
-        <h3 id="name-token-signature-vs-per-entr">
-<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-token-signature-vs-per-entr" class="section-name selfRef">Token Signature vs. Per-Entry Chain Signatures</a>
+        <h3 id="name-token-size">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-token-size" class="section-name selfRef">Token Size</a>
         </h3>
-<p id="section-7.1-1">A natural question arises: since the JWT containing the <code>actor_chain</code> is already signed by the Authorization Server (AS), is per-entry <code>chain_sig</code> redundant?<a href="#section-7.1-1" class="pilcrow">¶</a></p>
-<p id="section-7.1-2">The answer depends on what each signature proves and when it is produced:<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-1">The <code>actor_chain</code> is embedded inline in the JWT. Each Actor Chain Entry adds approximately 150-300 bytes (AS-Attested) or 400-600 bytes (Self-Attested, including <code>chain_digest</code> and <code>chain_sig</code>). For a chain of depth 5, this adds 0.75-3KB to the token. Authorization Servers SHOULD enforce <code>max_chain_depth</code> to bound token size. A RECOMMENDED default maximum of 10 entries limits the actor chain contribution to approximately 6KB.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="signature-verification-cost">
+<section id="section-7.2">
+        <h3 id="name-signature-verification-cost">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-signature-verification-cost" class="section-name selfRef">Signature Verification Cost</a>
+        </h3>
 <ul class="compact">
-<li class="compact" id="section-7.1-3.1">The <strong>JWT outer signature</strong> is produced by the AS when the final token is issued. It proves that the AS issued this specific token with this specific payload. It covers the entire token: <code>sub</code>, <code>aud</code>, <code>exp</code>, <code>actor_chain</code>, and all other claims.<a href="#section-7.1-3.1" class="pilcrow">¶</a>
+<li class="compact" id="section-7.2-1.1">
+            <strong>AS-Attested Mode</strong>: O(1) — the Relying Party verifies only the outer JWT signature. The actor chain is trusted as part of the signed payload.<a href="#section-7.2-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-7.1-3.2">Each <strong><code>chain_sig</code></strong> is produced by an individual actor during token exchange, before the final token exists (see Section "When Chain Signatures Are Produced"). It covers only the <code>chain_digest</code>—the hash of the actor chain state at that actor's point of participation. It proves that this specific actor participated in this specific chain.<a href="#section-7.1-3.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-7.2-1.2">
+            <strong>Self-Attested Mode</strong>: O(n) — the Relying Party verifies one <code>chain_sig</code> per entry. For a chain of depth 5, this requires 5 signature verifications (typically ECDSA P-256, ~0.5ms each on modern hardware).<a href="#section-7.2-1.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-7.1-4">The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:<a href="#section-7.1-4" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">Deployments with strict latency budgets on the data plane SHOULD prefer AS-Attested Mode when the trust model permits it.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="verification-caching">
+<section id="section-7.3">
+        <h3 id="name-verification-caching">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-verification-caching" class="section-name selfRef">Verification Caching</a>
+        </h3>
+<p id="section-7.3-1">Relying Parties MAY cache actor chain verification results, keyed by the <code>chain_digest</code> of the last entry (which covers the entire chain). A cached verification result is valid for the lifetime of the enclosing JWT (<code>exp</code> claim). This reduces repeated O(n) verification to O(1) lookup on subsequent requests within the same session.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-8">
+      <h2 id="name-security-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="token-signature-vs-per-entry-chain-signatures">
+<section id="section-8.1">
+        <h3 id="name-token-signature-vs-per-entr">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-token-signature-vs-per-entr" class="section-name selfRef">Token Signature vs. Per-Entry Chain Signatures</a>
+        </h3>
+<p id="section-8.1-1">A natural question arises: since the JWT containing the <code>actor_chain</code> is already signed by the Authorization Server (AS), is per-entry <code>chain_sig</code> redundant?<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2">The answer depends on what each signature proves and when it is produced:<a href="#section-8.1-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.1-3.1">The <strong>JWT outer signature</strong> is produced by the AS when the final token is issued. It proves that the AS issued this specific token with this specific payload. It covers the entire token: <code>sub</code>, <code>aud</code>, <code>exp</code>, <code>actor_chain</code>, and all other claims.<a href="#section-8.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.1-3.2">Each <strong><code>chain_sig</code></strong> is produced by an individual actor during token exchange, before the final token exists (see Section "When Chain Signatures Are Produced"). It covers only the <code>chain_digest</code>—the hash of the actor chain state at that actor's point of participation. It proves that this specific actor participated in this specific chain.<a href="#section-8.1-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.1-4">The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:<a href="#section-8.1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-7.1-5.1">
-            <p id="section-7.1-5.1.1"><strong>AS-Attested Mode</strong> is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-actor signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.<a href="#section-7.1-5.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-8.1-5.1">
+            <p id="section-8.1-5.1.1"><strong>AS-Attested Mode</strong> is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-actor signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.<a href="#section-8.1-5.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-7.1-5.2">
-            <p id="section-7.1-5.2.1"><strong>Self-Attested Mode</strong> is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:<a href="#section-7.1-5.2.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-8.1-5.2">
+            <p id="section-8.1-5.2.1"><strong>Self-Attested Mode</strong> is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:<a href="#section-8.1-5.2.1" class="pilcrow">¶</a></p>
 <ul class="compact normal">
-<li class="compact normal" id="section-7.1-5.2.2.1">
-                <strong>Federated/Multi-AS environments</strong>: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-actor signatures allow the RP to verify actor participation independently of the issuing AS.<a href="#section-7.1-5.2.2.1" class="pilcrow">¶</a>
+<li class="compact normal" id="section-8.1-5.2.2.1">
+                <strong>Federated/Multi-AS environments</strong>: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-actor signatures allow the RP to verify actor participation independently of the issuing AS.<a href="#section-8.1-5.2.2.1" class="pilcrow">¶</a>
 </li>
-              <li class="compact normal" id="section-7.1-5.2.2.2">
-                <strong>Non-repudiation</strong>: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.<a href="#section-7.1-5.2.2.2" class="pilcrow">¶</a>
+              <li class="compact normal" id="section-8.1-5.2.2.2">
+                <strong>Non-repudiation</strong>: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.<a href="#section-8.1-5.2.2.2" class="pilcrow">¶</a>
 </li>
-              <li class="compact normal" id="section-7.1-5.2.2.3">
-                <strong>Zero-trust posture</strong>: In adversarial environments, the Relying Party may not fully trust any single AS. Per-actor signatures provide defense-in-depth.<a href="#section-7.1-5.2.2.3" class="pilcrow">¶</a>
+              <li class="compact normal" id="section-8.1-5.2.2.3">
+                <strong>Zero-trust posture</strong>: In adversarial environments, the Relying Party may not fully trust any single AS. Per-actor signatures provide defense-in-depth.<a href="#section-8.1-5.2.2.3" class="pilcrow">¶</a>
 </li>
-              <li class="compact normal" id="section-7.1-5.2.2.4">
-                <strong>Forensic analysis</strong>: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.<a href="#section-7.1-5.2.2.4" class="pilcrow">¶</a>
+              <li class="compact normal" id="section-8.1-5.2.2.4">
+                <strong>Forensic analysis</strong>: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.<a href="#section-8.1-5.2.2.4" class="pilcrow">¶</a>
 </li>
             </ul>
 </li>
         </ul>
-<p id="section-7.1-6">Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.<a href="#section-7.1-6" class="pilcrow">¶</a></p>
+<p id="section-8.1-6">Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.<a href="#section-8.1-6" class="pilcrow">¶</a></p>
+<div id="recommended-mode">
+<section id="section-8.1.1">
+          <h4 id="name-recommended-mode">
+<a href="#section-8.1.1" class="section-number selfRef">8.1.1. </a><a href="#name-recommended-mode" class="section-name selfRef">Recommended Mode</a>
+          </h4>
+<table class="center" id="table-2">
+            <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Deployment Scenario</th>
+                <th class="text-left" rowspan="1" colspan="1">Recommended Mode</th>
+                <th class="text-left" rowspan="1" colspan="1">Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Single AS, all agents internal</td>
+                <td class="text-left" rowspan="1" colspan="1">AS-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">AS is trusted; smaller tokens, single signature verification</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Multi-AS or federated</td>
+                <td class="text-left" rowspan="1" colspan="1">Self-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">No single AS can vouch for the full chain across trust boundaries</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Zero-trust or regulatory compliance</td>
+                <td class="text-left" rowspan="1" colspan="1">Self-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">Non-repudiation and independent forensic verification required</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Performance-sensitive data plane</td>
+                <td class="text-left" rowspan="1" colspan="1">AS-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">O(1) signature verification vs. O(n) per-entry verification</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Multi-AS, performance-sensitive</td>
+                <td class="text-left" rowspan="1" colspan="1">Federated AS-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">Cross-AS verifiability with O(k) AS signatures, k ≤ n</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Mixed trust zones</td>
+                <td class="text-left" rowspan="1" colspan="1">Self-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">Agents crossing trust boundaries need independent attestation</td>
+              </tr>
+            </tbody>
+          </table>
+</section>
+</div>
+<div id="multi-as-identity-federation">
+<section id="section-8.1.2">
+          <h4 id="name-multi-as-identity-federatio">
+<a href="#section-8.1.2" class="section-number selfRef">8.1.2. </a><a href="#name-multi-as-identity-federatio" class="section-name selfRef">Multi-AS Identity Federation</a>
+          </h4>
+<p id="section-8.1.2-1">In federated deployments, a delegation chain may span multiple Authorization Servers. For example, Agent A authenticates to AS-1, delegates to Agent B which authenticates to AS-2, which delegates to Agent C targeting a Resource Server that trusts AS-3.<a href="#section-8.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-2">In this scenario, single-AS-Attested Mode is insufficient: the outer JWT is signed by whichever AS issued the final token, but the Relying Party may not trust that AS to have correctly validated actors authenticated by other ASes.<a href="#section-8.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-3">Two approaches address this:<a href="#section-8.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-4"><strong>Self-Attested Mode</strong> makes each actor's participation independently verifiable. The Relying Party verifies each <code>chain_sig</code> against the corresponding actor's public key — discoverable via the actor's <code>iss</code> claim (e.g., JWKS endpoint) or SPIFFE ID (e.g., SPIFFE trust bundle). Verification cost is O(n) where n is the number of actors.<a href="#section-8.1.2-4" class="pilcrow">¶</a></p>
+<p id="section-8.1.2-5"><strong>Federated AS-Attested Mode</strong> offers a more compact alternative. Instead of each actor signing individually, each AS signs the chain segment it validated. When the chain crosses from AS-1 to AS-2, AS-2 verifies AS-1's segment signature and appends its own segment signature covering the new actors it validated. The Relying Party verifies k AS signatures (where k is the number of ASes in the path) rather than n actor signatures. This preserves cross-AS verifiability while reducing token size and verification cost.<a href="#section-8.1.2-5" class="pilcrow">¶</a></p>
+<table class="center" id="table-3">
+            <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+              <tr>
+                <th class="text-left" rowspan="1" colspan="1">Approach</th>
+                <th class="text-left" rowspan="1" colspan="1">Signatures</th>
+                <th class="text-left" rowspan="1" colspan="1">Verification Cost</th>
+                <th class="text-left" rowspan="1" colspan="1">Token Overhead</th>
+                <th class="text-left" rowspan="1" colspan="1">Non-Repudiation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Self-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">Per-actor</td>
+                <td class="text-left" rowspan="1" colspan="1">O(n)</td>
+                <td class="text-left" rowspan="1" colspan="1">Higher</td>
+                <td class="text-left" rowspan="1" colspan="1">Per-actor</td>
+              </tr>
+              <tr>
+                <td class="text-left" rowspan="1" colspan="1">Federated AS-Attested</td>
+                <td class="text-left" rowspan="1" colspan="1">Per-AS</td>
+                <td class="text-left" rowspan="1" colspan="1">O(k), k ≤ n</td>
+                <td class="text-left" rowspan="1" colspan="1">Lower</td>
+                <td class="text-left" rowspan="1" colspan="1">Per-AS</td>
+              </tr>
+            </tbody>
+          </table>
+<p id="section-8.1.2-7">Federated deployments SHOULD:<a href="#section-8.1.2-7" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.1.2-8.1">Publish signing keys via standard discovery mechanisms (JWKS for ASes, SPIFFE trust bundles for actors).<a href="#section-8.1.2-8.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.1.2-8.2">Include <code>kid</code> or <code>jwk</code> in each <code>chain_sig</code> JWS header for key resolution.<a href="#section-8.1.2-8.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.1.2-8.3">Enforce cross-domain trust policies on the <code>iss</code> field of each Actor Chain Entry.<a href="#section-8.1.2-8.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.1.2-8.4">Select Self-Attested Mode when per-actor non-repudiation is required (e.g., regulatory), or Federated AS-Attested Mode when compactness and performance are prioritized.<a href="#section-8.1.2-8.4" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
 </section>
 </div>
 <div id="chain-integrity">
-<section id="section-7.2">
+<section id="section-8.2">
         <h3 id="name-chain-integrity">
-<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-chain-integrity" class="section-name selfRef">Chain Integrity</a>
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-chain-integrity" class="section-name selfRef">Chain Integrity</a>
         </h3>
-<p id="section-7.2-1">In AS-Attested Mode, chain integrity is provided by the JWT outer signature. The Relying Party trusts the AS to have correctly constructed the chain.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
-<p id="section-7.2-2">In Self-Attested Mode, the hash-chain structure provides additional tamper evidence. Insertion, deletion, or reordering of entries invalidates the <code>chain_digest</code> and <code>chain_sig</code> fields of all subsequent entries. An attacker who compromises a single actor in the chain cannot retroactively alter the entries of prior actors without possessing their signing keys.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.2-1">In AS-Attested Mode, chain integrity is provided by the JWT outer signature. The Relying Party trusts the AS to have correctly constructed the chain.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.2-2">In Self-Attested Mode, the hash-chain structure provides additional tamper evidence. Insertion, deletion, or reordering of entries invalidates the <code>chain_digest</code> and <code>chain_sig</code> fields of all subsequent entries. An attacker who compromises a single actor in the chain cannot retroactively alter the entries of prior actors without possessing their signing keys.<a href="#section-8.2-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="replay-protection">
-<section id="section-7.3">
+<section id="section-8.3">
         <h3 id="name-replay-protection">
-<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-replay-protection" class="section-name selfRef">Replay Protection</a>
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-replay-protection" class="section-name selfRef">Replay Protection</a>
         </h3>
-<p id="section-7.3-1">Each Actor Chain Entry includes an <code>iat</code> (issued-at) timestamp. Relying Parties SHOULD enforce a maximum age on Actor Chain Entries to prevent replay of stale chains. Additionally, the standard JWT claims <code>exp</code> and <code>nbf</code> on the enclosing token provide overall token-level freshness.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.3-1">Each Actor Chain Entry includes an <code>iat</code> (issued-at) timestamp. Relying Parties SHOULD enforce a maximum age on Actor Chain Entries to prevent replay of stale chains. Additionally, the standard JWT claims <code>exp</code> and <code>nbf</code> on the enclosing token provide overall token-level freshness.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="chain-depth-limits">
-<section id="section-7.4">
+<section id="section-8.4">
         <h3 id="name-chain-depth-limits">
-<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-chain-depth-limits" class="section-name selfRef">Chain Depth Limits</a>
+<a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-chain-depth-limits" class="section-name selfRef">Chain Depth Limits</a>
         </h3>
-<p id="section-7.4-1">Unbounded actor chains pose a risk of token size explosion and processing overhead. Authorization Servers SHOULD enforce a configurable maximum chain depth (<code>max_chain_depth</code>). A RECOMMENDED default maximum is 10 entries. Relying Parties MAY independently enforce their own chain depth limits.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+<p id="section-8.4-1">Unbounded actor chains pose a risk of token size explosion and processing overhead. Authorization Servers SHOULD enforce a configurable maximum chain depth (<code>max_chain_depth</code>). A RECOMMENDED default maximum is 10 entries. Relying Parties MAY independently enforce their own chain depth limits.<a href="#section-8.4-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="key-management">
-<section id="section-7.5">
+<section id="section-8.5">
         <h3 id="name-key-management">
-<a href="#section-7.5" class="section-number selfRef">7.5. </a><a href="#name-key-management" class="section-name selfRef">Key Management</a>
+<a href="#section-8.5" class="section-number selfRef">8.5. </a><a href="#name-key-management" class="section-name selfRef">Key Management</a>
         </h3>
-<p id="section-7.5-1">Each actor in the chain signs its entry with its own key. The security of the entire chain depends on the security of each actor's key material. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The use of PoR in Actor Chain Entries provides additional assurance that the signing key is bound to a verified execution environment.<a href="#section-7.5-1" class="pilcrow">¶</a></p>
+<p id="section-8.5-1">Each actor in the chain signs its entry with its own key. The security of the entire chain depends on the security of each actor's key material. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The use of PoR in Actor Chain Entries provides additional assurance that the signing key is bound to a verified execution environment.<a href="#section-8.5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="privacy-of-prior-actors">
-<section id="section-7.6">
+<section id="section-8.6">
         <h3 id="name-privacy-of-prior-actors">
-<a href="#section-7.6" class="section-number selfRef">7.6. </a><a href="#name-privacy-of-prior-actors" class="section-name selfRef">Privacy of Prior Actors</a>
+<a href="#section-8.6" class="section-number selfRef">8.6. </a><a href="#name-privacy-of-prior-actors" class="section-name selfRef">Privacy of Prior Actors</a>
         </h3>
-<p id="section-7.6-1">The <code>actor_chain</code> expose the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, the originating actor <code>a</code> may require its identity to be hidden from <code>e</code> while still ensuring the integrity of the delegation.<a href="#section-7.6-1" class="pilcrow">¶</a></p>
-<p id="section-7.6-2">Deployments SHOULD consider the following anonymization and privacy-preserving techniques:<a href="#section-7.6-2" class="pilcrow">¶</a></p>
+<p id="section-8.6-1">The <code>actor_chain</code> expose the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, the originating actor <code>a</code> may require its identity to be hidden from <code>e</code> while still ensuring the integrity of the delegation.<a href="#section-8.6-1" class="pilcrow">¶</a></p>
+<p id="section-8.6-2">Deployments SHOULD consider the following anonymization and privacy-preserving techniques:<a href="#section-8.6-2" class="pilcrow">¶</a></p>
 <div id="pseudonymous-identifiers">
-<section id="section-7.6.1">
+<section id="section-8.6.1">
           <h4 id="name-pseudonymous-identifiers">
-<a href="#section-7.6.1" class="section-number selfRef">7.6.1. </a><a href="#name-pseudonymous-identifiers" class="section-name selfRef">Pseudonymous Identifiers</a>
+<a href="#section-8.6.1" class="section-number selfRef">8.6.1. </a><a href="#name-pseudonymous-identifiers" class="section-name selfRef">Pseudonymous Identifiers</a>
           </h4>
-<p id="section-7.6.1-1">Instead of using globally unique or stable identifiers (like email addresses or client IDs), the Authorization Server (AS) can issue pairwise pseudonyms for actors. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>:
+<p id="section-8.6.1-1">Instead of using globally unique or stable identifiers (like email addresses or client IDs), the Authorization Server (AS) can issue pairwise pseudonyms for actors. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>:
 - The AS replaces <code>sub: "a"</code> with a pseudonym <code>sub: "pseudo-xyz"</code> that is only meaningful to the AS.
 - Relying Party <code>e</code> sees that the chain started with a verified actor, but does not know it was <code>a</code>.
-- The AS maintains a mapping to allow for forensic reconstruction if authorized.<a href="#section-7.6.1-1" class="pilcrow">¶</a></p>
+- The AS maintains a mapping to allow for forensic reconstruction if authorized.<a href="#section-8.6.1-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="selective-disclosure-sd-jwt-1">
-<section id="section-7.6.2">
+<section id="section-8.6.2">
           <h4 id="name-selective-disclosure-sd-jwt-2">
-<a href="#section-7.6.2" class="section-number selfRef">7.6.2. </a><a href="#name-selective-disclosure-sd-jwt-2" class="section-name selfRef">Selective Disclosure (SD-JWT)</a>
+<a href="#section-8.6.2" class="section-number selfRef">8.6.2. </a><a href="#name-selective-disclosure-sd-jwt-2" class="section-name selfRef">Selective Disclosure (SD-JWT)</a>
           </h4>
-<p id="section-7.6.2-1">The <code>actor_chain</code> MAY be implemented using Selective Disclosure for JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]]. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.<a href="#section-7.6.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.6.2-1">The <code>actor_chain</code> MAY be implemented using Selective Disclosure for JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]]. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.<a href="#section-8.6.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="identity-bridging-for-anonymity">
-<section id="section-7.6.3">
+<section id="section-8.6.3">
           <h4 id="name-identity-bridging-for-anony">
-<a href="#section-7.6.3" class="section-number selfRef">7.6.3. </a><a href="#name-identity-bridging-for-anony" class="section-name selfRef">Identity Bridging for Anonymity</a>
+<a href="#section-8.6.3" class="section-number selfRef">8.6.3. </a><a href="#name-identity-bridging-for-anony" class="section-name selfRef">Identity Bridging for Anonymity</a>
           </h4>
-<p id="section-7.6.3-1">An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the <code>actor_chain</code> with generic or pseudonymous identifiers, while still vouching for the chain's security properties.<a href="#section-7.6.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.6.3-1">An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the <code>actor_chain</code> with generic or pseudonymous identifiers, while still vouching for the chain's security properties.<a href="#section-8.6.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="targeted-selective-disclosure">
-<section id="section-7.6.4">
+<section id="section-8.6.4">
           <h4 id="name-targeted-selective-disclosu">
-<a href="#section-7.6.4" class="section-number selfRef">7.6.4. </a><a href="#name-targeted-selective-disclosu" class="section-name selfRef">Targeted Selective Disclosure</a>
+<a href="#section-8.6.4" class="section-number selfRef">8.6.4. </a><a href="#name-targeted-selective-disclosu" class="section-name selfRef">Targeted Selective Disclosure</a>
           </h4>
-<p id="section-7.6.4-1">A more advanced privacy model involves disclosing actor identities only to trusted intermediate parties. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, actor <code>a</code> may be visible to <code>b</code>, <code>c</code>, and <code>d</code>, but hidden from <code>e</code>.<a href="#section-7.6.4-1" class="pilcrow">¶</a></p>
-<p id="section-7.6.4-2">This is achieved through <strong>Targeted Disclosure</strong> using SD-JWT:
+<p id="section-8.6.4-1">A more advanced privacy model involves disclosing actor identities only to trusted intermediate parties. In the chain <code>a -&gt; b -&gt; c -&gt; d -&gt; e</code>, actor <code>a</code> may be visible to <code>b</code>, <code>c</code>, and <code>d</code>, but hidden from <code>e</code>.<a href="#section-8.6.4-1" class="pilcrow">¶</a></p>
+<p id="section-8.6.4-2">This is achieved through <strong>Targeted Disclosure</strong> using SD-JWT:
 - The AS generates the <code>actor_chain</code> with actor <code>a</code>'s identity hashed and salted.
 - Alongside the JWT, the AS provides a "Disclosure" string (the salt and cleartext value) for actor <code>a</code>.
 - When the AS issues a token for <code>b</code>, <code>c</code>, or <code>d</code>, it includes this disclosure string. This allows these "internal" actors to "unlock" the hash and see <code>a</code>'s true identity.
 - When the final token is exchanged for recipient <code>e</code>, the AS (or the last internal actor <code>d</code>) simply omits the disclosure string for actor <code>a</code>.
-- Actor <code>e</code> receives the same JWT but without the "key" to unlock <code>a</code>. <code>e</code> can verify the cryptographic integrity of the entire chain (proving that a verified, though anonymous, actor started it) without ever seeing <code>a</code>'s identity.<a href="#section-7.6.4-2" class="pilcrow">¶</a></p>
-<table class="center" id="table-2">
-            <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+- Actor <code>e</code> receives the same JWT but without the "key" to unlock <code>a</code>. <code>e</code> can verify the cryptographic integrity of the entire chain (proving that a verified, though anonymous, actor started it) without ever seeing <code>a</code>'s identity.<a href="#section-8.6.4-2" class="pilcrow">¶</a></p>
+<table class="center" id="table-4">
+            <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
 <thead>
               <tr>
                 <th class="text-left" rowspan="1" colspan="1">Recipient</th>
@@ -2256,76 +2417,76 @@ actor_chain[1].sub == "https://planner.example.com"
 </section>
 </div>
 <div id="encryption-jwe">
-<section id="section-7.6.5">
+<section id="section-8.6.5">
           <h4 id="name-encryption-jwe">
-<a href="#section-7.6.5" class="section-number selfRef">7.6.5. </a><a href="#name-encryption-jwe" class="section-name selfRef">Encryption (JWE)</a>
+<a href="#section-8.6.5" class="section-number selfRef">8.6.5. </a><a href="#name-encryption-jwe" class="section-name selfRef">Encryption (JWE)</a>
           </h4>
-<p id="section-7.6.5-1">The entire <code>actor_chain</code> claim can be encrypted using JWE [[RFC7516]] so that only the final intended audience <code>e</code> can decrypt it, preventing intermediate actors like <code>b</code>, <code>c</code>, and <code>d</code> from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.<a href="#section-7.6.5-1" class="pilcrow">¶</a></p>
+<p id="section-8.6.5-1">The entire <code>actor_chain</code> claim can be encrypted using JWE [[RFC7516]] so that only the final intended audience <code>e</code> can decrypt it, preventing intermediate actors like <code>b</code>, <code>c</code>, and <code>d</code> from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.<a href="#section-8.6.5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="confused-deputy-mitigation">
-<section id="section-7.7">
+<section id="section-8.7">
         <h3 id="name-confused-deputy-mitigation">
-<a href="#section-7.7" class="section-number selfRef">7.7. </a><a href="#name-confused-deputy-mitigation" class="section-name selfRef">Confused Deputy Mitigation</a>
+<a href="#section-8.7" class="section-number selfRef">8.7. </a><a href="#name-confused-deputy-mitigation" class="section-name selfRef">Confused Deputy Mitigation</a>
         </h3>
-<p id="section-7.7-1">In both modes, a confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. In Self-Attested Mode, the malicious actor's own cryptographic signature provides non-repudiable evidence of its participation.<a href="#section-7.7-1" class="pilcrow">¶</a></p>
+<p id="section-8.7-1">In both modes, a confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. In Self-Attested Mode, the malicious actor's own cryptographic signature provides non-repudiable evidence of its participation.<a href="#section-8.7-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="iana-considerations">
-<section id="section-8">
+<section id="section-9">
       <h2 id="name-iana-considerations">
-<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
 <div id="json-web-token-claims-registration">
-<section id="section-8.1">
+<section id="section-9.1">
         <h3 id="name-json-web-token-claims-regis">
-<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-json-web-token-claims-regis" class="section-name selfRef">JSON Web Token Claims Registration</a>
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-json-web-token-claims-regis" class="section-name selfRef">JSON Web Token Claims Registration</a>
         </h3>
-<p id="section-8.1-1">This document requests registration of the following claim in the "JSON Web Token Claims" registry established by [[RFC7519]]:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.1-1">This document requests registration of the following claim in the "JSON Web Token Claims" registry established by [[RFC7519]]:<a href="#section-9.1-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-8.1-2.1">
-            <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-8.1-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-9.1-2.1">
+            <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-9.1-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.1-2.2">
-            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.<a href="#section-8.1-2.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.1-2.2">
+            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.<a href="#section-9.1-2.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.1-2.3">
-            <strong>Change Controller</strong>: IETF<a href="#section-8.1-2.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.1-2.3">
+            <strong>Change Controller</strong>: IETF<a href="#section-9.1-2.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.1-2.4">
-            <strong>Specification Document(s)</strong>: [this document]<a href="#section-8.1-2.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.1-2.4">
+            <strong>Specification Document(s)</strong>: [this document]<a href="#section-9.1-2.4" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
 <div id="cbor-web-token-claims-registration">
-<section id="section-8.2">
+<section id="section-9.2">
         <h3 id="name-cbor-web-token-claims-regis">
-<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-cbor-web-token-claims-regis" class="section-name selfRef">CBOR Web Token Claims Registration</a>
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-cbor-web-token-claims-regis" class="section-name selfRef">CBOR Web Token Claims Registration</a>
         </h3>
-<p id="section-8.2-1">This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<p id="section-9.2-1">This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:<a href="#section-9.2-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-8.2-2.1">
-            <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-8.2-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-9.2-2.1">
+            <strong>Claim Name</strong>: <code>actor_chain</code><a href="#section-9.2-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.2-2.2">
-            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain.<a href="#section-8.2-2.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.2-2.2">
+            <strong>Claim Description</strong>: A Cryptographically Verifiable Actor Chain.<a href="#section-9.2-2.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.2-2.3">
-            <strong>CBOR Key</strong>: TBD (e.g., 40)<a href="#section-8.2-2.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.2-2.3">
+            <strong>CBOR Key</strong>: TBD (e.g., 40)<a href="#section-9.2-2.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.2-2.4">
-            <strong>Claim Type</strong>: array<a href="#section-8.2-2.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.2-2.4">
+            <strong>Claim Type</strong>: array<a href="#section-9.2-2.4" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.2-2.5">
-            <strong>Change Controller</strong>: IETF<a href="#section-8.2-2.5" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.2-2.5">
+            <strong>Change Controller</strong>: IETF<a href="#section-9.2-2.5" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.2-2.6">
-            <strong>Specification Document(s)</strong>: [this document]<a href="#section-8.2-2.6" class="pilcrow">¶</a>
+          <li class="compact" id="section-9.2-2.6">
+            <strong>Specification Document(s)</strong>: [this document]<a href="#section-9.2-2.6" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
