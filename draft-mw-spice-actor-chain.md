@@ -50,19 +50,19 @@ organization = "Aryaka"
 
 .# Abstract
 
-This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads—where susceptibility to **prompt injection attacks** can lead to unauthorized delegation paths — the security posture of the entire delegation chain is critical for authorization decisions.
+This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads—where susceptibility to **prompt injection attacks** can lead to unauthorized delegation paths — the security posture of the entire delegation chain is critical for authorization decisions.
 
 {mainmatter}
 
 # Introduction
 
-This document defines an extension to OAuth 2.0 Token Exchange [[RFC8693]] to support high-assurance **East-West** identity delegation through cryptographically verifiable actor chains. 
+This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} to support high-assurance **East-West** identity delegation through cryptographically verifiable actor chains. 
 
-In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While [[RFC8693]] provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
+In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While {{!RFC8693}} provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
 
 By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an **"East-West"** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
 
-This solution addresses several critical gaps in [[RFC8693]]:
+This solution addresses several critical gaps in {{!RFC8693}}:
 
 1. **Cryptographic Audit Trail**: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.
 2. **Data-Plane Policy Enforcement**: Enables Relying Parties to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").
@@ -74,8 +74,8 @@ This specification is part of a three-axis "Truth Stack" for AI agent governance
 | Specification | Axis | Question Answered | STRIDE Coverage |
 | :--- | :--- | :--- | :--- |
 | **Actor Chain** (this document) | Identity | WHO delegated to whom? | Spoofing, Repudiation, Elevation of Privilege |
-| **Intent Chain** ([[!I-D.draft-mw-spice-intent-chain]]) | Content | WHAT was produced and transformed? | Repudiation, Tampering |
-| **Inference Chain** ([[!I-D.draft-mw-spice-inference-chain]]) | Computation | HOW was the output computed? | Spoofing (computational), Tampering (model) |
+| **Intent Chain** ({{!I-D.draft-mw-spice-intent-chain}}) | Content | WHAT was produced and transformed? | Repudiation, Tampering |
+| **Inference Chain** ({{!I-D.draft-mw-spice-inference-chain}}) | Computation | HOW was the output computed? | Spoofing (computational), Tampering (model) |
 
 | Chain | Plane | Token Content | Full Chain | Primary Consumer |
 | :--- | :--- | :--- | :--- | :--- |
@@ -83,13 +83,13 @@ This specification is part of a three-axis "Truth Stack" for AI agent governance
 | **Intent** | Audit Plane | Merkle root only | External registry | Audit systems, forensic investigators |
 | **Inference** | Audit Plane | Merkle root only | External registry | Auditors, compliance systems |
 
-This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT [[RFC7519]]) and CBOR/COSE (CWT [[RFC8392]]) representations.
+This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT {{!RFC7519}}) and CBOR/COSE (CWT {{!RFC8392}}) representations.
 
 # Terminology
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [[RFC2119]] [[RFC8174]] when, and only when, they appear in all capitals, as shown here.
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they appear in all capitals, as shown here.
 
-This document leverages the terminology defined in OAuth 2.0 Token Exchange [[RFC8693]], the SPICE Architecture [[!I-D.ietf-spice-arch]], and the RATS Architecture [[RFC9334]].
+This document leverages the terminology defined in OAuth 2.0 Token Exchange {{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS Architecture {{!RFC9334}}.
 
 Actor Chain:
 : A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-actor cryptographic signatures (Self-Attested Mode).
@@ -104,13 +104,13 @@ Chain Depth:
 : The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
 
 Proof of Residency (PoR):
-: A cryptographic proof (as defined in [[!I-D.draft-mw-spice-transitive-attestation]]) binding a workload to a specific, verified local environment. When present in an Actor Chain Entry, it provides hardware-rooted assurance of the actor's execution context.
+: A cryptographic proof (as defined in {{!I-D.draft-mw-spice-transitive-attestation}}) binding a workload to a specific, verified local environment. When present in an Actor Chain Entry, it provides hardware-rooted assurance of the actor's execution context.
 
 # The Problem: RFC 8693 Actor Limitations
 
 ## Single-Actor Semantics
 
-[[RFC8693]] Section 4.1 defines the `act` claim as a JSON object identifying **the** current actor. While nesting is permitted to represent prior actors, the specification explicitly limits their utility. Only the outermost `act` claim—representing the current actor—is relevant for access control. All prior actors exist solely for informational purposes.
+{{!RFC8693}} Section 4.1 defines the `act` claim as a JSON object identifying **the** current actor. While nesting is permitted to represent prior actors, the specification explicitly limits their utility. Only the outermost `act` claim—representing the current actor—is relevant for access control. All prior actors exist solely for informational purposes.
 
 This design was appropriate for traditional web service delegation where chains are short (typically one or two hops) and the identity of the immediate caller is sufficient for authorization. It is insufficient for the emerging class of workloads described below.
 
@@ -122,7 +122,7 @@ Modern AI systems increasingly operate as networks of specialized agents. A typi
 User -> Orchestrator Agent -> Planning Agent -> Tool Agent -> Data API
 ```
 
-At each hop, the agent performs a token exchange ([[RFC8693]]) to obtain credentials appropriate for calling the next service. Under current [[RFC8693]] semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have been manipulated via **prompt injection** into delegating authority they should not have—are invisible to policy enforcement.
+At each hop, the agent performs a token exchange ({{!RFC8693}}) to obtain credentials appropriate for calling the next service. Under current {{!RFC8693}} semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have been manipulated via **prompt injection** into delegating authority they should not have—are invisible to policy enforcement.
 
 This creates several concrete risks:
 
@@ -132,7 +132,7 @@ This creates several concrete risks:
 
 ## Structural Limitations of Nested `act`
 
-Beyond the semantic restriction, the nested object structure of `act` in [[RFC8693]] has practical limitations:
+Beyond the semantic restriction, the nested object structure of `act` in {{!RFC8693}} has practical limitations:
 
 1. **Parsing Complexity**: Each prior actor requires traversing one additional level of JSON nesting. In high-throughput data-plane proxies (e.g., Envoy, Istio sidecars), deep nesting imposes parsing overhead.
 2. **Indexing**: It is not possible to efficiently query "the actor at position N" without recursively unwinding the nested structure.
@@ -150,7 +150,7 @@ The `actor_chain` claim supports two operational modes:
 
 1. **AS-Attested Mode**: The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. The AS's signature over the entire token (JWS or COSE) provides integrity protection for the chain. Per-actor `chain_sig` fields are omitted.
 
-2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a cryptographic signature (compact JWS [[RFC7515]] or COSE_Sign1 [[RFC9052]]) computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure providing tamper evidence and non-repudiation independent of the AS.
+2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a cryptographic signature (compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}}) computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure providing tamper evidence and non-repudiation independent of the AS.
 
 ## Claim Definition
 
@@ -159,16 +159,16 @@ The `actor_chain` claim is a JSON array. Each element of the array is a JSON obj
 - **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext. These fields typically correspond to the identity claims present in the **Actor Token** or client credentials used during the token exchange flow.
 
 sub:
-: REQUIRED (or selectively disclosed). A string identifying the actor, as defined in [[RFC7519]] Section 4.1.2.
+: REQUIRED (or selectively disclosed). A string identifying the actor, as defined in {{!RFC7519}} Section 4.1.2.
 
 iss:
-: REQUIRED (or selectively disclosed). A string identifying the issuer of the actor's identity, as defined in [[RFC7519]] Section 4.1.1.
+: REQUIRED (or selectively disclosed). A string identifying the issuer of the actor's identity, as defined in {{!RFC7519}} Section 4.1.1.
 
 iat:
-: REQUIRED (or selectively disclosed). The time at which this actor was appended to the chain, represented as a NumericDate as defined in [[RFC7519]] Section 4.1.6.
+: REQUIRED (or selectively disclosed). The time at which this actor was appended to the chain, represented as a NumericDate as defined in {{!RFC7519}} Section 4.1.6.
 
 por:
-: OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in [[!I-D.draft-mw-spice-transitive-attestation]].
+: OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in {{!I-D.draft-mw-spice-transitive-attestation}}.
 
 chain_digest:
 : OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a `chain_sig` at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode. 
@@ -177,7 +177,7 @@ chain_digest:
   > When Selective Disclosure is used, the SD-JWT **Disclosure strings** (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The `chain_digest` is computed exclusively over the Actor Chain Entry object, which contains the stable `_sd` hashes. This ensures the signature remains valid regardless of which disclosures are subsequently provided to different recipients.
 
 chain_sig:
-: OPTIONAL. A compact JWS [[RFC7515]] signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
+: OPTIONAL. A compact JWS {{!RFC7515}} signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
 
 chain_mode:
 : OPTIONAL. A top-level string claim (sibling to `actor_chain`) indicating the operational mode. Values are `as_attested` or `self_attested`. If omitted, the mode is inferred from the presence or absence of `chain_sig` fields in the Actor Chain Entries.
@@ -280,7 +280,7 @@ In the Self-Attested example:
 
 When an actor (Service B) receives a token containing an `actor_chain` and needs to call a downstream service (Service C), the following token exchange flow occurs:
 
-1. **Service B** sends a token exchange request to the Authorization Server (AS) per [[RFC8693]] Section 2.1.
+1. **Service B** sends a token exchange request to the Authorization Server (AS) per {{!RFC8693}} Section 2.1.
 2. The `subject_token` contains the existing `actor_chain`.
 3. The `actor_token` identifies Service B.
 4. The AS validates the existing `actor_chain`:
@@ -296,7 +296,7 @@ When an actor (Service B) receives a token containing an `actor_chain` and needs
 
 ### Disclosure Propagation in SD-JWT
 
-When Selective Disclosure (SD-JWT) [[!I-D.ietf-oauth-selective-disclosure-jwt]] is used for any Actor Chain Entry, the Authorization Server (AS) acts as the Discloser during token exchange. The propagation of the underlying cleartext identities is managed as follows:
+When Selective Disclosure (SD-JWT) {{!I-D.ietf-oauth-selective-disclosure-jwt}} is used for any Actor Chain Entry, the Authorization Server (AS) acts as the Discloser during token exchange. The propagation of the underlying cleartext identities is managed as follows:
 
 1. **Disclosure Inclusion**: When the AS issues a token for a downstream recipient (Service B), it determines based on policy which hidden identifiers in the `actor_chain` should be visible to that recipient. For each visible actor, the AS appends the corresponding SD-JWT Disclosure string (containing the salt and cleartext value) to the issued token.
 2. **Hop-by-Hop Visibility**: In a chain `a -> b -> c -> d -> e`, if `a` is to be visible to `b`, `c`, and `d`, the AS includes `a`'s disclosure string in the tokens issued to `b`, `c`, and `d` during their respective token exchanges.
@@ -344,7 +344,7 @@ Consequently, each `chain_sig` covers only the **actor chain state** at that act
 
 ## Data-Plane Policy Enforcement
 
-Unlike the nested `act` claim in [[RFC8693]], the `actor_chain` claim is explicitly designed to be used in access control decisions. Relying Parties and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
+Unlike the nested `act` claim in {{!RFC8693}}, the `actor_chain` claim is explicitly designed to be used in access control decisions. Relying Parties and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
 
 ### Policy Examples
 
@@ -408,7 +408,7 @@ A Relying Party receiving a token with the `actor_chain` claim MUST perform the 
     - **Verify chain_sig**: Verify `chain_sig` against `chain_digest` using the actor's public key.
 
 4. **PoR Verification** (if present):
-    - Verify each PoR assertion according to [[!I-D.draft-mw-spice-transitive-attestation]].
+    - Verify each PoR assertion according to {{!I-D.draft-mw-spice-transitive-attestation}}.
 
 5. **Policy Evaluation**:
     - Apply local authorization policy against the verified actor chain.
@@ -421,24 +421,24 @@ This proposal extends and complements several ongoing efforts:
 
 | Specification | Relationship |
 | :--- | :--- |
-| **RFC 8693** [[RFC8693]] | This document extends [[RFC8693]] by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
-| **Transitive Attestation** [[!I-D.draft-mw-spice-transitive-attestation]] | Provides the "North-South" residency proof (agent to local WIA) that complements the "East-West" delegation proof (agent to actor-chain) provided by this document. |
-| **SPICE Architecture** [[!I-D.ietf-spice-arch]] | Defines the overarching workload identity architecture within which this extension operates. |
-| **WIMSE Architecture** [[!I-D.ietf-wimse-arch]] | This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures. |
-| **Attestation-Based Auth** [[!I-D.ietf-oauth-attestation-based-client-auth]] | Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted `por` claims in Actor Chain Entries. |
-| **SCITT** [[!I-D.ietf-scitt-architecture]] | Verifiable actor chains can be recorded in SCITT transparency logs to provide long-term, tamper-proof auditability of delegation paths. |
-| **RATS** [[RFC9334]] | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
-| **DPoP** [[RFC9449]] | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. |
+| **RFC 8693** {{!RFC8693}} | This document extends {{!RFC8693}} by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
+| **Transitive Attestation** {{!I-D.draft-mw-spice-transitive-attestation}} | Provides the "North-South" residency proof (agent to local WIA) that complements the "East-West" delegation proof (agent to actor-chain) provided by this document. |
+| **SPICE Architecture** {{!I-D.ietf-spice-arch}} | Defines the overarching workload identity architecture within which this extension operates. |
+| **WIMSE Architecture** {{!I-D.ietf-wimse-arch}} | This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures. |
+| **Attestation-Based Auth** {{!I-D.ietf-oauth-attestation-based-client-auth}} | Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted `por` claims in Actor Chain Entries. |
+| **SCITT** {{!I-D.ietf-scitt-architecture}} | Verifiable actor chains can be recorded in SCITT transparency logs to provide long-term, tamper-proof auditability of delegation paths. |
+| **RATS** {{!RFC9334}} | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
+| **DPoP** {{!RFC9449}} | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. |
 
 ## East-West vs. North-South Security
 
-This specification addresses the **East-West** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation [[!I-D.draft-mw-spice-transitive-attestation]] addresses the **North-South** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
+This specification addresses the **East-West** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation {{!I-D.draft-mw-spice-transitive-attestation}} addresses the **North-South** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
 
 By embedding "North-South" Proofs of Residency (PoR) within "East-West" Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.
 
 ## Backward Compatibility with RFC 8693
 
-An Authorization Server implementing this extension SHOULD populate both the `act` claim (per [[RFC8693]] Section 4.1) and the `actor_chain` claim in issued tokens. This ensures that:
+An Authorization Server implementing this extension SHOULD populate both the `act` claim (per {{!RFC8693}} Section 4.1) and the `actor_chain` claim in issued tokens. This ensures that:
 
 - **Legacy consumers** that understand only `act` continue to function correctly, seeing the current actor in the top-level `act` claim.
 - **Chain-aware consumers** can use `actor_chain` for fine-grained policy enforcement and audit.
@@ -553,11 +553,11 @@ Instead of using globally unique or stable identifiers (like email addresses or 
 
 ### Selective Disclosure (SD-JWT)
 
-The `actor_chain` MAY be implemented using Selective Disclosure for JWTs [[!I-D.ietf-oauth-selective-disclosure-jwt]]. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.
+The `actor_chain` MAY be implemented using Selective Disclosure for JWTs {{!I-D.ietf-oauth-selective-disclosure-jwt}}. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.
 
 ### Identity Bridging for Anonymity
 
-An Identity Bridge [[!I-D.ietf-spice-arch]] MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the `actor_chain` with generic or pseudonymous identifiers, while still vouching for the chain's security properties.
+An Identity Bridge {{!I-D.ietf-spice-arch}} MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the `actor_chain` with generic or pseudonymous identifiers, while still vouching for the chain's security properties.
 
 ### Targeted Selective Disclosure
 
@@ -577,7 +577,7 @@ This is achieved through **Targeted Disclosure** using SD-JWT:
 
 ### Encryption (JWE)
 
-The entire `actor_chain` claim can be encrypted using JWE [[RFC7516]] so that only the final intended audience `e` can decrypt it, preventing intermediate actors like `b`, `c`, and `d` from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.
+The entire `actor_chain` claim can be encrypted using JWE {{!RFC7516}} so that only the final intended audience `e` can decrypt it, preventing intermediate actors like `b`, `c`, and `d` from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.
 
 ## Confused Deputy Mitigation
 
@@ -587,7 +587,7 @@ In both modes, a confused deputy attack—where a legitimate actor is tricked in
 
 ## JSON Web Token Claims Registration
 
-This document requests registration of the following claim in the "JSON Web Token Claims" registry established by [[RFC7519]]:
+This document requests registration of the following claim in the "JSON Web Token Claims" registry established by {{!RFC7519}}:
 
 - **Claim Name**: `actor_chain`
 - **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.
@@ -596,7 +596,7 @@ This document requests registration of the following claim in the "JSON Web Toke
 
 ## CBOR Web Token Claims Registration
 
-This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by [[RFC8392]]:
+This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by {{!RFC8392}}:
 
 - **Claim Name**: `actor_chain`
 - **Claim Description**: A Cryptographically Verifiable Actor Chain.
