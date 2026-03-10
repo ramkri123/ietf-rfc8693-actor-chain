@@ -7,6 +7,7 @@ ipr = "trust200902"
 area = "Security"
 workgroup = "SPICE"
 keyword = ["actor chain", "spice", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents"]
+date = 2026-03-10
 
 [seriesInfo]
 name = "Internet-Draft"
