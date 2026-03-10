@@ -50,17 +50,17 @@ organization = "Aryaka"
 
 .# Abstract
 
-This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads—where susceptibility to **prompt injection attacks** can lead to unauthorized delegation paths — the security posture of the entire delegation chain is critical for authorization decisions.
+This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where susceptibility to **prompt injection attacks** can lead to unauthorized delegation paths.
 
 {mainmatter}
 
 # Introduction
 
-This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} to support high-assurance **East-West** identity delegation through cryptographically verifiable actor chains. 
+This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} to support high-assurance identity delegation through cryptographically verifiable actor chains. 
 
 In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While {{!RFC8693}} provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
 
-By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes an **"East-West"** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
+By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes a **delegation** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
 
 This solution addresses several critical gaps in {{!RFC8693}}:
 
@@ -80,8 +80,8 @@ This specification is part of a three-axis "Truth Stack" for AI agent governance
 | Chain | Plane | Token Content | Full Chain | Primary Consumer |
 | :--- | :--- | :--- | :--- | :--- |
 | **Actor** | Data Plane | Full chain inline | In token | Every Relying Party (real-time authorization) |
-| **Intent** | Audit Plane | Merkle root only | External registry | Audit systems, forensic investigators |
-| **Inference** | Audit Plane | Merkle root only | External registry | Auditors, compliance systems |
+| **Intent** | Audit Plane | merkle root only | External registry | Audit systems, forensic investigators |
+| **Inference** | Audit Plane | merkle root only | External registry | Auditors, compliance systems |
 
 This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT {{!RFC7519}}) and CBOR/COSE (CWT {{!RFC8392}}) representations.
 
@@ -92,13 +92,16 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 This document leverages the terminology defined in OAuth 2.0 Token Exchange {{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS Architecture {{!RFC9334}}.
 
 Actor Chain:
-: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The chain is integrity-protected either by the AS's JWT signature (AS-Attested Mode) or by per-actor cryptographic signatures (Self-Attested Mode).
+: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The token carries identity entries inline and a merkle root (`actor_chain_root`) binding those entries to per-actor cryptographic signatures stored in an external registry.
 
 Actor Chain Entry:
-: A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims and a cryptographic signature binding it to the chain state at the point of its participation.
+: A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims (`sub`, `iss`, `iat`) and an optional Proof of Residency (`por`). The token carries these entries inline for data-plane policy enforcement.
 
-Chain Digest:
-: A cumulative cryptographic hash computed over the delegation history. For any entry at index `N`, the `chain_digest` is computed over the concatenation of the current entry's identity claims and the `chain_digest` of the preceding entry (at index `N-1`). For the entry at index 0, the digest is computed over that entry's identity claims alone. Each actor produces a `per-actor signature` over its `chain_digest`, cryptographically anchoring itself to the entire preceding history.
+Actor Chain Root:
+: The merkle root hash of the complete set of per-actor signatures (`chain_sig` values) in the actor chain, included in the OAuth token as the `actor_chain_root` claim. This binds the data-plane token to the audit-plane evidence.
+
+Actor Chain Registry:
+: A service endpoint that stores the full per-actor signature evidence (including `chain_digest` and `chain_sig` for each entry). Referenced by the `actor_chain_registry` claim in the token. Implementations MAY use a SCITT transparency log {{!I-D.ietf-scitt-architecture}} or equivalent ordered log.
 
 Chain Depth:
 : The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
@@ -139,24 +142,47 @@ Beyond the semantic restriction, the nested object structure of `act` in {{!RFC8
 3. **Size Predictability**: The depth of nesting is unbounded, making it difficult to predict token sizes and allocate parsing buffers.
 4. **No Integrity**: Each nested `act` is a plain JSON object with no signature or hash binding. Any intermediary could insert, remove, or reorder prior actors without detection.
 
-### Selective Disclosure (SD-JWT)
 # The Solution: The Cryptographically Verifiable `actor_chain` Claim
 
 ## Overview
 
 This document defines a new claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.
 
-The `actor_chain` claim supports two operational modes:
+The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs the cumulative chain state at its point of participation, producing a per-entry `chain_sig`. The full signed entries are stored in an external registry (the Actor Chain Registry), while the token carries only the identity entries and a merkle root (`actor_chain_root`) binding them to the signed evidence. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
 
-1. **AS-Attested Mode**: The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. The AS's signature over the entire token (JWS or COSE) provides integrity protection for the chain. Per-actor `chain_sig` fields are omitted.
+This architecture separates data-plane concerns (fast access control using identity entries) from audit-plane concerns (per-actor non-repudiation using stored signatures), following the same pattern as the companion Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications:
 
-2. **Self-Attested Mode**: Each Actor Chain Entry additionally includes a `chain_sig` field: a cryptographic signature (compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}}) computed by that actor over a Chain Digest of all preceding entries. This creates a hash-chain structure providing tamper evidence and non-repudiation independent of the AS.
+| Chain | Question | Token (data plane) | Registry (audit plane) |
+| :--- | :--- | :--- | :--- |
+| **Actor Chain** (this document) | WHO participated? | Identity entries + merkle root | Per-actor `chain_sig` |
+| **Intent Chain** {{!I-D.draft-mw-spice-intent-chain}} | WHAT was produced? | Content refs + merkle root | Per-entry `intent_sig` |
+| **Inference Chain** {{!I-D.draft-mw-spice-inference-chain}} | HOW was it computed? | Model refs + merkle root | Per-entry `inference_sig` |
+
+By requiring per-actor signatures in all three chains and storing them in registries with merkle roots in tokens, a Relying Party obtains O(1) data-plane verification while retaining full per-actor non-repudiation for audit.
 
 ## Claim Definition
 
-The `actor_chain` claim is a JSON array. Each element of the array is a JSON object (an Actor Chain Entry) with the following members. To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
+### Token Claims (Data Plane)
+
+The following claims are included in the OAuth token:
+
+actor_chain:
+: REQUIRED. A JSON array of Actor Chain Entry objects. Each element is a JSON object with the following members.
+
+actor_chain_root:
+: RECOMMENDED. A string containing the merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
+
+actor_chain_registry:
+: RECOMMENDED. A URI identifying the Actor Chain Registry endpoint where the full per-actor signature evidence can be retrieved. MUST be present whenever `actor_chain_root` is present.
+
+sid:
+: RECOMMENDED. A string identifying the session to which this token belongs. The Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) are partitioned by this identifier. MUST be present whenever `actor_chain_registry` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit.
+
+To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
 - **Per-Actor**: An Authorization Server MAY choose to hide entire Actor Chain Entries or only specific actors in the chain.
-- **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext. These fields typically correspond to the identity claims present in the **Actor Token** or client credentials used during the token exchange flow.
+- **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext.
+
+### Actor Chain Entry Members
 
 sub:
 : REQUIRED (or selectively disclosed). A string identifying the actor, as defined in {{!RFC7519}} Section 4.1.2.
@@ -170,23 +196,23 @@ iat:
 por:
 : OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in {{!I-D.draft-mw-spice-transitive-attestation}}.
 
-chain_digest:
-: OPTIONAL. A Base64url-encoded cumulative cryptographic hash (SHA-256). For any entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone. This recursive structure ensures that a `chain_sig` at any point in the chain provides proof of participation for all prior actors. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode. 
+### Registry Entry Members (Audit Plane)
 
-  > [!IMPORTANT]
-  > When Selective Disclosure is used, the SD-JWT **Disclosure strings** (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The `chain_digest` is computed exclusively over the Actor Chain Entry object, which contains the stable `_sd` hashes. This ensures the signature remains valid regardless of which disclosures are subsequently provided to different recipients.
+The following fields are stored per-entry in the Actor Chain Registry and are NOT included in the token:
+
+chain_digest:
+: REQUIRED. A Base64url-encoded cumulative cryptographic hash (SHA-256). For an entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone.
+
+  > When Selective Disclosure is used, the SD-JWT Disclosure strings (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The `chain_digest` is computed exclusively over the Actor Chain Entry object, which contains the stable `_sd` hashes.
 
 chain_sig:
-: OPTIONAL. A compact JWS {{!RFC7515}} signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key. REQUIRED in Self-Attested Mode. MUST be omitted in AS-Attested Mode.
+: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key.
 
-chain_mode:
-: OPTIONAL. A top-level string claim (sibling to `actor_chain`) indicating the operational mode. Values are `as_attested` or `self_attested`. If omitted, the mode is inferred from the presence or absence of `chain_sig` fields in the Actor Chain Entries.
 
-## Example Tokens
 
-### AS-Attested Mode
+## Example Token (Data Plane)
 
-In this mode, the AS constructs the `actor_chain` array and the JWT's own signature provides integrity. No per-entry `chain_sig` or `chain_digest` fields are present. This is the simplest deployment model.
+The token carries identity entries inline for policy enforcement and a merkle root binding them to per-actor signatures stored in the registry. No per-actor signatures appear in the token itself.
 
 ```json
 {
@@ -195,6 +221,10 @@ In this mode, the AS constructs the `actor_chain` array and the JWT's own signat
   "exp": 1700000100,
   "nbf": 1700000000,
   "sub": "user@example.com",
+  "sid": "session-123",
+  "actor_chain_root": "sha256:9f86d08...",
+  "actor_chain_registry":
+    "https://registry.example.com/actor-chains/session-123",
   "actor_chain": [
     {
       "sub": "https://orchestrator.example.com",
@@ -223,28 +253,19 @@ In this mode, the AS constructs the `actor_chain` array and the JWT's own signat
 }
 ```
 
-The integrity of the chain rests on the AS's JWT signature. The Relying Party trusts the AS to have correctly validated each actor at the time of each token exchange.
+## Example Registry Entries (Audit Plane)
 
-### Self-Attested Mode
-
-In this mode, each Actor Chain Entry additionally carries a `chain_digest` and `chain_sig`, forming a hash chain with per-actor non-repudiation. This mode is appropriate for federated deployments, multi-AS environments, or when Relying Parties require cryptographic proof of each actor's participation independent of any single AS.
+The Actor Chain Registry stores the full per-actor signature evidence:
 
 ```json
 {
-  "aud": "https://data-api.example.com",
-  "iss": "https://auth.example.com",
-  "exp": 1700000100,
-  "nbf": 1700000000,
-  "sub": "user@example.com",
-  "actor_chain": [
+  "session_id": "session-123",
+  "actor_chain_root": "sha256:9f86d08...",
+  "entries": [
     {
       "sub": "https://orchestrator.example.com",
       "iss": "https://auth.example.com",
       "iat": 1700000010,
-      "por": {
-        "wia_kid": "spiffe://example.com/wia/node-1",
-        "env_hash": "sha256:abc123..."
-      },
       "chain_digest": "sha256:mno345...",
       "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
     },
@@ -259,10 +280,6 @@ In this mode, each Actor Chain Entry additionally carries a `chain_digest` and `
       "sub": "https://tool-agent.example.com",
       "iss": "https://auth.example.com",
       "iat": 1700000050,
-      "por": {
-        "wia_kid": "spiffe://example.com/wia/node-3",
-        "env_hash": "sha256:ghi789..."
-      },
       "chain_digest": "sha256:jkl012...",
       "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
     }
@@ -270,29 +287,28 @@ In this mode, each Actor Chain Entry additionally carries a `chain_digest` and `
 }
 ```
 
-In the Self-Attested example:
-
-- **Index 0** (Orchestrator): The originating actor. Its `chain_digest` is `SHA-256(canonical_json({sub, iss, iat}))` — a self-hash of its own identity claims. Its `chain_sig` is computed over this digest. It includes a PoR binding it to `node-1`.
-- **Index 1** (Planning Agent): Its `chain_digest` is `SHA-256(canonical_json(actor_chain[0]))`. Its `chain_sig` is produced by the Planning Agent's key over this digest. No PoR is present (the agent may be running in a non-TEE environment).
-- **Index 2** (Tool Agent): Its `chain_digest` is `SHA-256(canonical_json(actor_chain[0..1]))`. Its `chain_sig` is produced by the Tool Agent's key over this digest. It includes a PoR for `node-3`.
+The merkle tree is constructed from the `chain_sig` values as leaf nodes, ordered by chain index (index 0 is the leftmost leaf). The cumulative hash-chain structure (`chain_digest`) ensures that this ordering is cryptographically enforced — reordering entries changes their digests, which changes their signatures, which changes the merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the merkle tree from the registry entries and verify it matches the root in the token.
 
 ## Token Exchange Flow
 
 When an actor (Service B) receives a token containing an `actor_chain` and needs to call a downstream service (Service C), the following token exchange flow occurs:
 
-1. **Service B** sends a token exchange request to the Authorization Server (AS) per {{!RFC8693}} Section 2.1.
-2. The `subject_token` contains the existing `actor_chain`.
-3. The `actor_token` identifies Service B.
-4. The AS validates the existing `actor_chain`:
-    - In Self-Attested Mode: verifies each `chain_sig` against the corresponding actor's public key and each `chain_digest` against the hash of preceding entries.
-    - In AS-Attested Mode: verifies the JWT signature and validates the actor identities through its own policy (e.g., client registration, mTLS certificate).
-    - In both modes: enforces any `max_chain_depth` policy.
-5. The AS constructs a new `actor_chain` for the issued token by:
-    - Copying all existing Actor Chain Entries from the `subject_token`.
-    - Appending a new Actor Chain Entry for Service B.
-    - In Self-Attested Mode: the new entry's `chain_digest` is computed over all preceding entries, and its `chain_sig` is produced by Service B's key (provided via the `actor_token` or client credentials).
-    - In AS-Attested Mode: the new entry contains only the identity claims (`sub`, `iss`, `iat`) and optional `por`.
-6. The AS issues a new token with the extended `actor_chain`.
+1. **Service B** computes its `chain_digest` over the existing chain entries from the received token and signs it with its own key, producing `chain_sig`.
+2. **Service B** sends a token exchange request to the Authorization Server (AS) per {{!RFC8693}} Section 2.1.
+3. The `subject_token` contains the existing `actor_chain`.
+4. The `actor_token` identifies Service B and includes its `chain_digest` and `chain_sig`.
+5. The AS validates the existing `actor_chain`:
+    - Verifies the JWT signature on the `subject_token`.
+    - Validates actor identities through its own policy (e.g., client registration, mTLS certificate).
+    - Enforces any `max_chain_depth` policy.
+6. The AS validates Service B's `chain_digest` and `chain_sig`.
+7. The AS stores Service B's signed entry (`chain_digest`, `chain_sig`) in the Actor Chain Registry.
+8. The AS recomputes the merkle root over all `chain_sig` values (existing + Service B's).
+9. The AS constructs a new token with:
+    - The extended `actor_chain` array (identity entries only: `sub`, `iss`, `iat`, optional `por`).
+    - The updated `actor_chain_root` (new merkle root).
+    - The `actor_chain_registry` URI.
+10. The AS signs the entire JWT and issues the token.
 
 ### Disclosure Propagation in SD-JWT
 
@@ -304,43 +320,6 @@ When Selective Disclosure (SD-JWT) {{!I-D.ietf-oauth-selective-disclosure-jwt}} 
 4. **Validation**: Each recipient in the chain can independently verify the hash of any disclosed claim against the `_sd` array in the Actor Chain Entry. If a disclosure is missing, the recipient sees only the hash, but can still verify the entry's geographic and residency properties through other claims.
 
 This mechanism ensures that the "key" to unlock a hidden identity is passed only to authorized actors in the chain, while the underlying cryptographically signed JWT structure remains identical for all recipients.
-
-### When Chain Signatures Are Produced
-
-In Self-Attested Mode, a critical distinction is that each actor's `chain_sig` is produced **during the token exchange request**, before the final issued token exists. Consider a scenario where Service A calls Service B, and Service B later needs to call Service C:
-
-1. Service A calls Service B, presenting a token containing `actor_chain` with chain `[A]`.
-2. Service B receives the token and performs its work.
-3. **When Service B needs to call downstream Service C**, it initiates a token exchange with the AS. At this point — not before — Service B:
-    - Computes `chain_digest` over the existing chain entries from the received token.
-    - Signs this `chain_digest` with its own key, producing `chain_sig`.
-    - Submits both values to the AS as part of the token exchange request, alongside the `subject_token` (containing chain `[A]`) and its own `actor_token`.
-4. The AS validates the existing chain, then assembles the new `actor_chain` (prior entries + Service B's signed entry) into the issued JWT.
-5. The AS signs the **entire JWT** (including the `actor_chain`) with the AS's own key and returns the token to Service B.
-6. Service B uses this new token (containing chain `[A, B]`) to call Service C.
-
-Consequently, each `chain_sig` covers only the **actor chain state** at that actor's point of participation — not the enclosing JWT's other claims such as `aud`, `exp`, or `sub`. This is by design: the actor chain and the token are concerns of different parties. The actor signs the chain to prove its participation; the AS signs the token to assert the token's validity. This separation allows the AS to set audience, expiry, and other claims independently without invalidating any actor's chain signature.
-
-```
-  Svc A        Auth Server        Svc B        Svc C
-    |               |               |             |
-    |-- token ------>|               |             |
-    |  (chain=[A])   |               |             |
-    |               |-- issued tok ->|             |
-    |               |  (chain=[A])   |             |
-    |               |               |             |
-    |               |<- exchange req-|             |
-    |               |  subj_tok:     |             |
-    |               |   chain=[A]    |             |
-    |               |  actor_tok=B   |             |
-    |               |               |             |
-    |               |-- issued tok ->|             |
-    |               |  (chain=[A,B]) |             |
-    |               |               |             |
-    |               |               |-- request ->|
-    |               |               | token has   |
-    |               |               | chain=[A,B] |
-```
 
 ## Data-Plane Policy Enforcement
 
@@ -396,24 +375,49 @@ The flat array structure of `actor_chain` is designed for efficient processing b
 
 # Chain Integrity Verification
 
-A Relying Party receiving a token with the `actor_chain` claim MUST perform the following verification steps:
+Verification of the actor chain operates at two levels, reflecting the data-plane / audit-plane separation.
 
-1. **JWT Signature Verification**: Verify the outer JWT signature per standard JWT processing rules. This is REQUIRED in both modes and provides baseline integrity for the entire token, including the `actor_chain`.
+## Data-Plane Verification
+
+A Relying Party receiving a token with the `actor_chain` claim MUST perform the following verification steps at request time:
+
+1. **JWT Signature Verification**: Verify the outer JWT signature per standard JWT processing rules. This provides integrity for the entire token, including the `actor_chain` and `actor_chain_root` (if present).
 
 2. **Structural Validation**: Verify that `actor_chain` is a JSON array with at least one element. Verify that each element contains the required identity fields (`sub`, `iss`, `iat`).
 
-3. **Per-Entry Signature Verification** (Self-Attested Mode only). For each entry at index `i`:
-    - **Compute expected digest**: If `i == 0`, compute `expected_digest = SHA-256(canonical_json({sub, iss, iat}))` from the entry's own identity claims. If `i > 0`, compute `expected_digest = SHA-256(canonical_json(actor_chain[0..i-1]))`.
-    - **Verify chain_digest**: Confirm that the entry's `chain_digest` matches `expected_digest`.
-    - **Verify chain_sig**: Verify `chain_sig` against `chain_digest` using the actor's public key.
-
-4. **PoR Verification** (if present):
+3. **PoR Verification** (if present):
     - Verify each PoR assertion according to {{!I-D.draft-mw-spice-transitive-attestation}}.
 
-5. **Policy Evaluation**:
+4. **Policy Evaluation**:
     - Apply local authorization policy against the verified actor chain.
 
 If any verification step fails, the Relying Party MUST reject the token.
+
+## Tiered Verification
+
+The appropriate level of actor chain checking depends on the risk level of the operation:
+
+| Risk Level | Data-Plane (sync) | Audit-Plane (async) | Use Case |
+| :--- | :--- | :--- | :--- |
+| Low | Verify JWT signature | — | Read operations |
+| Medium | Verify JWT signature + actor identities | — | Create/update |
+| High | Verify JWT signature + actor identities | Full forensic verification via registry | Delete, transfer, admin |
+| Critical | Verify JWT signature + actor identities | Full forensic + cross-chain (intent + inference) | Regulatory, cross-border settlements |
+
+## Audit-Plane Verification (Forensic)
+
+For forensic analysis, regulatory compliance, or zero-trust verification, an auditor retrieves the full chain from the Actor Chain Registry and performs:
+
+1. **Retrieve entries**: Fetch the full actor chain entries from the `actor_chain_registry` URI.
+
+2. **Per-Entry Signature Verification**: For each entry at index `i`:
+    - **Compute expected digest**: If `i == 0`, compute `expected_digest = SHA-256(canonical_json({sub, iss, iat}))` from the entry's own identity claims. If `i > 0`, compute `expected_digest = SHA-256(canonical_json(actor_chain[0..i-1]) || identity_claims_i)`.
+    - **Verify chain_digest**: Confirm that the entry's `chain_digest` matches `expected_digest`.
+    - **Verify chain_sig**: Verify `chain_sig` against `chain_digest` using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle).
+
+3. **merkle Root Verification**: Reconstruct the merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
+
+This two-tier verification model ensures that data-plane latency remains O(1) while full per-actor non-repudiation is available on demand.
 
 # Relation to Other IETF Work
 
@@ -422,7 +426,7 @@ This proposal extends and complements several ongoing efforts:
 | Specification | Relationship |
 | :--- | :--- |
 | **RFC 8693** {{!RFC8693}} | This document extends {{!RFC8693}} by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
-| **Transitive Attestation** {{!I-D.draft-mw-spice-transitive-attestation}} | Provides the "North-South" residency proof (agent to local WIA) that complements the "East-West" delegation proof (agent to actor-chain) provided by this document. |
+| **Transitive Attestation** {{!I-D.draft-mw-spice-transitive-attestation}} | Provides the platform attestation proof (agent to local WIA) that complements the delegation proof (agent to actor-chain) provided by this document. |
 | **SPICE Architecture** {{!I-D.ietf-spice-arch}} | Defines the overarching workload identity architecture within which this extension operates. |
 | **WIMSE Architecture** {{!I-D.ietf-wimse-arch}} | This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures. |
 | **Attestation-Based Auth** {{!I-D.ietf-oauth-attestation-based-client-auth}} | Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted `por` claims in Actor Chain Entries. |
@@ -430,11 +434,11 @@ This proposal extends and complements several ongoing efforts:
 | **RATS** {{!RFC9334}} | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
 | **DPoP** {{!RFC9449}} | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. |
 
-## East-West vs. North-South Security
+## Delegation vs. Platform Attestation
 
-This specification addresses the **East-West** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation {{!I-D.draft-mw-spice-transitive-attestation}} addresses the **North-South** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
+This specification addresses the **delegation** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation {{!I-D.draft-mw-spice-transitive-attestation}} addresses the **platform attestation** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
 
-By embedding "North-South" Proofs of Residency (PoR) within "East-West" Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.
+By embedding platform attestation Proofs of Residency (PoR) within delegation Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.
 
 ## Backward Compatibility with RFC 8693
 
@@ -449,82 +453,43 @@ The `act` claim, when present alongside `actor_chain`, MUST identify the same en
 
 ## Token Size
 
-The `actor_chain` is embedded inline in the JWT. Each Actor Chain Entry adds approximately 150-300 bytes (AS-Attested) or 400-600 bytes (Self-Attested, including `chain_digest` and `chain_sig`). For a chain of depth 5, this adds 0.75-3KB to the token. Authorization Servers SHOULD enforce `max_chain_depth` to bound token size. A RECOMMENDED default maximum of 10 entries limits the actor chain contribution to approximately 6KB.
+The `actor_chain` identity entries are embedded inline in the JWT. Each Actor Chain Entry adds approximately 150-300 bytes (identity claims only; no signatures). For a chain of depth 5, this adds approximately 0.75-1.5KB to the token. The `actor_chain_root` adds a fixed 44 bytes regardless of chain depth. Authorization Servers SHOULD enforce `max_chain_depth` to bound token size. A RECOMMENDED default maximum of 10 entries limits the actor chain contribution to approximately 3KB.
+
+For the CWT representation, Actor Chain Entries use CBOR maps with integer keys, and `chain_sig` in the registry uses COSE_Sign1 {{!RFC9052}}, further reducing overhead.
 
 ## Signature Verification Cost
 
-- **AS-Attested Mode**: O(1) — the Relying Party verifies only the outer JWT signature. The actor chain is trusted as part of the signed payload.
-- **Self-Attested Mode**: O(n) — the Relying Party verifies one `chain_sig` per entry. For a chain of depth 5, this requires 5 signature verifications (typically ECDSA P-256, ~0.5ms each on modern hardware).
-
-Deployments with strict latency budgets on the data plane SHOULD prefer AS-Attested Mode when the trust model permits it.
+Data-plane signature verification cost is O(1) — the Relying Party verifies only the outer JWT signature. The `actor_chain_root` is trusted as part of the signed payload. Per-actor signature verification is deferred to the audit plane, where it is O(n) but occurs asynchronously and only when needed.
 
 ## Verification Caching
 
-Relying Parties MAY cache actor chain verification results, keyed by the `chain_digest` of the last entry (which covers the entire chain). A cached verification result is valid for the lifetime of the enclosing JWT (`exp` claim). This reduces repeated O(n) verification to O(1) lookup on subsequent requests within the same session.
+Relying Parties MAY cache actor chain verification results, keyed by the `actor_chain_root` (which uniquely identifies the complete chain). A cached verification result is valid for the lifetime of the enclosing JWT (`exp` claim).
 
-# Security Considerations
+## Trust Model
 
-## Token Signature vs. Per-Entry Chain Signatures
+The `actor_chain` provides two layers of integrity serving different planes:
 
-A natural question arises: since the JWT containing the `actor_chain` is already signed by the Authorization Server (AS), is per-entry `chain_sig` redundant?
+1. **Data plane** — AS outer signature (JWT/CWT): The Authorization Server signs the entire token, including the `actor_chain` identity entries and the `actor_chain_root`. If the Relying Party trusts the AS, this single signature provides sufficient assurance for real-time access control decisions.
 
-The answer depends on what each signature proves and when it is produced:
+2. **Audit plane** — Per-actor signatures (registry): Each actor's `chain_sig` in the registry proves that specific actor participated in this specific delegation path. This evidence is independently verifiable and non-repudiable — a compromised AS cannot fabricate an actor's `chain_sig` without that actor's private key.
 
-- The **JWT outer signature** is produced by the AS when the final token is issued. It proves that the AS issued this specific token with this specific payload. It covers the entire token: `sub`, `aud`, `exp`, `actor_chain`, and all other claims.
-- Each **`chain_sig`** is produced by an individual actor during token exchange, before the final token exists (see Section "When Chain Signatures Are Produced"). It covers only the `chain_digest`—the hash of the actor chain state at that actor's point of participation. It proves that this specific actor participated in this specific chain.
-
-The JWT outer signature does NOT prove that each individual actor actually participated in the delegation. A compromised or malicious AS could construct any chain it desires. The two modes address different trust assumptions:
-
-- **AS-Attested Mode** is appropriate when all participants trust the AS to faithfully record the chain. The AS validates each actor at exchange time, and its JWT signature provides integrity. This is the common single-organization deployment where the AS is a trusted internal service (e.g., a corporate identity provider). Per-actor signatures are omitted, keeping token sizes smaller and reducing cryptographic overhead.
-
-- **Self-Attested Mode** is appropriate when the chain crosses trust boundaries or when stronger guarantees are needed:
-    - **Federated/Multi-AS environments**: The token may be issued by AS-1 but consumed by a Relying Party that trusts AS-2. Per-actor signatures allow the RP to verify actor participation independently of the issuing AS.
-    - **Non-repudiation**: Each actor's signature provides cryptographic evidence that it participated in the chain—evidence that the actor cannot deny and that the AS cannot fabricate.
-    - **Zero-trust posture**: In adversarial environments, the Relying Party may not fully trust any single AS. Per-actor signatures provide defense-in-depth.
-    - **Forensic analysis**: Post-breach investigations can verify the chain using each actor's public key, independent of the AS's continued availability or trustworthiness.
-
-Deployments SHOULD select the mode that matches their trust model. An AS MAY enforce a specific mode via policy.
-
-### Recommended Mode
-
-| Deployment Scenario | Recommended Mode | Rationale |
-| :--- | :--- | :--- |
-| Single AS, all agents internal | AS-Attested | AS is trusted; smaller tokens, single signature verification |
-| Multi-AS or federated | Self-Attested | No single AS can vouch for the full chain across trust boundaries |
-| Zero-trust or regulatory compliance | Self-Attested | Non-repudiation and independent forensic verification required |
-| Performance-sensitive data plane | AS-Attested | O(1) signature verification vs. O(n) per-entry verification |
-| Multi-AS, performance-sensitive | Federated AS-Attested | Cross-AS verifiability with O(k) AS signatures, k ≤ n |
-| Mixed trust zones | Self-Attested | Agents crossing trust boundaries need independent attestation |
+The `actor_chain_root` binds these two planes: it is a signed claim in the token AND the merkle root of the registry signatures. Any tampering with either plane is detectable.
 
 ### Multi-AS Identity Federation
 
-In federated deployments, a delegation chain may span multiple Authorization Servers. For example, Agent A authenticates to AS-1, delegates to Agent B which authenticates to AS-2, which delegates to Agent C targeting a Resource Server that trusts AS-3.
+In federated deployments, a delegation chain may span multiple Authorization Servers. For example: `b (AS1) -> a (AS1) -> c (AS1) -> f (AS2) -> d (AS2) -> e (AS2)`.
 
-In this scenario, single-AS-Attested Mode is insufficient: the outer JWT is signed by whichever AS issued the final token, but the Relying Party may not trust that AS to have correctly validated actors authenticated by other ASes.
-
-Two approaches address this:
-
-**Self-Attested Mode** makes each actor's participation independently verifiable. The Relying Party verifies each `chain_sig` against the corresponding actor's public key — discoverable via the actor's `iss` claim (e.g., JWKS endpoint) or SPIFFE ID (e.g., SPIFFE trust bundle). Verification cost is O(n) where n is the number of actors.
-
-**Federated AS-Attested Mode** offers a more compact alternative. Instead of each actor signing individually, each AS signs the chain segment it validated. When the chain crosses from AS-1 to AS-2, AS-2 verifies AS-1's segment signature and appends its own segment signature covering the new actors it validated. The Relying Party verifies k AS signatures (where k is the number of ASes in the path) rather than n actor signatures. This preserves cross-AS verifiability while reducing token size and verification cost.
-
-| Approach | Signatures | Verification Cost | Token Overhead | Non-Repudiation |
-| :--- | :--- | :--- | :--- | :--- |
-| Self-Attested | Per-actor | O(n) | Higher | Per-actor |
-| Federated AS-Attested | Per-AS | O(k), k ≤ n | Lower | Per-AS |
+The data-plane token is signed by whichever AS issued the final token (AS2 in this example). For real-time access control, the Relying Party trusts AS2. For audit-plane verification — such as confirming that `b` actually initiated the chain through AS1 — the auditor retrieves the registry entries and verifies each actor's `chain_sig` against that actor's public key, discoverable via the `iss` claim (JWKS endpoint) or SPIFFE ID (trust bundle). No single AS needs to be trusted for the entire chain.
 
 Federated deployments SHOULD:
 
-- Publish signing keys via standard discovery mechanisms (JWKS for ASes, SPIFFE trust bundles for actors).
+- Publish actor signing keys via standard discovery mechanisms (JWKS endpoints, SPIFFE trust bundles).
 - Include `kid` or `jwk` in each `chain_sig` JWS header for key resolution.
 - Enforce cross-domain trust policies on the `iss` field of each Actor Chain Entry.
-- Select Self-Attested Mode when per-actor non-repudiation is required (e.g., regulatory), or Federated AS-Attested Mode when compactness and performance are prioritized.
 
 ## Chain Integrity
 
-In AS-Attested Mode, chain integrity is provided by the JWT outer signature. The Relying Party trusts the AS to have correctly constructed the chain.
-
-In Self-Attested Mode, the hash-chain structure provides additional tamper evidence. Insertion, deletion, or reordering of entries invalidates the `chain_digest` and `chain_sig` fields of all subsequent entries. An attacker who compromises a single actor in the chain cannot retroactively alter the entries of prior actors without possessing their signing keys.
+The hash-chain structure in the registry provides tamper evidence for the entire delegation path. Insertion, deletion, or reordering of entries invalidates the `chain_digest` and `chain_sig` fields of all subsequent entries and changes the merkle root. The `actor_chain_root` in the signed token anchors this evidence — any alteration to the registry entries produces a different merkle root that no longer matches the token.
 
 ## Replay Protection
 
@@ -536,11 +501,11 @@ Unbounded actor chains pose a risk of token size explosion and processing overhe
 
 ## Key Management
 
-Each actor in the chain signs its entry with its own key. The security of the entire chain depends on the security of each actor's key material. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The use of PoR in Actor Chain Entries provides additional assurance that the signing key is bound to a verified execution environment.
+Each actor in the chain signs its `chain_digest` with its own private key. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The same signing key MAY be used for the actor's `chain_sig` in the actor chain, its contributions to the Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and the Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, providing a unified key management model across all three governance chains.
 
 ## Privacy of Prior Actors
 
-The `actor_chain` expose the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain `a -> b -> c -> d -> e`, the originating actor `a` may require its identity to be hidden from `e` while still ensuring the integrity of the delegation.
+The `actor_chain` exposes the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain `a -> b -> c -> d -> e`, the originating actor `a` may require its identity to be hidden from `e` while still ensuring the integrity of the delegation.
 
 Deployments SHOULD consider the following anonymization and privacy-preserving techniques:
 
@@ -581,22 +546,32 @@ The entire `actor_chain` claim can be encrypted using JWE {{!RFC7516}} so that o
 
 ## Confused Deputy Mitigation
 
-In both modes, a confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. In Self-Attested Mode, the malicious actor's own cryptographic signature provides non-repudiable evidence of its participation.
+A confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. The malicious actor's own cryptographic `chain_sig` (retrievable from the registry) provides non-repudiable evidence of its participation.
 
 # IANA Considerations
 
 ## JSON Web Token Claims Registration
 
-This document requests registration of the following claim in the "JSON Web Token Claims" registry established by {{!RFC7519}}:
+This document requests registration of the following claims in the "JSON Web Token Claims" registry established by {{!RFC7519}}:
 
 - **Claim Name**: `actor_chain`
-- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor entries representing the complete delegation chain with optional per-entry cryptographic signatures.
+- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor identity entries representing the complete delegation chain.
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+- **Claim Name**: `actor_chain_root`
+- **Claim Description**: merkle root hash of per-actor cryptographic signatures in the actor chain.
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+- **Claim Name**: `actor_chain_registry`
+- **Claim Description**: URI of the Actor Chain Registry where per-actor signature evidence is stored.
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
 
 ## CBOR Web Token Claims Registration
 
-This document requests registration of the following claim in the "CBOR Web Token (CWT) Claims" registry established by {{!RFC8392}}:
+This document requests registration of the following claims in the "CBOR Web Token (CWT) Claims" registry established by {{!RFC8392}}:
 
 - **Claim Name**: `actor_chain`
 - **Claim Description**: A Cryptographically Verifiable Actor Chain.
@@ -604,6 +579,104 @@ This document requests registration of the following claim in the "CBOR Web Toke
 - **Claim Type**: array
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
+
+- **Claim Name**: `actor_chain_root`
+- **Claim Description**: merkle root hash of per-actor COSE_Sign1 signatures.
+- **CBOR Key**: TBD (e.g., 41)
+- **Claim Type**: tstr
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+- **Claim Name**: `actor_chain_registry`
+- **Claim Description**: URI of Actor Chain Registry.
+- **CBOR Key**: TBD (e.g., 42)
+- **Claim Type**: tstr
+- **Change Controller**: IETF
+- **Specification Document(s)**: [this document]
+
+# Design Rationale
+
+This section summarizes why the data-plane / audit-plane separation with merkle root binding was chosen for the actor chain.
+
+## Why Not Inline Per-Actor Signatures?
+
+An earlier design included `chain_digest` and `chain_sig` directly in each Actor Chain Entry within the token. This approach was rejected for three reasons:
+
+1. **Token size**: Each JWS `chain_sig` adds ~200-300 bytes per entry. For a chain of depth 6, this adds ~1.5-2KB to every token — significant for high-throughput data planes and constrained IoT devices.
+
+2. **Data-plane latency**: Verifying O(n) signatures per request is unnecessary when the Relying Party trusts the issuing AS. Most data-plane decisions require only the actor identities, not cryptographic proof of participation.
+
+3. **Redundancy**: The AS already signs the entire token. Inline per-actor signatures duplicate the integrity guarantee for the common case where the RP trusts the AS.
+
+## Why Per-Actor Signatures At All?
+
+Per-actor signatures are essential for governance because:
+
+1. **Non-repudiation**: An actor cannot deny having participated in a delegation chain. This is critical for regulatory compliance and post-incident forensic analysis.
+
+2. **Multi-AS trust**: In federated deployments (e.g., `b (AS1) -> a (AS1) -> c (AS1) -> f (AS2) -> d (AS2) -> e (AS2)`), no single AS can vouch for the entire chain. Per-actor signatures allow an auditor to verify each actor's participation independently of any AS.
+
+3. **Governance alignment**: The Intent Chain and Inference Chain specifications already require per-actor signatures for content and computation provenance. Without per-actor signatures in the actor chain, the WHO dimension of the governance framework would lack the same level of assurance as WHAT and HOW.
+
+## Why the merkle Root?
+
+The merkle root (`actor_chain_root`) provides the binding between the data-plane token and the audit-plane registry without inflating the token. It has constant size (44 bytes) regardless of chain depth. An auditor verifies the merkle root by reconstructing it from the registry's `chain_sig` values — if the computed root matches the token's `actor_chain_root`, the registry evidence is proven authentic.
+
+This is the same pattern used by the Intent Chain (`intent_root`) and Inference Chain (`inference_root`), creating a unified, architecturally consistent governance framework across all three chains.
+
+## Registry Availability
+
+Deployments where the Actor Chain Registry is unavailable (network partition, registry outage) do not affect data-plane operation — the token's AS-signed `actor_chain` entries are sufficient for real-time access control. The `actor_chain_root` in the signed token acts as a commitment: even during a registry outage, the signed evidence cannot be tampered with because the root is fixed at token issuance.
+
+For high-availability requirements, deployments SHOULD:
+
+- Replicate registry entries across availability zones.
+- Use append-only log services designed for high durability (e.g., SCITT transparency logs).
+- Cache recently-verified registry entries at the audit plane.
+
+## Registry Hosting
+
+The Actor Chain Registry is an append-only log partitioned by session (`sid`). Per-session entries accumulate as token exchanges occur (one entry per actor per session), and each entry is small (~400-600 bytes including `chain_digest` and compact JWS `chain_sig`).
+
+A federated IAM/IdM platform (e.g., Keycloak, Microsoft Entra, Okta, PingFederate) is a natural host for the Actor Chain Registry because:
+
+- The Authorization Server already mediates every token exchange ({{!RFC8693}}) and can append registry entries as a side-effect of token issuance.
+- IAM platforms already manage the signing key infrastructure (JWKS endpoints, SPIFFE trust bundles) needed to verify `chain_sig` values.
+- Federation and cross-domain trust — the core of multi-AS actor chains — are the IAM's primary competency.
+
+Most enterprise IAM/IdM platforms support configurable data stores. To host the Actor Chain Registry, the data store MUST be configured for append-only semantics:
+
+- **No update or delete** of registry entries after creation.
+- **Session-scoped partitioning** (`sid`) for isolation and efficient retrieval.
+- **Immutable storage backends** such as append-only database tables, write-once object storage (e.g., S3 Object Lock), Kafka topics with log compaction disabled, or SCITT transparency logs.
+
+### Credential Isolation
+
+Registry entries MUST NOT contain OAuth tokens, bearer credentials, or signing keys. The relationship between tokens and registry entries is one-directional: the token references the registry via the `actor_chain_registry` URI claim, but the registry MUST NOT store or reference the token itself. This separation ensures that compromise of the registry does not expose bearer credentials that could be used for unauthorized access.
+
+An IAM/IdM platform that co-locates token issuance and registry storage MUST enforce strict access control boundaries between the token store and the registry store. The token MUST NOT be reconstructable from registry entries alone — registry entries contain only identity claims, cumulative hashes, and per-actor signatures, never the complete token payload or the AS signing key.
+
+### Registry Discovery
+
+The token carries `actor_chain_registry`, `intent_registry` ({{!I-D.draft-mw-spice-intent-chain}}), and `inference_registry` ({{!I-D.draft-mw-spice-inference-chain}}) URI claims. In a federated IAM deployment, these URIs MAY follow two patterns:
+
+**Unified endpoint** — all three registries hosted under the same IAM endpoint, differentiated by chain type:
+
+```
+https://iam.example.com/governance/{session_id}/actor
+https://iam.example.com/governance/{session_id}/intent
+https://iam.example.com/governance/{session_id}/inference
+```
+
+**Per-chain-type endpoints** — each registry hosted separately, with inference proofs potentially on a different storage service:
+
+```
+https://iam.example.com/governance/{session_id}/actor
+https://iam.example.com/governance/{session_id}/intent
+https://proofs.example.com/inference/{session_id}
+```
+
+The per-chain-type pattern is RECOMMENDED for deployments where inference proof sizes require a separate storage backend. Regardless of the pattern, the registry URIs in the token MUST resolve to endpoints that return the complete set of entries for the given session.
 
 {backmatter}
 
