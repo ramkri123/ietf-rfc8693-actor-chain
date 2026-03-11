@@ -2,6 +2,16 @@
 
 **Scenario:** `a → b → c → d` where `a, b ∈ AS₁` and `c, d ∈ AS₂`
 
+**Actors vs. Audience:** Actors `a`, `b`, `c` participate in the delegation chain — each signs its own identity claims (`chain_sig`), is appended to `actor_chain`, and gets a Merkle tree leaf. The Relying Party `d` is the **audience** (`aud`): it consumes the token but does not sign, is not in the chain, and has no Merkle entry. If `d` were to delegate onward, it would become an actor.
+
+**Planes:**
+
+| Plane | When | What |
+|:---|:---|:---|
+| **Data Plane** (green) | Every hop | Receive token, verify JWT — O(1) |
+| **Control Plane** (blue) | Token exchange | Sign identity, verify, store, build Merkle, issue token |
+| **Audit Plane** (tan) | On-demand, async | Cross-chain verification, forensic audit |
+
 ## Sequence Diagram
 
 ```mermaid
