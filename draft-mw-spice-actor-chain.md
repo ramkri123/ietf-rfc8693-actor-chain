@@ -507,6 +507,8 @@ When a delegation chain crosses an AS boundary, the following Merkle constructio
 
 For chains spanning more than two ASes (e.g., AS1 → AS2 → AS3), the construction is recursive: AS3 uses AS2's root as a leaf, producing `r4 = Merkle(r3, σ_3)`.
 
+### Recursive Audit Verification
+
 An auditor performing forensic verification uses the archived token as the ground truth and walks the registry entries in-order — simultaneously verifying ordering, participation, and integrity in a single O(n) pass.
 
 The algorithm traverses each AS's registry entries in chain order, matching leaf position `i` against `actor_chain[i]` from the archived token:
