@@ -2,7 +2,16 @@
 
 **Scenario:** `a → b → c → d` where `a, b ∈ AS₁` and `c, d ∈ AS₂`
 
-**Actors vs. Audience:** Actors `a`, `b`, `c` participate in the delegation chain — each signs its own identity claims (`chain_sig`), is appended to `actor_chain`, and gets a Merkle tree leaf. The Relying Party `d` is the **audience** (`aud`): it consumes the token but does not sign, is not in the chain, and has no Merkle entry. If `d` were to delegate onward, it would become an actor.
+**Actors vs. Audience:** Each entity in the chain plays one or both roles:
+
+| Entity | Audience (receives token) | Actor (signs + exchanges) |
+|:---|:---|:---|
+| `a` | — | ✅ Actor only (originator) |
+| `b` | T₁ | ✅ Both — verifies T₁, then signs and exchanges for T₂ |
+| `c` | T₂ | ✅ Both — verifies T₂, then signs and exchanges for T₃ |
+| `d` | T₃ | Audience only (terminal RP) |
+
+Only actors (`a`, `b`, `c`) sign identity claims, appear in `actor_chain`, and get Merkle tree leaves. The terminal RP (`d`) consumes the token but has no chain entry. If `d` delegates onward, it becomes an actor.
 
 **Planes:**
 
