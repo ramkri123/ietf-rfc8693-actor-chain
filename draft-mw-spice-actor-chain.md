@@ -81,8 +81,8 @@ This specification is part of a three-axis "Truth Stack" for AI agent governance
 | Chain | Plane | Token Content | Full Chain | Primary Consumer |
 | :--- | :--- | :--- | :--- | :--- |
 | **Actor** | Data Plane | Full chain inline | In token | Every Relying Party (real-time authorization) |
-| **Intent** | Audit Plane | merkle root only | External registry | Audit systems, forensic investigators |
-| **Inference** | Audit Plane | merkle root only | External registry | Auditors, compliance systems |
+| **Intent** | Audit Plane | Merkle root only | External registry | Audit systems, forensic investigators |
+| **Inference** | Audit Plane | Merkle root only | External registry | Auditors, compliance systems |
 
 This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT {{!RFC7519}}) and CBOR/COSE (CWT {{!RFC8392}}) representations.
 
@@ -93,13 +93,13 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 This document leverages the terminology defined in OAuth 2.0 Token Exchange {{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS Architecture {{!RFC9334}}.
 
 Actor Chain:
-: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The token carries identity entries inline and a merkle root (`actor_chain_root`) binding those entries to per-actor cryptographic signatures stored in an external registry.
+: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The token carries identity entries inline and a Merkle root (`actor_chain_root`) binding those entries to per-actor cryptographic signatures stored in an external registry.
 
 Actor Chain Entry:
 : A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims (`sub`, `iss`, `iat`) and an optional Proof of Residency (`por`). The token carries these entries inline for data-plane policy enforcement.
 
 Actor Chain Root:
-: The merkle root hash of the complete set of per-actor signatures (`chain_sig` values) in the actor chain, included in the OAuth token as the `actor_chain_root` claim. This binds the data-plane token to the audit-plane evidence.
+: The Merkle root hash of the complete set of per-actor signatures (`chain_sig` values) in the actor chain, included in the OAuth token as the `actor_chain_root` claim. This binds the data-plane token to the audit-plane evidence.
 
 Actor Chain Registry:
 : A service endpoint that stores per-actor signature evidence (`chain_sig` for each entry) in an ordered, append-only log. Discovered via the Authorization Server's metadata (`governance_registry_endpoint`) and queried using the token's `sid` claim. Implementations MAY use a SCITT transparency log {{!I-D.ietf-scitt-architecture}} or equivalent ordered log.
@@ -149,17 +149,17 @@ Beyond the semantic restriction, the nested object structure of `act` in {{!RFC8
 
 This document defines a new claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.
 
-The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs its own identity claims, producing a per-entry `chain_sig`. The full signed entries are stored in an external registry (the Actor Chain Registry), while the token carries only the identity entries and a merkle root (`actor_chain_root`) binding them to the signed evidence. The AS constructs an ordered merkle tree from the `chain_sig` values, ensuring that the ordering of entries is cryptographically enforced. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
+The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs its own identity claims, producing a per-entry `chain_sig`. The full signed entries are stored in an external registry (the Actor Chain Registry), while the token carries only the identity entries and a Merkle root (`actor_chain_root`) binding them to the signed evidence. The AS constructs an ordered Merkle tree from the `chain_sig` values, ensuring that the ordering of entries is cryptographically enforced. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
 
 This architecture separates data-plane concerns (fast access control using identity entries) from audit-plane concerns (per-actor non-repudiation using stored signatures), following the same pattern as the companion Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications:
 
 | Chain | Question | Token (data plane) | Registry (audit plane) |
 | :--- | :--- | :--- | :--- |
-| **Actor Chain** (this document) | WHO participated? | Identity entries + merkle root | Per-actor `chain_sig` |
-| **Intent Chain** {{!I-D.draft-mw-spice-intent-chain}} | WHAT was produced? | Content refs + merkle root | Per-entry `intent_sig` |
-| **Inference Chain** {{!I-D.draft-mw-spice-inference-chain}} | HOW was it computed? | Model refs + merkle root | Per-entry `inference_sig` |
+| **Actor Chain** (this document) | WHO participated? | Identity entries + Merkle root | Per-actor `chain_sig` |
+| **Intent Chain** {{!I-D.draft-mw-spice-intent-chain}} | WHAT was produced? | Content refs + Merkle root | Per-entry `intent_sig` |
+| **Inference Chain** {{!I-D.draft-mw-spice-inference-chain}} | HOW was it computed? | Model refs + Merkle root | Per-entry `inference_sig` |
 
-By requiring per-actor signatures in all three chains and storing them in registries with merkle roots in tokens, a Relying Party obtains O(1) data-plane verification while retaining full per-actor non-repudiation for audit.
+By requiring per-actor signatures in all three chains and storing them in registries with Merkle roots in tokens, a Relying Party obtains O(1) data-plane verification while retaining full per-actor non-repudiation for audit.
 
 ## Claim Definition
 
@@ -171,7 +171,7 @@ actor_chain:
 : REQUIRED. A JSON array of Actor Chain Entry objects. Each element is a JSON object with the following members.
 
 actor_chain_root:
-: RECOMMENDED. A string containing the merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Single-AS deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments involving multi-AS federation (where the delegation chain spans more than one Authorization Server) MUST include this claim, because no single AS can vouch for the entire chain and per-actor non-repudiation is required to verify cross-domain hops. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
+: RECOMMENDED. A string containing the Merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Single-AS deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments involving multi-AS federation (where the delegation chain spans more than one Authorization Server) MUST include this claim, because no single AS can vouch for the entire chain and per-actor non-repudiation is required to verify cross-domain hops. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
 
 sid:
 : RECOMMENDED. A string identifying the session to which this token belongs, as defined in OpenID Connect Back-Channel Logout 1.0 {{!OIDC.BackChannel}}. This specification reuses the registered `sid` claim to partition the Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) by session. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
@@ -196,13 +196,13 @@ por:
 The following fields are stored per-entry in the Actor Chain Registry and are NOT included in the token:
 
 chain_sig:
-: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the canonical serialization of its own identity claims (`sub`, `iss`, `iat`, and `por` if present). The JWS header MUST include the `jwk` or `kid` member to identify the signing key. The signature proves this specific actor participated in the delegation chain. Ordering of entries is enforced by the merkle tree structure (see (#chain-integrity)), not by cumulative hashing.
+: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the canonical serialization of its own identity claims (`sub`, `iss`, `iat`, and `por` if present). The JWS header MUST include the `jwk` or `kid` member to identify the signing key. The signature proves this specific actor participated in the delegation chain. Ordering of entries is enforced by the Merkle tree structure (see (#chain-integrity)), not by cumulative hashing.
 
 
 
 ## Example Token (Data Plane)
 
-The token carries identity entries inline for policy enforcement and a merkle root binding them to per-actor signatures stored in the registry. No per-actor signatures appear in the token itself.
+The token carries identity entries inline for policy enforcement and a Merkle root binding them to per-actor signatures stored in the registry. No per-actor signatures appear in the token itself.
 
 ```json
 {
@@ -272,7 +272,7 @@ The Actor Chain Registry stores the full per-actor signature evidence:
 }
 ```
 
-The merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). The ordering of entries is cryptographically enforced by the merkle tree structure — reordering entries changes the leaf positions, which changes the merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the merkle tree from the registry entries and verify it matches the root in the token.
+The Merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). The ordering of entries is cryptographically enforced by the Merkle tree structure — reordering entries changes the leaf positions, which changes the Merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the Merkle tree from the registry entries and verify it matches the root in the token.
 
 ## Token Exchange Flow
 
@@ -288,10 +288,10 @@ When an actor (Service B) receives a token containing an `actor_chain` and needs
     - Enforces any `max_chain_depth` policy.
 6. The AS validates Service B's `chain_sig` against Service B's public key.
 7. The AS stores Service B's entry (identity claims + `chain_sig`) in the Actor Chain Registry.
-8. The AS appends Service B's `chain_sig` as a new leaf and recomputes the merkle root over all `chain_sig` values (existing + Service B's).
+8. The AS appends Service B's `chain_sig` as a new leaf and recomputes the Merkle root over all `chain_sig` values (existing + Service B's).
 9. The AS constructs a new token with:
     - The extended `actor_chain` array (identity entries only: `sub`, `iss`, `iat`, optional `por`).
-    - The updated `actor_chain_root` (new merkle root).
+    - The updated `actor_chain_root` (new Merkle root).
     - The `sid` identifying the session.
 10. The AS signs the entire JWT and issues the token.
 
@@ -387,7 +387,7 @@ For forensic analysis, regulatory compliance, or zero-trust verification, an aud
 2. **Per-Entry Signature Verification**: For each entry at index `i`:
     - **Verify chain_sig**: Verify `chain_sig` against the canonical serialization of the entry's identity claims (`sub`, `iss`, `iat`) using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle). This proves the actor participated in the delegation.
 
-3. **Merkle Root Verification**: Reconstruct the merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
+3. **Merkle Root Verification**: Reconstruct the Merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
 
 This two-tier verification model ensures that data-plane latency remains O(1) while full per-actor non-repudiation is available on demand.
 
@@ -445,7 +445,7 @@ The `actor_chain` provides two layers of integrity serving different planes:
 
 2. **Audit plane** — Per-actor signatures (registry): Each actor's `chain_sig` in the registry proves that specific actor participated in this specific delegation path. This evidence is independently verifiable and non-repudiable — a compromised AS cannot fabricate an actor's `chain_sig` without that actor's private key.
 
-The `actor_chain_root` binds these two planes: it is a signed claim in the token AND the merkle root of the registry signatures. Any tampering with either plane is detectable.
+The `actor_chain_root` binds these two planes: it is a signed claim in the token AND the Merkle root of the registry signatures. Any tampering with either plane is detectable.
 
 ### Multi-AS Identity Federation
 
@@ -461,9 +461,9 @@ Federated deployments SHOULD:
 
 ### Cross-AS Ordering and Completeness (Open Work Item)
 
-In the current design, each actor signs only its own identity claims (`chain_sig` is standalone). The merkle tree enforces ordering within a single AS's domain, but when entries cross an AS boundary — for example, AS2 receiving entries from AS1 — the receiving AS could theoretically reorder or omit entries from the originating AS. Per-actor signatures remain independently verifiable (participation is provable), but ordering and completeness across AS boundaries are not cryptographically enforced.
+In the current design, each actor signs only its own identity claims (`chain_sig` is standalone). The Merkle tree enforces ordering within a single AS's domain, but when entries cross an AS boundary — for example, AS2 receiving entries from AS1 — the receiving AS could theoretically reorder or omit entries from the originating AS. Per-actor signatures remain independently verifiable (participation is provable), but ordering and completeness across AS boundaries are not cryptographically enforced.
 
-The leading candidate solution is a **subtree root model**: instead of rebuilding a flat merkle tree over all `chain_sig` values, the receiving AS (AS2) uses the originating AS's signed root (`r_prior`) as a leaf node in its own tree:
+The leading candidate solution is a **subtree root model**: instead of rebuilding a flat Merkle tree over all `chain_sig` values, the receiving AS (AS2) uses the originating AS's signed root (`r_prior`) as a leaf node in its own tree:
 
 ```
 Within AS1:  r2 = Merkle(σ_0, σ_1)
@@ -476,7 +476,7 @@ A future version of this document will specify the subtree root construction, it
 
 ## Chain Integrity
 
-The merkle tree structure in the registry provides tamper evidence for the entire delegation path. The `chain_sig` values form the ordered leaf nodes of the merkle tree, and the resulting `actor_chain_root` is committed in the signed token. Insertion, deletion, or reordering of entries changes the leaf positions, producing a different merkle root that no longer matches the token's `actor_chain_root`. A fabricated entry would also fail verification because the attacker cannot produce a valid `chain_sig` without the actor's private key.
+The Merkle tree structure in the registry provides tamper evidence for the entire delegation path. The `chain_sig` values form the ordered leaf nodes of the Merkle tree, and the resulting `actor_chain_root` is committed in the signed token. Insertion, deletion, or reordering of entries changes the leaf positions, producing a different Merkle root that no longer matches the token's `actor_chain_root`. A fabricated entry would also fail verification because the attacker cannot produce a valid `chain_sig` without the actor's private key.
 
 ## Replay Protection
 
@@ -531,7 +531,7 @@ This document requests registration of the following claims in the "JSON Web Tok
 - **Specification Document(s)**: [this document]
 
 - **Claim Name**: `actor_chain_root`
-- **Claim Description**: merkle root hash of per-actor cryptographic signatures in the actor chain.
+- **Claim Description**: Merkle root hash of per-actor cryptographic signatures in the actor chain.
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
 
@@ -547,7 +547,7 @@ This document requests registration of the following claims in the "CBOR Web Tok
 - **Specification Document(s)**: [this document]
 
 - **Claim Name**: `actor_chain_root`
-- **Claim Description**: merkle root hash of per-actor COSE_Sign1 signatures.
+- **Claim Description**: Merkle root hash of per-actor COSE_Sign1 signatures.
 - **CBOR Key**: TBD (e.g., 41)
 - **Claim Type**: tstr
 - **Change Controller**: IETF
@@ -555,7 +555,7 @@ This document requests registration of the following claims in the "CBOR Web Tok
 
 # Design Rationale
 
-This section summarizes why the data-plane / audit-plane separation with merkle root binding was chosen for the actor chain.
+This section summarizes why the data-plane / audit-plane separation with Merkle root binding was chosen for the actor chain.
 
 ## Why Not Inline Per-Actor Signatures?
 
@@ -577,9 +577,9 @@ Per-actor signatures are essential for governance because:
 
 3. **Governance alignment**: The Intent Chain and Inference Chain specifications already require per-actor signatures for content and computation provenance. Without per-actor signatures in the actor chain, the WHO dimension of the governance framework would lack the same level of assurance as WHAT and HOW.
 
-## Why the merkle Root?
+## Why the Merkle Root?
 
-The merkle root (`actor_chain_root`) provides the binding between the data-plane token and the audit-plane registry without inflating the token. It has constant size (44 bytes) regardless of chain depth. An auditor verifies the merkle root by reconstructing it from the registry's `chain_sig` values — if the computed root matches the token's `actor_chain_root`, the registry evidence is proven authentic.
+The Merkle root (`actor_chain_root`) provides the binding between the data-plane token and the audit-plane registry without inflating the token. It has constant size (44 bytes) regardless of chain depth. An auditor verifies the Merkle root by reconstructing it from the registry's `chain_sig` values — if the computed root matches the token's `actor_chain_root`, the registry evidence is proven authentic.
 
 This is the same pattern used by the Intent Chain (`intent_root`) and Inference Chain (`inference_root`), creating a unified, architecturally consistent governance framework across all three chains.
 
