@@ -272,7 +272,7 @@ The Actor Chain Registry stores the full per-actor signature evidence:
 }
 ```
 
-Within a single AS domain, the Merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). Across AS boundaries, the receiving AS uses the upstream AS's Merkle root as a leaf node in its own tree (see (#subtree-root-model)). The ordering of entries is cryptographically enforced by the Merkle tree structure — reordering entries changes the leaf positions, which changes the Merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the Merkle tree recursively from each AS's registry entries and verify it matches the root in the token.
+Within a single AS domain, the Merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). Across AS boundaries, the receiving AS uses the upstream AS's Merkle root as a leaf node in its own tree (see (#subtree-root-model)). Because the subtree model produces heterogeneous leaf types (signatures and upstream roots), each leaf MUST be domain-separated with a type prefix before hashing (see (#merkle-leaf-domain-separation)). The ordering of entries is cryptographically enforced by the Merkle tree structure — reordering entries changes the leaf positions, which changes the Merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the Merkle tree recursively from each AS's registry entries and verify it matches the root in the token.
 
 ## Token Exchange Flow
 
@@ -483,6 +483,17 @@ At AS2:      r3 = Merkle(r2, σ_2)         -- upstream root as leaf
 This construction cryptographically binds AS2's tree to AS1's ordering and completeness — reordering or dropping any of AS1's entries would change `r2`, which would change `r3`. The approach adds zero token bloat (the token still carries only the final root) and naturally mirrors the federation topology.
 
 The subtree model follows naturally from the control-plane constraint: during token exchange, AS2 has only the current actor's `chain_sig` (σ_2) and the upstream root (`r2`) from the verified JWT. AS2 does not have access to AS1's individual signatures at exchange time — those are retrieved asynchronously during audit-plane verification.
+
+#### Merkle Leaf Domain Separation
+
+Because the subtree model produces heterogeneous leaf types — actor signatures (`chain_sig`) and upstream Merkle roots (`prior_root`) — each leaf MUST be domain-separated with a type prefix before hashing. This prevents type confusion attacks where a hash value could be misinterpreted as a signature or vice versa.
+
+```
+leaf_hash(chain_sig)  = H(0x01 || chain_sig)    -- actor signature leaf
+leaf_hash(prior_root) = H(0x02 || prior_root)    -- upstream subtree root leaf
+```
+
+Within a single AS (all leaves are `chain_sig`), only the `0x01` prefix is used. The `0x02` prefix is introduced only at AS boundaries where the upstream root appears as a leaf. Implementations MUST use these prefixes consistently at both construction time (AS) and verification time (auditor).
 
 ### Cross-AS Merkle Construction
 

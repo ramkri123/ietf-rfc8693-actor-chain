@@ -132,6 +132,15 @@ Across AS boundaries, the receiving AS uses the upstream root as a leaf:
 AS₂: r₃ = Merkle(r₂, σ₂)    ← r₂ trusted from verified JWT
 ```
 
+**Domain separation:** Because the subtree model mixes leaf types (signatures and upstream roots), each leaf is prefixed before hashing:
+
+```
+H(0x01 || σ_i)        ← actor signature leaf
+H(0x02 || r_prior)    ← upstream subtree root leaf
+```
+
+This prevents type confusion — a hash cannot be mistaken for a signature or vice versa. Within a single AS (all `chain_sig` leaves), only `0x01` is used.
+
 This cryptographically binds AS₂'s tree to AS₁'s ordering — reordering or dropping any of AS₁'s entries changes `r₂`, which changes `r₃`. Zero token bloat (token still carries only the final root).
 
 ### Responsibility Split
