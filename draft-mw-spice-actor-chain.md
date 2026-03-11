@@ -616,6 +616,19 @@ The Merkle root (`actor_chain_root`) provides the binding between the data-plane
 
 This is the same pattern used by the Intent Chain (`intent_root`) and Inference Chain (`inference_root`), creating a unified, architecturally consistent governance framework across all three chains.
 
+## Federated Audit Without Shared Infrastructure
+
+The subtree root model (see (#multi-as-identity-federation)) enables a fully federated audit plane without requiring a shared data store, cross-AS replication, or a central audit authority. Each AS maintains sovereignty over its own registry:
+
+- **AS1** stores `{σ_0, σ_1}` in R1.
+- **AS2** stores `{σ_2}` and `prior_root: r2` in R2.
+
+No AS writes to another AS's registry, and no shared database is required. The token's `actor_chain_root` — a single 44-byte Merkle root — is the only cross-AS coordination point, and it is established during the normal token exchange flow.
+
+An auditor reconstructs the full chain by following standard OAuth discovery: resolve each `iss` claim to its AS metadata, discover the `governance_registry_endpoint`, and query by `sid`. The subtree binding `r3 = Merkle(r2, σ_2)` provides the cryptographic proof that the registries are consistent with each other and with the token.
+
+This architecture mirrors how federated identity already works — each AS manages its own keys, metadata, and tokens — and extends it to audit evidence. No additional federated infrastructure is required beyond what the token exchange and AS metadata already provide.
+
 ## Registry Availability
 
 Deployments where the Actor Chain Registry is unavailable (network partition, registry outage) do not affect data-plane operation — the token's AS-signed `actor_chain` entries are sufficient for real-time access control. The `actor_chain_root` in the signed token acts as a commitment: even during a registry outage, the signed evidence cannot be tampered with because the root is fixed at token issuance.
