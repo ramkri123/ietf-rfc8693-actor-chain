@@ -102,7 +102,7 @@ Actor Chain Root:
 : The merkle root hash of the complete set of per-actor signatures (`chain_sig` values) in the actor chain, included in the OAuth token as the `actor_chain_root` claim. This binds the data-plane token to the audit-plane evidence.
 
 Actor Chain Registry:
-: A service endpoint that stores the full per-actor signature evidence (including `chain_digest` and `chain_sig` for each entry). Referenced by the `actor_chain_registry` claim in the token. Implementations MAY use a SCITT transparency log {{!I-D.ietf-scitt-architecture}} or equivalent ordered log.
+: A service endpoint that stores per-actor signature evidence (`chain_sig` for each entry) in an ordered, append-only log. Discovered via the Authorization Server's metadata (`governance_registry_endpoint`) and queried using the token's `sid` claim. Implementations MAY use a SCITT transparency log {{!I-D.ietf-scitt-architecture}} or equivalent ordered log.
 
 Chain Depth:
 : The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
@@ -171,13 +171,10 @@ actor_chain:
 : REQUIRED. A JSON array of Actor Chain Entry objects. Each element is a JSON object with the following members.
 
 actor_chain_root:
-: RECOMMENDED. A string containing the merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
-
-actor_chain_registry:
-: RECOMMENDED. A URI identifying the Actor Chain Registry endpoint where the full per-actor signature evidence can be retrieved. MUST be present whenever `actor_chain_root` is present.
+: RECOMMENDED. A string containing the merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Single-AS deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments involving multi-AS federation (where the delegation chain spans more than one Authorization Server) MUST include this claim, because no single AS can vouch for the entire chain and per-actor non-repudiation is required to verify cross-domain hops. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
 
 sid:
-: RECOMMENDED. A string identifying the session to which this token belongs. The Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) are partitioned by this identifier. MUST be present whenever `actor_chain_registry` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit.
+: RECOMMENDED. A string identifying the session to which this token belongs. The Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) are partitioned by this identifier. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
 
 To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
 - **Per-Actor**: An Authorization Server MAY choose to hide entire Actor Chain Entries or only specific actors in the chain.
@@ -201,13 +198,8 @@ por:
 
 The following fields are stored per-entry in the Actor Chain Registry and are NOT included in the token:
 
-chain_digest:
-: REQUIRED. A Base64url-encoded cumulative cryptographic hash (SHA-256). For an entry at index `N`, the hash is computed over the canonical serialization of the union of the current entry's identity claims (e.g., `sub`, `iss`, `iat`, `_sd` hashes) and the `chain_digest` of the preceding entry (index `N-1`). For the entry at index 0, the hash is computed over its identity claims alone.
-
-  > When Selective Disclosure is used, the SD-JWT Disclosure strings (the cleartext salts/values) MUST NOT be included in the canonical serialization used for hashing. The `chain_digest` is computed exclusively over the Actor Chain Entry object, which contains the stable `_sd` hashes.
-
 chain_sig:
-: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the `chain_digest` value. The JWS header MUST include the `jwk` or `kid` member to identify the signing key.
+: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the canonical serialization of its own identity claims (`sub`, `iss`, `iat`, and `por` if present). The JWS header MUST include the `jwk` or `kid` member to identify the signing key. The signature proves this specific actor participated in the delegation chain. Ordering of entries is enforced by the merkle tree structure (see (#chain-integrity)), not by cumulative hashing.
 
 
 
@@ -224,8 +216,6 @@ The token carries identity entries inline for policy enforcement and a merkle ro
   "sub": "user@example.com",
   "sid": "session-123",
   "actor_chain_root": "sha256:9f86d08...",
-  "actor_chain_registry":
-    "https://registry.example.com/actor-chains/session-123",
   "actor_chain": [
     {
       "sub": "https://orchestrator.example.com",
@@ -267,48 +257,45 @@ The Actor Chain Registry stores the full per-actor signature evidence:
       "sub": "https://orchestrator.example.com",
       "iss": "https://auth.example.com",
       "iat": 1700000010,
-      "chain_digest": "sha256:mno345...",
       "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
     },
     {
       "sub": "https://planner.example.com",
       "iss": "https://auth.example.com",
       "iat": 1700000030,
-      "chain_digest": "sha256:def456...",
       "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
     },
     {
       "sub": "https://tool-agent.example.com",
       "iss": "https://auth.example.com",
       "iat": 1700000050,
-      "chain_digest": "sha256:jkl012...",
       "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
     }
   ]
 }
 ```
 
-The merkle tree is constructed from the `chain_sig` values as leaf nodes, ordered by chain index (index 0 is the leftmost leaf). The cumulative hash-chain structure (`chain_digest`) ensures that this ordering is cryptographically enforced — reordering entries changes their digests, which changes their signatures, which changes the merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the merkle tree from the registry entries and verify it matches the root in the token.
+The merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). The ordering of entries is cryptographically enforced by the merkle tree structure — reordering entries changes the leaf positions, which changes the merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the merkle tree from the registry entries and verify it matches the root in the token.
 
 ## Token Exchange Flow
 
 When an actor (Service B) receives a token containing an `actor_chain` and needs to call a downstream service (Service C), the following token exchange flow occurs:
 
-1. **Service B** computes its `chain_digest` over the existing chain entries from the received token and signs it with its own key, producing `chain_sig`.
+1. **Service B** signs the canonical serialization of its own identity claims (`sub`, `iss`, `iat`) with its private key, producing `chain_sig`.
 2. **Service B** sends a token exchange request to the Authorization Server (AS) per {{!RFC8693}} Section 2.1.
 3. The `subject_token` contains the existing `actor_chain`.
-4. The `actor_token` identifies Service B and includes its `chain_digest` and `chain_sig`.
+4. The `actor_token` identifies Service B and includes its `chain_sig`.
 5. The AS validates the existing `actor_chain`:
     - Verifies the JWT signature on the `subject_token`.
     - Validates actor identities through its own policy (e.g., client registration, mTLS certificate).
     - Enforces any `max_chain_depth` policy.
-6. The AS validates Service B's `chain_digest` and `chain_sig`.
-7. The AS stores Service B's signed entry (`chain_digest`, `chain_sig`) in the Actor Chain Registry.
-8. The AS recomputes the merkle root over all `chain_sig` values (existing + Service B's).
+6. The AS validates Service B's `chain_sig` against Service B's public key.
+7. The AS stores Service B's entry (identity claims + `chain_sig`) in the Actor Chain Registry.
+8. The AS appends Service B's `chain_sig` as a new leaf and recomputes the merkle root over all `chain_sig` values (existing + Service B's).
 9. The AS constructs a new token with:
     - The extended `actor_chain` array (identity entries only: `sub`, `iss`, `iat`, optional `por`).
     - The updated `actor_chain_root` (new merkle root).
-    - The `actor_chain_registry` URI.
+    - The `sid` identifying the session.
 10. The AS signs the entire JWT and issues the token.
 
 ### Disclosure Propagation in SD-JWT
@@ -409,12 +396,10 @@ The appropriate level of actor chain checking depends on the risk level of the o
 
 For forensic analysis, regulatory compliance, or zero-trust verification, an auditor retrieves the full chain from the Actor Chain Registry and performs:
 
-1. **Retrieve entries**: Fetch the full actor chain entries from the `actor_chain_registry` URI.
+1. **Retrieve entries**: Discover the Actor Chain Registry endpoint via the AS's metadata (`governance_registry_endpoint`, resolved from the token's `iss` claim) and fetch the full actor chain entries using the token's `sid` as the query key. For cross-chain verification, the auditor retrieves Actor, Intent, and Inference registry entries using the shared `sid` value to correlate all three evidence sets.
 
 2. **Per-Entry Signature Verification**: For each entry at index `i`:
-    - **Compute expected digest**: If `i == 0`, compute `expected_digest = SHA-256(canonical_json({sub, iss, iat}))` from the entry's own identity claims. If `i > 0`, compute `expected_digest = SHA-256(canonical_json(actor_chain[0..i-1]) || identity_claims_i)`.
-    - **Verify chain_digest**: Confirm that the entry's `chain_digest` matches `expected_digest`.
-    - **Verify chain_sig**: Verify `chain_sig` against `chain_digest` using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle).
+    - **Verify chain_sig**: Verify `chain_sig` against the canonical serialization of the entry's identity claims (`sub`, `iss`, `iat`) using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle). This proves the actor participated in the delegation.
 
 3. **merkle Root Verification**: Reconstruct the merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
 
@@ -490,7 +475,7 @@ Federated deployments SHOULD:
 
 ## Chain Integrity
 
-The hash-chain structure in the registry provides tamper evidence for the entire delegation path. Insertion, deletion, or reordering of entries invalidates the `chain_digest` and `chain_sig` fields of all subsequent entries and changes the merkle root. The `actor_chain_root` in the signed token anchors this evidence — any alteration to the registry entries produces a different merkle root that no longer matches the token.
+The merkle tree structure in the registry provides tamper evidence for the entire delegation path. The `chain_sig` values form the ordered leaf nodes of the merkle tree, and the resulting `actor_chain_root` is committed in the signed token. Insertion, deletion, or reordering of entries changes the leaf positions, producing a different merkle root that no longer matches the token's `actor_chain_root`. A fabricated entry would also fail verification because the attacker cannot produce a valid `chain_sig` without the actor's private key.
 
 ## Replay Protection
 
@@ -502,7 +487,7 @@ Unbounded actor chains pose a risk of token size explosion and processing overhe
 
 ## Key Management
 
-Each actor in the chain signs its `chain_digest` with its own private key. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The same signing key MAY be used for the actor's `chain_sig` in the actor chain, its contributions to the Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and the Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, providing a unified key management model across all three governance chains.
+Each actor in the chain signs its own identity claims with its private key. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The same signing key MAY be used for the actor's `chain_sig` in the actor chain, its contributions to the Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and the Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, providing a unified key management model across all three governance chains.
 
 ## Privacy of Prior Actors
 
@@ -565,11 +550,6 @@ This document requests registration of the following claims in the "JSON Web Tok
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
 
-- **Claim Name**: `actor_chain_registry`
-- **Claim Description**: URI of the Actor Chain Registry where per-actor signature evidence is stored.
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
-
 ## CBOR Web Token Claims Registration
 
 This document requests registration of the following claims in the "CBOR Web Token (CWT) Claims" registry established by {{!RFC8392}}:
@@ -588,20 +568,13 @@ This document requests registration of the following claims in the "CBOR Web Tok
 - **Change Controller**: IETF
 - **Specification Document(s)**: [this document]
 
-- **Claim Name**: `actor_chain_registry`
-- **Claim Description**: URI of Actor Chain Registry.
-- **CBOR Key**: TBD (e.g., 42)
-- **Claim Type**: tstr
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
-
 # Design Rationale
 
 This section summarizes why the data-plane / audit-plane separation with merkle root binding was chosen for the actor chain.
 
 ## Why Not Inline Per-Actor Signatures?
 
-An earlier design included `chain_digest` and `chain_sig` directly in each Actor Chain Entry within the token. This approach was rejected for three reasons:
+An earlier design included per-actor `chain_sig` directly in each Actor Chain Entry within the token. This approach was rejected for three reasons:
 
 1. **Token size**: Each JWS `chain_sig` adds ~200-300 bytes per entry. For a chain of depth 6, this adds ~1.5-2KB to every token — significant for high-throughput data planes and constrained IoT devices.
 
@@ -637,7 +610,7 @@ For high-availability requirements, deployments SHOULD:
 
 ## Registry Hosting
 
-The Actor Chain Registry is an append-only log partitioned by session (`sid`). Per-session entries accumulate as token exchanges occur (one entry per actor per session), and each entry is small (~400-600 bytes including `chain_digest` and compact JWS `chain_sig`).
+The Actor Chain Registry is an append-only log partitioned by session (`sid`). Per-session entries accumulate as token exchanges occur (one entry per actor per session), and each entry is small (~200-400 bytes including compact JWS `chain_sig`).
 
 A federated IAM/IdM platform (e.g., Keycloak, Microsoft Entra, Okta, PingFederate) is a natural host for the Actor Chain Registry because:
 
@@ -653,31 +626,56 @@ Most enterprise IAM/IdM platforms support configurable data stores. To host the 
 
 ### Credential Isolation
 
-Registry entries MUST NOT contain OAuth tokens, bearer credentials, or signing keys. The relationship between tokens and registry entries is one-directional: the token references the registry via the `actor_chain_registry` URI claim, but the registry MUST NOT store or reference the token itself. This separation ensures that compromise of the registry does not expose bearer credentials that could be used for unauthorized access.
+Registry entries MUST NOT contain OAuth tokens, bearer credentials, or signing keys. The relationship between tokens and registry entries is one-directional: the token's `sid` claim identifies the session whose entries are stored in the registry, but the registry MUST NOT store or reference the token itself. This separation ensures that compromise of the registry does not expose bearer credentials that could be used for unauthorized access.
 
 An IAM/IdM platform that co-locates token issuance and registry storage MUST enforce strict access control boundaries between the token store and the registry store. The token MUST NOT be reconstructable from registry entries alone — registry entries contain only identity claims, cumulative hashes, and per-actor signatures, never the complete token payload or the AS signing key.
 
 ### Registry Discovery
 
-The token carries `actor_chain_registry`, `intent_registry` ({{!I-D.draft-mw-spice-intent-chain}}), and `inference_registry` ({{!I-D.draft-mw-spice-inference-chain}}) URI claims. In a federated IAM deployment, these URIs MAY follow two patterns:
+The Actor Chain Registry endpoint is NOT carried in the token. Instead, it is discovered via the Authorization Server's metadata, consistent with standard OAuth 2.0 discovery conventions.
 
-**Unified endpoint** — all three registries hosted under the same IAM endpoint, differentiated by chain type:
+The AS MUST publish a `governance_registry_endpoint` field in its Authorization Server Metadata ({{!RFC8414}}). This endpoint serves as the base URL for all governance registries (Actor, Intent, Inference).
+
+A Relying Party or auditor discovers the registry as follows:
+
+1. Resolve the `iss` claim from the token to the AS's metadata document (e.g., `{iss}/.well-known/oauth-authorization-server`).
+2. Extract the `governance_registry_endpoint` value from the metadata.
+3. Query the registry using the token's `sid` claim as the session key.
+
+The registry endpoint MUST support retrieval by `sid` and chain type. A GET request to the governance registry endpoint returns a JSON object containing the `sid`, the computed `actor_chain_root`, and the full `entries` array:
 
 ```
-https://iam.example.com/governance/{session_id}/actor
-https://iam.example.com/governance/{session_id}/intent
-https://iam.example.com/governance/{session_id}/inference
+GET {governance_registry_endpoint}/actor?sid={sid}
 ```
 
-**Per-chain-type endpoints** — each registry hosted separately, with inference proofs potentially on a different storage service:
+Response:
+
+```json
+{
+  "sid": "session-123",
+  "actor_chain_root": "sha256:9f86d08...",
+  "entries": [
+    {
+      "sub": "https://orchestrator.example.com",
+      "iss": "https://auth.example.com",
+      "iat": 1700000010,
+      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
+    }
+  ]
+}
+```
+
+In a federated IAM deployment, the governance registry endpoint MAY serve all three chain types under a unified base:
 
 ```
-https://iam.example.com/governance/{session_id}/actor
-https://iam.example.com/governance/{session_id}/intent
-https://proofs.example.com/inference/{session_id}
+GET {governance_registry_endpoint}/actor?sid={sid}
+GET {governance_registry_endpoint}/intent?sid={sid}
+GET {governance_registry_endpoint}/inference?sid={sid}
 ```
 
-The per-chain-type pattern is RECOMMENDED for deployments where inference proof sizes require a separate storage backend. Regardless of the pattern, the registry URIs in the token MUST resolve to endpoints that return the complete set of entries for the given session.
+Alternatively, separate endpoints MAY be published for each chain type (e.g., `governance_actor_registry_endpoint`, `governance_inference_registry_endpoint`) when inference proof sizes require a separate storage backend.
+
+Deployments that omit `actor_chain_root` (single-AS, no governance) require no registry infrastructure beyond the Authorization Server's existing token exchange capability.
 
 {backmatter}
 
