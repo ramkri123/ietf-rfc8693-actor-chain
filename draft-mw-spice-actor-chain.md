@@ -384,10 +384,12 @@ For forensic analysis, regulatory compliance, or zero-trust verification, an aud
 
 1. **Retrieve entries**: Starting from the token's `iss` claim, discover the AS's `governance_registry_endpoint` and query by `sid`. For cross-AS chains, the auditor follows `prior_root` references to discover upstream registries. For cross-chain verification, the auditor retrieves Actor, Intent, and Inference registry entries using the shared `sid` value to correlate all three evidence sets.
 
-2. **Per-Entry Signature Verification**: For each entry in each registry:
+2. **Ordering and Completeness Check**: Assert that the registry entries match the `actor_chain` array in the archived token — each actor must be present in the correct position.
+
+3. **Per-Entry Signature Verification**: For each entry in each registry:
     - **Verify chain_sig**: Verify `chain_sig` against the canonical serialization of the entry's identity claims (`sub`, `iss`, `iat`) using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle). This proves the actor participated in the delegation.
 
-3. **Recursive Merkle Root Verification**: Reconstruct each AS's local Merkle subtree from its registry entries. For cross-AS chains, reconstruct the upstream subtree first, then use its root as a leaf to reconstruct the downstream tree. Verify that the final computed root matches the `actor_chain_root` in the original token.
+4. **Recursive Merkle Root Verification**: Reconstruct each AS's local Merkle subtree from its registry entries. For cross-AS chains, reconstruct the upstream subtree first, then use its root as a leaf to reconstruct the downstream tree. Verify that the final computed root matches the `actor_chain_root` in the archived token.
 
 This two-tier verification model ensures that data-plane latency remains O(1) while full per-actor non-repudiation is available on demand.
 
@@ -496,16 +498,18 @@ For chains spanning more than two ASes (e.g., AS1 → AS2 → AS3), the construc
 
 ### Recursive Audit Verification
 
-An auditor performing forensic verification follows the registry chain in reverse:
+An auditor performing forensic verification follows the registry chain in reverse, using the archived token as the ground truth:
 
-1. Query R2 (AS2) by `sid` — receives `{σ_2}` and `prior_root: r2`.
-2. Discover AS1 via the `iss` claim of the upstream entries, then query R1 (AS1) by `sid` — receives `{σ_0, σ_1}`.
-3. Verify each `chain_sig` against the actor's public key (discoverable via `iss` JWKS or SPIFFE trust bundle).
-4. Reconstruct `r2 = Merkle(σ_0, σ_1)` from R1's entries.
-5. Reconstruct `r3 = Merkle(r2, σ_2)` using R2's entry and the reconstructed upstream root.
-6. Assert `r3` matches the `actor_chain_root` in the original token.
+1. Archive the token — `actor_chain` provides the expected actor ordering, `actor_chain_root` provides the expected Merkle root.
+2. Query R2 (AS2) by `sid` — receives `{σ_2}` and `prior_root: r2`.
+3. Discover AS1 via the `iss` claim of the upstream entries, then query R1 (AS1) by `sid` — receives `{σ_0, σ_1}`.
+4. Assert that the registry entries match the `actor_chain` array in the token: each actor is present in the correct position.
+5. Verify each `chain_sig` against the actor's public key (discoverable via `iss` JWKS or SPIFFE trust bundle).
+6. Reconstruct `r2 = Merkle(σ_0, σ_1)` from R1's entries.
+7. Reconstruct `r3 = Merkle(r2, σ_2)` using R2's entry and the reconstructed upstream root.
+8. Assert `r3` matches the `actor_chain_root` in the archived token.
 
-If any step fails — a signature is invalid, a leaf is missing, or the reconstructed root does not match — the chain is provably tampered.
+If any step fails — an actor is missing, out of order, a signature is invalid, or the reconstructed root does not match — the chain is provably tampered.
 
 ## Chain Integrity
 

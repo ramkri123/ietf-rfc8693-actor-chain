@@ -206,13 +206,15 @@ In cross-AS hops, the receiving AS (AS₂) verifies the originating AS's JWT as 
 
 ### Recursive Audit Verification
 
-An auditor (or RP) performing forensic verification follows the registry chain:
+An auditor (or RP) performing forensic verification uses the archived token as ground truth:
 
-1. Query R₂ (AS₂) by `sid` → gets `{σ₂}` and `prior_root: r₂`
-2. Query R₁ (AS₁) by `sid` → gets `{σ₀, σ₁}`
-3. Verify each `σ_i` against the actor's public key
-4. Reconstruct `r₂ = Merkle(σ₀, σ₁)`, then `r₃ = Merkle(r₂, σ₂)`
-5. Assert `r₃ == actor_chain_root` in the token
+1. Archive the token — `actor_chain` gives expected ordering, `actor_chain_root` gives expected root
+2. Query R₂ (AS₂) by `sid` → gets `{σ₂}` and `prior_root: r₂`
+3. Query R₁ (AS₁) by `sid` → gets `{σ₀, σ₁}`
+4. Assert entries match `actor_chain` order: a→b→c
+5. Verify each `σ_i` against the actor's public key
+6. Reconstruct `r₂ = Merkle(σ₀, σ₁)`, then `r₃ = Merkle(r₂, σ₂)`
+7. Assert `r₃ == actor_chain_root` in the archived token
 
 ## Open Work Items
 
