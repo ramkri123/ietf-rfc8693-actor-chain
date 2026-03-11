@@ -92,13 +92,15 @@ sequenceDiagram
     Note over AS1, R2: Audit Plane (async, on-demand)
     rect rgb(245, 235, 220)
         Note right of d: RP Forensic Audit (recursive)
+        d->>d: Archive T₃ (actor_chain=[a,b,c], root=r₃)
         d->>R2: GET /actor?sid={sid}
-        R2-->>d: {entries:[{c,σ₂}], prior_root:r₂, root:r₃}
-        d->>d: Verify σ₂(pk_c)
+        R2-->>d: {entries:[{c,σ₂}], prior_root:r₂}
         d->>R1: GET /actor?sid={sid}
-        R1-->>d: {entries:[{a,σ₀},{b,σ₁}], root:r₂}
-        d->>d: Verify σ₀(pk_a), σ₁(pk_b)
-        d->>d: Reconstruct r₂, then r₃ = Merkle(r₂, σ₂)
+        R1-->>d: {entries:[{a,σ₀},{b,σ₁}]}
+        d->>d: Assert entries match actor_chain order: a→b→c
+        d->>d: Verify σ₀(pk_a), σ₁(pk_b), σ₂(pk_c)
+        d->>d: Reconstruct r₂ = Merkle(σ₀,σ₁)
+        d->>d: Reconstruct r₃ = Merkle(r₂, σ₂)
         d->>d: Assert r₃ == actor_chain_root in T₃
     end
 ```
