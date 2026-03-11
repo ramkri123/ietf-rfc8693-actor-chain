@@ -149,7 +149,7 @@ Beyond the semantic restriction, the nested object structure of `act` in {{!RFC8
 
 This document defines a new claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.
 
-The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs the cumulative chain state at its point of participation, producing a per-entry `chain_sig`. The full signed entries are stored in an external registry (the Actor Chain Registry), while the token carries only the identity entries and a merkle root (`actor_chain_root`) binding them to the signed evidence. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
+The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs its own identity claims, producing a per-entry `chain_sig`. The full signed entries are stored in an external registry (the Actor Chain Registry), while the token carries only the identity entries and a merkle root (`actor_chain_root`) binding them to the signed evidence. The AS constructs an ordered merkle tree from the `chain_sig` values, ensuring that the ordering of entries is cryptographically enforced. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
 
 This architecture separates data-plane concerns (fast access control using identity entries) from audit-plane concerns (per-actor non-repudiation using stored signatures), following the same pattern as the companion Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications:
 
@@ -401,7 +401,7 @@ For forensic analysis, regulatory compliance, or zero-trust verification, an aud
 2. **Per-Entry Signature Verification**: For each entry at index `i`:
     - **Verify chain_sig**: Verify `chain_sig` against the canonical serialization of the entry's identity claims (`sub`, `iss`, `iat`) using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle). This proves the actor participated in the delegation.
 
-3. **merkle Root Verification**: Reconstruct the merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
+3. **Merkle Root Verification**: Reconstruct the merkle tree from the `chain_sig` leaf nodes and verify that the computed root matches the `actor_chain_root` in the original token.
 
 This two-tier verification model ensures that data-plane latency remains O(1) while full per-actor non-repudiation is available on demand.
 
@@ -628,7 +628,7 @@ Most enterprise IAM/IdM platforms support configurable data stores. To host the 
 
 Registry entries MUST NOT contain OAuth tokens, bearer credentials, or signing keys. The relationship between tokens and registry entries is one-directional: the token's `sid` claim identifies the session whose entries are stored in the registry, but the registry MUST NOT store or reference the token itself. This separation ensures that compromise of the registry does not expose bearer credentials that could be used for unauthorized access.
 
-An IAM/IdM platform that co-locates token issuance and registry storage MUST enforce strict access control boundaries between the token store and the registry store. The token MUST NOT be reconstructable from registry entries alone — registry entries contain only identity claims, cumulative hashes, and per-actor signatures, never the complete token payload or the AS signing key.
+An IAM/IdM platform that co-locates token issuance and registry storage MUST enforce strict access control boundaries between the token store and the registry store. The token MUST NOT be reconstructable from registry entries alone — registry entries contain only identity claims and per-actor signatures, never the complete token payload or the AS signing key.
 
 ### Registry Discovery
 
