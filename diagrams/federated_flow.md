@@ -204,17 +204,28 @@ AS₂ trusts `r₂` from the verified JWT (control-plane trust). This cryptograp
 
 In cross-AS hops, the receiving AS (AS₂) verifies the originating AS's JWT as a **control-plane** operation (trusting AS₁'s signature). The per-actor signature verification of upstream entries (`σ₀`, `σ₁`) is **audit-plane** work — deferred and async.
 
-### Recursive Audit Verification
+### Recursive Audit Verification — O(n) In-Order Traversal
 
-An auditor (or RP) performing forensic verification uses the archived token as ground truth:
+The auditor walks registry entries in chain order, using the archived token as ground truth. Each leaf at position `i` is verified against `actor_chain[i]` — simultaneously checking ordering, participation, and completeness:
 
-1. Archive the token — `actor_chain` gives expected ordering, `actor_chain_root` gives expected root
-2. Query R₂ (AS₂) by `sid` → gets `{σ₂}` and `prior_root: r₂`
-3. Query R₁ (AS₁) by `sid` → gets `{σ₀, σ₁}`
-4. Assert entries match `actor_chain` order: a→b→c
-5. Verify each `σ_i` against the actor's public key
-6. Reconstruct `r₂ = Merkle(σ₀, σ₁)`, then `r₃ = Merkle(r₂, σ₂)`
-7. Assert `r₃ == actor_chain_root` in the archived token
+```
+R1_entries = query R1 by sid   // [{a, σ₀}, {b, σ₁}]
+R2_entries = query R2 by sid   // [{c, σ₂}], prior_root: r₂
+
+// R1 scope (AS₁)
+for i, entry in R1_entries:
+    assert entry.sub == actor_chain[i].sub
+    verify σ_i against pk of actor_chain[i]
+r₂ = Merkle(σ₀, σ₁)
+
+// R2 scope (AS₂) — subtree binding
+for i, entry in R2_entries (offset by R1 length):
+    assert entry.sub == actor_chain[i].sub
+    verify σ_i against pk of actor_chain[i]
+r₃ = Merkle(r₂, σ₂)
+
+assert r₃ == actor_chain_root in archived token
+```
 
 ## Open Work Items
 

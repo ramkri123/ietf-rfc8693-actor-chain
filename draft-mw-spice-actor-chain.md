@@ -496,20 +496,39 @@ When a delegation chain crosses an AS boundary, the following Merkle constructio
 
 For chains spanning more than two ASes (e.g., AS1 → AS2 → AS3), the construction is recursive: AS3 uses AS2's root as a leaf, producing `r4 = Merkle(r3, σ_3)`.
 
-### Recursive Audit Verification
+An auditor performing forensic verification uses the archived token as the ground truth and walks the registry entries in-order — simultaneously verifying ordering, participation, and integrity in a single O(n) pass.
 
-An auditor performing forensic verification follows the registry chain in reverse, using the archived token as the ground truth:
+The algorithm traverses each AS's registry entries in chain order, matching leaf position `i` against `actor_chain[i]` from the archived token:
 
-1. Archive the token — `actor_chain` provides the expected actor ordering, `actor_chain_root` provides the expected Merkle root.
-2. Query R2 (AS2) by `sid` — receives `{σ_2}` and `prior_root: r2`.
-3. Discover AS1 via the `iss` claim of the upstream entries, then query R1 (AS1) by `sid` — receives `{σ_0, σ_1}`.
-4. Assert that the registry entries match the `actor_chain` array in the token: each actor is present in the correct position.
-5. Verify each `chain_sig` against the actor's public key (discoverable via `iss` JWKS or SPIFFE trust bundle).
-6. Reconstruct `r2 = Merkle(σ_0, σ_1)` from R1's entries.
-7. Reconstruct `r3 = Merkle(r2, σ_2)` using R2's entry and the reconstructed upstream root.
-8. Assert `r3` matches the `actor_chain_root` in the archived token.
+```
+// Retrieve evidence from each AS's registry (by sid)
+R1_entries = query R1 by sid   // [{a, σ_0}, {b, σ_1}]
+R2_entries = query R2 by sid   // [{c, σ_2}], prior_root: r2
 
-If any step fails — an actor is missing, out of order, a signature is invalid, or the reconstructed root does not match — the chain is provably tampered.
+// In-order traversal: verify each leaf against actor_chain[i]
+// — R1 scope (AS1)
+for i, entry in enumerate(R1_entries):
+    assert entry.sub == actor_chain[i].sub   // ordering + completeness
+    verify σ_i against pk of actor_chain[i]   // participation proof
+
+r2 = Merkle(σ_0, σ_1)                        // reconstruct AS1 subtree
+
+// — R2 scope (AS2), subtree binding
+for i, entry in enumerate(R2_entries, offset=len(R1_entries)):
+    assert entry.sub == actor_chain[i].sub
+    verify σ_i against pk of actor_chain[i]
+
+r3 = Merkle(r2, σ_2)                         // reconstruct cross-AS root
+assert r3 == actor_chain_root in archived token
+```
+
+Each iteration does three things simultaneously:
+
+1. **Ordering** — leaf position `i` must correspond to `actor_chain[i]`
+2. **Participation** — `σ_i` is valid for that actor's public key
+3. **Completeness** — any missing or extra leaf changes the Merkle root
+
+If any check fails — an actor is missing, out of order, a signature is invalid, or the reconstructed root does not match — the chain is provably tampered.
 
 ## Chain Integrity
 
