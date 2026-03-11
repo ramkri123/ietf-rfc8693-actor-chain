@@ -469,31 +469,43 @@ The `sid` value is carried forward unchanged across all token exchanges in a del
 
 No per-AS session identifier mapping is required. A future version of this document MAY define per-AS sid namespacing for deployments requiring AS-level namespace sovereignty.
 
-#### Independent Merkle Trees per AS
+#### Subtree Root Model
 
-In the current design, each AS builds its own independent Merkle tree over the `chain_sig` values it holds. When AS2 receives entries from AS1 during a cross-domain token exchange, AS2 rebuilds a flat Merkle tree over all entries (both forwarded from AS1 and locally appended):
-
-```
-AS1: r2 = Merkle(σ_0, σ_1)           -- actors a, b
-AS2: r3 = Merkle(σ_0, σ_1, σ_2)      -- actors a, b, c (flat rebuild)
-```
-
-The Merkle trees of AS1 and AS2 are not cryptographically linked. Cross-AS ordering integrity relies on the receiving AS (AS2) trusting the originating AS's (AS1) JWT signature — a control-plane trust decision. The per-actor signature verification of upstream entries is audit-plane work, performed asynchronously when forensic verification is required.
-
-### Cross-AS Ordering and Completeness (Open Work Item)
-
-In the current design, each actor signs only its own identity claims (`chain_sig` is standalone). The Merkle tree enforces ordering within a single AS's domain, but when entries cross an AS boundary — for example, AS2 receiving entries from AS1 — the receiving AS could theoretically reorder or omit entries from the originating AS. Per-actor signatures remain independently verifiable (participation is provable), but ordering and completeness across AS boundaries are not cryptographically enforced.
-
-The leading candidate solution is a **subtree root model**: instead of rebuilding a flat Merkle tree over all `chain_sig` values, the receiving AS (AS2) uses the originating AS's signed root (`r_prior`) as a leaf node in its own tree:
+Each AS stores only its own actor entries in its registry and uses the upstream AS's Merkle root as a subtree binding. The receiving AS (AS2) does not rebuild a flat tree over all entries; instead, it treats the upstream root from the verified JWT as a leaf node in its own Merkle tree:
 
 ```
-Within AS1:  r2 = Merkle(σ_0, σ_1)
-At AS2:      r3 = Merkle(r2, σ_2)
+Within AS1:  r2 = Merkle(σ_0, σ_1)       -- local entries only
+At AS2:      r3 = Merkle(r2, σ_2)         -- upstream root as leaf
 ```
 
-This cryptographically binds AS2's tree to AS1's ordering and completeness — reordering or dropping any of AS1's entries would change `r2`, which would change `r3`. The approach adds zero token bloat (the token still carries only the final root) and naturally mirrors the federation topology.
+This construction cryptographically binds AS2's tree to AS1's ordering and completeness — reordering or dropping any of AS1's entries would change `r2`, which would change `r3`. The approach adds zero token bloat (the token still carries only the final root) and naturally mirrors the federation topology.
 
-A future version of this document will specify the subtree root construction, its interaction with the registry response schema, and the recursive verification algorithm. This is tracked as an open work item.
+The subtree model follows naturally from the control-plane constraint: during token exchange, AS2 has only the current actor's `chain_sig` (σ_2) and the upstream root (`r2`) from the verified JWT. AS2 does not have access to AS1's individual signatures at exchange time — those are retrieved asynchronously during audit-plane verification.
+
+### Cross-AS Merkle Construction
+
+When a delegation chain crosses an AS boundary, the following Merkle construction applies:
+
+1. The receiving AS (AS2) verifies the inbound JWT signature (control-plane trust in AS1).
+2. AS2 extracts `actor_chain_root` (r2) from the verified token.
+3. AS2 stores only the new actor's entry ({c, σ_2}) in its own registry (R2), along with `prior_root: r2` as a reference to the upstream subtree.
+4. AS2 computes the new root: `r3 = Merkle(r2, σ_2)`.
+5. AS2 issues a new token with `actor_chain_root: r3`.
+
+For chains spanning more than two ASes (e.g., AS1 → AS2 → AS3), the construction is recursive: AS3 uses AS2's root as a leaf, producing `r4 = Merkle(r3, σ_3)`.
+
+### Recursive Audit Verification
+
+An auditor performing forensic verification follows the registry chain in reverse:
+
+1. Query R2 (AS2) by `sid` — receives `{σ_2}` and `prior_root: r2`.
+2. Discover AS1 via the `iss` claim of the upstream entries, then query R1 (AS1) by `sid` — receives `{σ_0, σ_1}`.
+3. Verify each `chain_sig` against the actor's public key (discoverable via `iss` JWKS or SPIFFE trust bundle).
+4. Reconstruct `r2 = Merkle(σ_0, σ_1)` from R1's entries.
+5. Reconstruct `r3 = Merkle(r2, σ_2)` using R2's entry and the reconstructed upstream root.
+6. Assert `r3` matches the `actor_chain_root` in the original token.
+
+If any step fails — a signature is invalid, a leaf is missing, or the reconstructed root does not match — the chain is provably tampered.
 
 ## Chain Integrity
 
