@@ -174,7 +174,7 @@ actor_chain_root:
 : RECOMMENDED. A string containing the merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Single-AS deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments involving multi-AS federation (where the delegation chain spans more than one Authorization Server) MUST include this claim, because no single AS can vouch for the entire chain and per-actor non-repudiation is required to verify cross-domain hops. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
 
 sid:
-: RECOMMENDED. A string identifying the session to which this token belongs. The Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) are partitioned by this identifier. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
+: RECOMMENDED. A string identifying the session to which this token belongs, as defined in OpenID Connect Back-Channel Logout 1.0 {{!OIDC.BackChannel}}. This specification reuses the registered `sid` claim to partition the Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) by session. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
 
 
 ### Actor Chain Entry Members
@@ -716,4 +716,13 @@ Deployments that omit `actor_chain_root` (single-AS, no governance) require no r
     <date year="2022" month="August"/>
   </front>
   <seriesInfo name="RFC" value="9052"/>
+</reference>
+
+<reference anchor="OIDC.BackChannel" target="https://openid.net/specs/openid-connect-backchannel-1_0.html">
+  <front>
+    <title>OpenID Connect Back-Channel Logout 1.0</title>
+    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
+    <author initials="J." surname="Bradley" fullname="John Bradley"/>
+    <date year="2022" month="September"/>
+  </front>
 </reference>
