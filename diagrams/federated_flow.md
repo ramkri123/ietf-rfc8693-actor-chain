@@ -28,19 +28,16 @@ sequenceDiagram
         AS1->>R1: Store(sid, {a, σ₀})
         AS1->>AS1: r₁ = Merkle(σ₀)
     end
-    rect rgb(230, 245, 230)
-        Note right of AS1: Data Plane
+    rect rgb(225, 235, 250)
+        Note right of AS1: Control Plane
         AS1->>a: T₁ = JWT_AS₁{chain:[a], root:r₁, sid}
     end
 
     Note over a, b: Step 2 — Same-Domain Hop (AS₁)
-    rect rgb(230, 245, 230)
-        Note right of a: Data Plane
+    rect rgb(225, 235, 250)
+        Note right of a: Control Plane
         a->>b: T₁
         b->>b: Verify JWT_AS₁(T₁)
-    end
-    rect rgb(225, 235, 250)
-        Note right of b: Control Plane
         b->>b: σ₁ = Sign(canon(b), sk_b)
         b->>AS1: TokenExchange(subject=T₁, actor={b, σ₁})
         AS1->>AS1: Verify T₁, verify σ₁ against pk_b
@@ -50,20 +47,17 @@ sequenceDiagram
         AS1->>R1: Store(sid, {b, σ₁})
         AS1->>AS1: r₂ = Merkle(σ₀, σ₁)
     end
-    rect rgb(230, 245, 230)
-        Note right of AS1: Data Plane
+    rect rgb(225, 235, 250)
+        Note right of AS1: Control Plane
         AS1->>b: T₂ = JWT_AS₁{chain:[a,b], root:r₂, sid}
     end
 
     Note over b, AS2: Step 3 — Cross-Domain Hop (AS₁ → AS₂)
-    rect rgb(230, 245, 230)
-        Note right of b: Data Plane
+    rect rgb(225, 235, 250)
+        Note right of b: Control Plane
         b->>c: T₂
         c->>c: Discover AS₁ JWKS via iss(T₂)
         c->>c: Verify JWT_AS₁(T₂)
-    end
-    rect rgb(225, 235, 250)
-        Note right of c: Control Plane
         c->>c: σ₂ = Sign(canon(c), sk_c)
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
@@ -78,8 +72,8 @@ sequenceDiagram
         AS2->>R2: Store(sid, [{a,σ₀}, {b,σ₁}, {c,σ₂}])
         AS2->>AS2: r₃ = Merkle(σ₀, σ₁, σ₂)
     end
-    rect rgb(230, 245, 230)
-        Note right of AS2: Data Plane
+    rect rgb(225, 235, 250)
+        Note right of AS2: Control Plane
         AS2->>c: T₃ = JWT_AS₂{chain:[a,b,c], root:r₃, sid}
     end
 
