@@ -167,8 +167,41 @@ Reordering leaves changes the root → detected by comparing against the signed 
 | **Data-plane integrity** | AS JWT signature |
 | **Cross-domain trust** | Each σ_i verifiable via actor's own pk_i, independent of any AS |
 
+## Design Notes (Current Cut)
+
+### Session ID (`sid`) Carry-Forward
+
+The same `sid` value is carried forward across all token exchanges in a delegation chain, including cross-AS hops. AS₂ reuses the `sid` from `T₂` (originated by AS₁) in `T₃` and in its own registry. This means:
+
+- The `sid` acts as a **global correlation key** across all registries.
+- An auditor can query both `R₁` and `R₂` with the same `sid` to reconstruct the full chain.
+- This assumes `sid` values are globally unique (e.g., UUIDs). No per-AS sid mapping is required.
+
+### Independent Merkle Trees per AS
+
+Each AS builds its own independent Merkle tree over the `chain_sig` values it holds:
+
+| AS | Merkle Root | Leaves |
+|:---|:---|:---|
+| AS₁ | `r₂ = Merkle(σ₀, σ₁)` | Actors `a`, `b` |
+| AS₂ | `r₃ = Merkle(σ₀, σ₁, σ₂)` | Actors `a`, `b`, `c` (flat rebuild) |
+
+AS₂ rebuilds the tree from all entries (including those forwarded from AS₁). The trees are not cryptographically linked — cross-AS ordering integrity relies on trusting the originating AS's JWT signature.
+
+### Plane Separation
+
+| Plane | Scope | Operations |
+|:---|:---|:---|
+| **Data Plane** | Each RP boundary (every hop) | Receive token + verify JWT — O(1) |
+| **Control Plane** | Chain building | Sign identity, token exchange, AS verification |
+| **Audit Plane** | Evidence storage + forensic | Registry store, Merkle tree, cross-chain sig verification |
+
+In cross-AS hops, the receiving AS (AS₂) verifies the originating AS's JWT as a **control-plane** operation (trusting AS₁'s signature). The per-actor signature verification of upstream entries (`σ₀`, `σ₁`) is **audit-plane** work — deferred and async.
+
 ## Open Work Items
 
 **Cross-AS Ordering and Completeness**: In the current design, ordering and completeness are enforced within a single AS domain via the Merkle tree. Across AS boundaries, the receiving AS could theoretically reorder or omit entries from the originating AS. The leading candidate solution is a subtree root model where AS2 uses AS1's root as a leaf node: `r3 = Merkle(r2, sig_2)`. This cryptographically binds AS2's tree to AS1's ordering without any token bloat.
+
+**Per-AS Session ID Mapping**: An alternative to the carry-forward `sid` model is per-AS sid namespacing, where AS₂ mints its own `sid` and maps it to AS₁'s. This provides namespace sovereignty but requires a mapping table and complicates cross-AS auditing. Deferred to a future version.
 
 **Notes**: The `sid` claim is reused from OpenID Connect Back-Channel Logout 1.0 (not defined in RFC 8693). Registry discovery uses the AS's `.well-known` metadata (`governance_registry_endpoint`), not an in-token claim.
