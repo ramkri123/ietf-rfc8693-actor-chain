@@ -74,6 +74,7 @@ sequenceDiagram
         c->>c: σ₂ = Sign(canon(c), sk_c)
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
+        AS2->>AS2: Extract r₂ = actor_chain_root from T₂
         AS2->>AS2: Verify σ₂ against pk_c
         AS2->>R2: Store(sid, {c, σ₂})
         AS2->>AS2: r₃ = Merkle(r₂, σ₂)
@@ -89,13 +90,6 @@ sequenceDiagram
     end
 
     Note over AS1, R2: Audit Plane (async, on-demand)
-    rect rgb(245, 235, 220)
-        Note right of AS2: AS₂ Cross-Chain Verification
-        AS2->>AS1: GET .well-known → governance_registry_endpoint
-        AS2->>R1: GET /actor?sid={sid}
-        R1-->>AS2: {entries:[{a,σ₀}, {b,σ₁}], root:r₂}
-        AS2->>AS2: Verify σ₀(pk_a), σ₁(pk_b), reconstruct r₂
-    end
     rect rgb(245, 235, 220)
         Note right of d: RP Forensic Audit (recursive)
         d->>R2: GET /actor?sid={sid}
