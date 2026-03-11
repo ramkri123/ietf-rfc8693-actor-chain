@@ -22,14 +22,6 @@ sequenceDiagram
         a->>a: σ₀ = Sign(canon(a), sk_a)
         a->>AS1: Authenticate + σ₀
         AS1->>AS1: Verify σ₀ against pk_a
-    end
-    rect rgb(245, 235, 220)
-        Note right of AS1: Audit Plane
-        AS1->>R1: Store(sid, {a, σ₀})
-        AS1->>AS1: r₁ = Merkle(σ₀)
-    end
-    rect rgb(225, 235, 250)
-        Note right of AS1: Control Plane
         AS1->>a: T₁ = JWT_AS₁{chain:[a], root:r₁, sid}
     end
 
@@ -44,14 +36,6 @@ sequenceDiagram
         b->>b: σ₁ = Sign(canon(b), sk_b)
         b->>AS1: TokenExchange(subject=T₁, actor={b, σ₁})
         AS1->>AS1: Verify T₁, verify σ₁ against pk_b
-    end
-    rect rgb(245, 235, 220)
-        Note right of AS1: Audit Plane
-        AS1->>R1: Store(sid, {b, σ₁})
-        AS1->>AS1: r₂ = Merkle(σ₀, σ₁)
-    end
-    rect rgb(225, 235, 250)
-        Note right of AS1: Control Plane
         AS1->>b: T₂ = JWT_AS₁{chain:[a,b], root:r₂, sid}
     end
 
@@ -68,9 +52,26 @@ sequenceDiagram
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
         AS2->>AS2: Verify σ₂ against pk_c
+        AS2->>c: T₃ = JWT_AS₂{chain:[a,b,c], root:r₃, sid}
+    end
+
+    Note over c, d: Step 4 — Final RP
+    rect rgb(230, 245, 230)
+        Note right of c: Data Plane
+        c->>d: T₃
+        d->>d: Verify JWT_AS₂(T₃)
+        d->>d: Evaluate policy on actor_chain
+    end
+
+    Note over AS1, R2: Audit Plane (async, on-demand)
+    rect rgb(245, 235, 220)
+        Note right of AS1: AS₁ Evidence Storage
+        AS1->>R1: Store(sid, {a, σ₀})
+        AS1->>R1: Store(sid, {b, σ₁})
+        AS1->>AS1: r₂ = Merkle(σ₀, σ₁)
     end
     rect rgb(245, 235, 220)
-        Note right of AS2: Audit Plane
+        Note right of AS2: AS₂ Cross-Chain Verify + Store
         AS2->>AS1: GET .well-known → governance_registry_endpoint
         AS2->>R1: GET /actor?sid={sid}
         R1-->>AS2: {entries:[{a,σ₀}, {b,σ₁}], root:r₂}
@@ -78,20 +79,8 @@ sequenceDiagram
         AS2->>R2: Store(sid, [{a,σ₀}, {b,σ₁}, {c,σ₂}])
         AS2->>AS2: r₃ = Merkle(σ₀, σ₁, σ₂)
     end
-    rect rgb(225, 235, 250)
-        Note right of AS2: Control Plane
-        AS2->>c: T₃ = JWT_AS₂{chain:[a,b,c], root:r₃, sid}
-    end
-
-    Note over c, d: Step 4 — Final RP (Data Plane + Audit Plane)
-    rect rgb(230, 245, 230)
-        Note right of c: Data Plane
-        c->>d: T₃
-        d->>d: Verify JWT_AS₂(T₃)
-        d->>d: Evaluate policy on actor_chain
-    end
     rect rgb(245, 235, 220)
-        Note over d: Audit Plane — O(n), async
+        Note right of d: RP Forensic Audit — O(n)
         d->>AS2: GET .well-known → governance_registry_endpoint
         d->>R2: GET /actor?sid={sid}
         R2-->>d: {entries:[{a,σ₀},{b,σ₁},{c,σ₂}], root:r₃}
