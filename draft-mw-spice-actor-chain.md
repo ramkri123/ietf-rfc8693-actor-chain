@@ -176,9 +176,6 @@ actor_chain_root:
 sid:
 : RECOMMENDED. A string identifying the session to which this token belongs. The Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) are partitioned by this identifier. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
 
-To support diverse privacy requirements, Selective Disclosure (SD-JWT) is configurable at two levels of granularity:
-- **Per-Actor**: An Authorization Server MAY choose to hide entire Actor Chain Entries or only specific actors in the chain.
-- **Per-Field**: Within a single Actor Chain Entry, a subset of members (e.g., `sub`) MAY be hidden using an `_sd` claim while others (e.g., `iat` or `por`) remain in cleartext.
 
 ### Actor Chain Entry Members
 
@@ -297,17 +294,6 @@ When an actor (Service B) receives a token containing an `actor_chain` and needs
     - The updated `actor_chain_root` (new merkle root).
     - The `sid` identifying the session.
 10. The AS signs the entire JWT and issues the token.
-
-### Disclosure Propagation in SD-JWT
-
-When Selective Disclosure (SD-JWT) {{!I-D.ietf-oauth-selective-disclosure-jwt}} is used for any Actor Chain Entry, the Authorization Server (AS) acts as the Discloser during token exchange. The propagation of the underlying cleartext identities is managed as follows:
-
-1. **Disclosure Inclusion**: When the AS issues a token for a downstream recipient (Service B), it determines based on policy which hidden identifiers in the `actor_chain` should be visible to that recipient. For each visible actor, the AS appends the corresponding SD-JWT Disclosure string (containing the salt and cleartext value) to the issued token.
-2. **Hop-by-Hop Visibility**: In a chain `a -> b -> c -> d -> e`, if `a` is to be visible to `b`, `c`, and `d`, the AS includes `a`'s disclosure string in the tokens issued to `b`, `c`, and `d` during their respective token exchanges.
-3. **Selective Redaction**: When the final exchange occurs for recipient `e` (the end of the trust zone), the AS simply omits the disclosure string for `a` from the issued token.
-4. **Validation**: Each recipient in the chain can independently verify the hash of any disclosed claim against the `_sd` array in the Actor Chain Entry. If a disclosure is missing, the recipient sees only the hash, but can still verify the entry's geographic and residency properties through other claims.
-
-This mechanism ensures that the "key" to unlock a hidden identity is passed only to authorized actors in the chain, while the underlying cryptographically signed JWT structure remains identical for all recipients.
 
 ## Data-Plane Policy Enforcement
 
@@ -504,27 +490,11 @@ Instead of using globally unique or stable identifiers (like email addresses or 
 
 ### Selective Disclosure (SD-JWT)
 
-The `actor_chain` MAY be implemented using Selective Disclosure for JWTs {{!I-D.ietf-oauth-selective-disclosure-jwt}}. This allows individual Actor Chain Entries to be hashed with unique salts, enabling verification of the entry's integrity without revealing its cleartext content unless a corresponding disclosure is provided.
+Selective Disclosure for JWTs (SD-JWT) {{!I-D.ietf-oauth-selective-disclosure-jwt}} is a promising mechanism for hiding actor identities from downstream Relying Parties while preserving chain integrity. However, the interaction between SD-JWT Disclosure mechanics and per-actor `chain_sig` signatures requires further specification. A future version of this document will define how `chain_sig` is computed when Actor Chain Entries contain selectively disclosed claims. This is tracked as an open work item.
 
 ### Identity Bridging for Anonymity
 
 An Identity Bridge {{!I-D.ietf-spice-arch}} MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the `actor_chain` with generic or pseudonymous identifiers, while still vouching for the chain's security properties.
-
-### Targeted Selective Disclosure
-
-A more advanced privacy model involves disclosing actor identities only to trusted intermediate parties. In the chain `a -> b -> c -> d -> e`, actor `a` may be visible to `b`, `c`, and `d`, but hidden from `e`.
-
-This is achieved through **Targeted Disclosure** using SD-JWT:
-- The AS generates the `actor_chain` with actor `a`'s identity hashed and salted.
-- Alongside the JWT, the AS provides a "Disclosure" string (the salt and cleartext value) for actor `a`.
-- When the AS issues a token for `b`, `c`, or `d`, it includes this disclosure string. This allows these "internal" actors to "unlock" the hash and see `a`'s true identity.
-- When the final token is exchanged for recipient `e`, the AS (or the last internal actor `d`) simply omits the disclosure string for actor `a`.
-- Actor `e` receives the same JWT but without the "key" to unlock `a`. `e` can verify the cryptographic integrity of the entire chain (proving that a verified, though anonymous, actor started it) without ever seeing `a`'s identity.
-
-| Recipient | JWT Payload | Disclosure provided? | Interpretation |
-| :--- | :--- | :--- | :--- |
-| **Actor b** | `_sd: [hash_a]` | **Yes** | `b` sees `sub: a` |
-| **Actor e** | `_sd: [hash_a]` | **No** | `e` sees `sub: <hidden>` |
 
 ### Encryption (JWE)
 
