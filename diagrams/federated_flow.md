@@ -89,18 +89,23 @@ sequenceDiagram
         d->>d: Evaluate policy on actor_chain
     end
 
-    Note over AS1, R2: Audit Plane (async, on-demand)
+    Note over AS1, R2: Audit Plane — O(n) In-Order Traversal
     rect rgb(245, 235, 220)
-        Note right of d: RP Forensic Audit (recursive)
+        Note right of d: RP Forensic Audit
         d->>d: Archive T₃ (actor_chain=[a,b,c], root=r₃)
-        d->>R2: GET /actor?sid={sid}
-        R2-->>d: {entries:[{c,σ₂}], prior_root:r₂}
         d->>R1: GET /actor?sid={sid}
         R1-->>d: {entries:[{a,σ₀},{b,σ₁}]}
-        d->>d: Assert entries match actor_chain order: a→b→c
-        d->>d: Verify σ₀(pk_a), σ₁(pk_b), σ₂(pk_c)
-        d->>d: Reconstruct r₂ = Merkle(σ₀,σ₁)
-        d->>d: Reconstruct r₃ = Merkle(r₂, σ₂)
+        d->>R2: GET /actor?sid={sid}
+        R2-->>d: {entries:[{c,σ₂}], prior_root:r₂}
+
+        Note right of d: In-order leaf traversal (i=0,1,2)
+        d->>d: i=0: assert sub==a, verify σ₀(pk_a) ✓
+        d->>d: i=1: assert sub==b, verify σ₁(pk_b) ✓
+        d->>d: r₂ = Merkle(H(0x01‖σ₀), H(0x01‖σ₁))
+
+        d->>d: i=2: assert sub==c, verify σ₂(pk_c) ✓
+        d->>d: r₃ = Merkle(H(0x02‖r₂), H(0x01‖σ₂))
+
         d->>d: Assert r₃ == actor_chain_root in T₃
     end
 ```
