@@ -75,8 +75,8 @@ sequenceDiagram
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
         AS2->>AS2: Verify σ₂ against pk_c
-        AS2->>R2: Store(sid, [{a,σ₀}, {b,σ₁}, {c,σ₂}])
-        AS2->>AS2: r₃ = Merkle(σ₀, σ₁, σ₂)
+        AS2->>R2: Store(sid, {c, σ₂})
+        AS2->>AS2: r₃ = Merkle(r₂, σ₂)
         AS2->>c: T₃ = JWT_AS₂{chain:[a,b,c], root:r₃, sid}
     end
 
