@@ -459,6 +459,21 @@ Federated deployments SHOULD:
 - Include `kid` or `jwk` in each `chain_sig` JWS header for key resolution.
 - Enforce cross-domain trust policies on the `iss` field of each Actor Chain Entry.
 
+### Cross-AS Ordering and Completeness (Open Work Item)
+
+In the current design, each actor signs only its own identity claims (`chain_sig` is standalone). The merkle tree enforces ordering within a single AS's domain, but when entries cross an AS boundary — for example, AS2 receiving entries from AS1 — the receiving AS could theoretically reorder or omit entries from the originating AS. Per-actor signatures remain independently verifiable (participation is provable), but ordering and completeness across AS boundaries are not cryptographically enforced.
+
+The leading candidate solution is a **subtree root model**: instead of rebuilding a flat merkle tree over all `chain_sig` values, the receiving AS (AS2) uses the originating AS's signed root (`r_prior`) as a leaf node in its own tree:
+
+```
+Within AS1:  r2 = Merkle(σ_0, σ_1)
+At AS2:      r3 = Merkle(r2, σ_2)
+```
+
+This cryptographically binds AS2's tree to AS1's ordering and completeness — reordering or dropping any of AS1's entries would change `r2`, which would change `r3`. The approach adds zero token bloat (the token still carries only the final root) and naturally mirrors the federation topology.
+
+A future version of this document will specify the subtree root construction, its interaction with the registry response schema, and the recursive verification algorithm. This is tracked as an open work item.
+
 ## Chain Integrity
 
 The merkle tree structure in the registry provides tamper evidence for the entire delegation path. The `chain_sig` values form the ordered leaf nodes of the merkle tree, and the resulting `actor_chain_root` is committed in the signed token. Insertion, deletion, or reordering of entries changes the leaf positions, producing a different merkle root that no longer matches the token's `actor_chain_root`. A fabricated entry would also fail verification because the attacker cannot produce a valid `chain_sig` without the actor's private key.
