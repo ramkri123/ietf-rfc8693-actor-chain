@@ -67,14 +67,14 @@ sequenceDiagram
         c->>c: σ₂ = Sign(canon(c), sk_c)
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
-        AS2->>AS1: GET .well-known → governance_registry_endpoint
-        AS2->>R1: GET /actor?sid={sid}
-        R1-->>AS2: {entries:[{a,σ₀}, {b,σ₁}], root:r₂}
-        AS2->>AS2: Verify σ₀(pk_a), σ₁(pk_b), reconstruct r₂
         AS2->>AS2: Verify σ₂ against pk_c
     end
     rect rgb(245, 235, 220)
         Note right of AS2: Audit Plane
+        AS2->>AS1: GET .well-known → governance_registry_endpoint
+        AS2->>R1: GET /actor?sid={sid}
+        R1-->>AS2: {entries:[{a,σ₀}, {b,σ₁}], root:r₂}
+        AS2->>AS2: Verify σ₀(pk_a), σ₁(pk_b), reconstruct r₂
         AS2->>R2: Store(sid, [{a,σ₀}, {b,σ₁}, {c,σ₂}])
         AS2->>AS2: r₃ = Merkle(σ₀, σ₁, σ₂)
     end
