@@ -37,10 +37,10 @@ sequenceDiagram
     rect rgb(230, 245, 230)
         Note right of a: Data Plane
         a->>b: T₁
+        b->>b: Verify JWT_AS₁(T₁)
     end
     rect rgb(225, 235, 250)
         Note right of b: Control Plane
-        b->>b: Verify JWT_AS₁(T₁)
         b->>b: σ₁ = Sign(canon(b), sk_b)
         b->>AS1: TokenExchange(subject=T₁, actor={b, σ₁})
         AS1->>AS1: Verify T₁, verify σ₁ against pk_b
@@ -59,11 +59,11 @@ sequenceDiagram
     rect rgb(230, 245, 230)
         Note right of b: Data Plane
         b->>c: T₂
+        c->>c: Discover AS₁ JWKS via iss(T₂)
+        c->>c: Verify JWT_AS₁(T₂)
     end
     rect rgb(225, 235, 250)
         Note right of c: Control Plane
-        c->>c: Discover AS₁ JWKS via iss(T₂)
-        c->>c: Verify JWT_AS₁(T₂)
         c->>c: σ₂ = Sign(canon(c), sk_c)
         c->>AS2: TokenExchange(subject=T₂, actor={c, σ₂})
         AS2->>AS2: Discover AS₁ JWKS, verify JWT_AS₁(T₂)
