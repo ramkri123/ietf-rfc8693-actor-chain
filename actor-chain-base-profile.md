@@ -1,3 +1,4 @@
+
 # Actor Chain — Base Profile: Cryptographic Audit Trail
 
 **Status:** Draft — Design Proposal  
