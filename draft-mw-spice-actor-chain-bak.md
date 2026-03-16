@@ -1,19 +1,19 @@
 %%%
-title = "Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange"
-abbrev = "SPICE-ACTOR-CHAIN"
-category = "info"
-docName = "draft-mw-spice-actor-chain-00"
+title = "Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange"
+abbrev = "SPICE-ACTOR-CHAINS"
+category = "std"
+docname = "draft-mw-spice-actor-chain-11"
 ipr = "trust200902"
 area = "Security"
 workgroup = "SPICE"
-keyword = ["actor chain", "spice", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents"]
-date = 2026-03-10
+keyword = ["actor chain", "spice", "oauth", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents", "MCP", "A2A"]
+date = 2026-03-15
 
 [seriesInfo]
 name = "Internet-Draft"
-value = "draft-mw-spice-actor-chain-00"
+value = "draft-mw-spice-actor-chain-11"
 stream = "IETF"
-status = "informational"
+status = "standard"
 
 [[author]]
 initials = "A."
@@ -47,702 +47,2046 @@ organization = "Aryaka"
   [author.address]
   email = "srinivasa.addepalli@aryaka.com"
 
+[normative]
+RFC2119 = {}
+RFC8174 = {}
+RFC7515 = {}
+RFC7519 = {}
+RFC8392 = {}
+RFC8414 = {}
+RFC8693 = {}
+RFC8785 = {}
+RFC6838 = {}
+RFC6920 = {}
+RFC8949 = {}
+RFC9052 = {}
+
+[informative]
+RFC9334 = {}
+RFC9901 = {}
+
+[informative."I-D.ietf-spice-arch"]
+[informative."I-D.ietf-spice-s2s-protocol"]
+[informative."I-D.ietf-spice-sd-cwt"]
+[informative."I-D.draft-mw-spice-intent-chain"]
+[informative."I-D.draft-mw-spice-inference-chain"]
+[informative."I-D.draft-mw-spice-transitive-attestation"]
 %%%
 
 .# Abstract
 
-This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} that addresses the problem of **Delegation Auditability Gaps** in multi-hop service environments. Current standards treat prior actors in a delegation chain as "informational only," providing no cryptographic proof of the actual delegation path. This document proposes a new `actor_chain` claim — a **Cryptographically Verifiable Actor Chain** — that replaces the informational-only nested `act` claim with a tamper-evident, ordered record of all actors. This solution enables high-assurance data-plane policy enforcement and forensic auditability, particularly for dynamic AI agent-to-agent workloads where susceptibility to **prompt injection attacks** can lead to unauthorized delegation paths.
+This document defines three actor-chain profiles for OAuth 2.0 Token Exchange
+{{!RFC8693}}. {{!RFC8693}} permits nested `act` claims, but prior actors remain
+informational only and token exchange does not define how a delegation path is
+preserved and validated across successive exchanges.
+
+This document defines profile-specific processing for linear multi-hop
+workflows. The profiles are Asserted Delegation Path, Committed Delegation
+Path, and Commitment-Only Delegation Path.
+
+These profiles preserve the existing meanings of `sub` and `act`, support same-
+domain and cross-domain delegation, require sender-constrained tokens, and
+provide different tradeoffs among readable chain-based authorization,
+cryptographic accountability, auditability, privacy, and long-running workflow
+support.
 
 {mainmatter}
 
 # Introduction
 
-This document defines an extension to OAuth 2.0 Token Exchange {{!RFC8693}} to support high-assurance identity delegation through cryptographically verifiable actor chains. 
+In service-to-service, tool-calling, and agent-to-agent systems, a workload
+often receives a token, performs work, and then exchanges that token to call
+another workload. This pattern appears in microservices, workload identity
+systems, MCP-style tool invocation, and AI-agent orchestration pipelines. The
+resulting path can span multiple hops and multiple Authorization Servers
+(ASes).
 
-In modern multi-service and AI-agent environments, a workload often delegates its authority to another agent, which may in turn delegate to others. While {{!RFC8693}} provides the `act` (actor) claim to represent delegation, it explicitly restricts prior actors in a nested chain to be "informational only," excluding them from access control considerations. This creates a significant **Delegation Auditability Gap**: Relying Parties cannot verify the full path of authority, and attackers can potentially hide lateral movement or **prompt injection-induced hijacking** within unverified informational claims.
+{{!RFC8693}} defines token exchange and the `act` claim for the current actor,
+but it does not define a standardized model for preserving and validating the
+full delegation path across successive exchanges.
 
-By providing a standardized **Cryptographically Verifiable Actor Chain**, this extension replaces the informal nested `act` structure with a policy-enforceable, ordered, and tamper-evident record of all participants. This establishes a **delegation** axis of accountability, ensuring that any service in a global delegation chain can be verified for identity, integrity, and (optionally) physical residency.
+This document defines cryptographically verifiable actor-chain profiles for
+OAuth 2.0 Token Exchange.
 
-This solution addresses several critical gaps in {{!RFC8693}}:
+* `sub` continues to identify the token subject.
+* `act`, when present, continues to identify the current actor.
+* `actor_chain`, when present, carries the ordered delegation path.
+* `actor_chain_commitment`, when present, carries cumulative committed chain
+  state for stronger tamper evidence and auditability.
 
-1. **Cryptographic Audit Trail**: Proves that each prior actor actually participated in the delegation chain and that the sequence has not been tampered with.
-2. **Data-Plane Policy Enforcement**: Enables Relying Parties to write fine-grained authorization policies based on any actor in the path (e.g., "originating actor must be X").
-3. **Dynamic AI Agent Topologies**: Provides a scalable architecture for the unpredictable and deep delegation chains common in autonomous agent networks.
-4. **Data-Plane Efficiency**: Uses a flat, ordered array structure optimized for high-throughput parsing and indexing in cloud-native proxies (e.g., Envoy).
+The design separates:
 
-This specification is part of a three-axis "Truth Stack" for AI agent governance:
+* **inline authorization**, where ordinary tokens carry what the next hop needs
+  to validate and authorize a request; and
+* **proof and audit**, where committed profiles bind each accepted hop to
+  actor-signed proofs and cumulative committed state for later verification.
 
-| Specification | Axis | Question Answered | STRIDE Coverage |
-| :--- | :--- | :--- | :--- |
-| **Actor Chain** (this document) | Identity | WHO delegated to whom? | Spoofing, Repudiation, Elevation of Privilege |
-| **Intent Chain** ({{!I-D.draft-mw-spice-intent-chain}}) | Content | WHAT was produced and transformed? | Repudiation, Tampering |
-| **Inference Chain** ({{!I-D.draft-mw-spice-inference-chain}}) | Computation | HOW was the output computed? | Spoofing (computational), Tampering (model) |
-
-| Chain | Plane | Token Content | Full Chain | Primary Consumer |
-| :--- | :--- | :--- | :--- | :--- |
-| **Actor** | Data Plane | Full chain inline | In token | Every Relying Party (real-time authorization) |
-| **Intent** | Audit Plane | Merkle root only | External registry | Audit systems, forensic investigators |
-| **Inference** | Audit Plane | Merkle root only | External registry | Auditors, compliance systems |
-
-This extension is designed to be backward-compatible and format-agnostic, supporting both JSON/JWS (JWT {{!RFC7519}}) and CBOR/COSE (CWT {{!RFC8392}}) representations.
+This document is format-agnostic. JWT deployments use JSON and JWS. CWT
+deployments use CBOR and COSE.
 
 # Terminology
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they appear in all capitals, as shown here.
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
+when, and only when, they appear in all capitals, as shown here.
 
-This document leverages the terminology defined in OAuth 2.0 Token Exchange {{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS Architecture {{!RFC9334}}.
+This document also leverages terminology from OAuth 2.0 Token Exchange
+{{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS
+Architecture {{!RFC9334}}.
 
-Actor Chain:
-: A Cryptographically Verifiable Actor Chain — an ordered sequence of Actor Chain Entries representing the complete delegation path from the originating actor to the current actor. The token carries identity entries inline and a Merkle root (`actor_chain_root`) binding those entries to per-actor cryptographic signatures stored in an external registry.
+Actor:
+: A workload, service, application component, agent, or other authenticated
+  entity that receives a token, performs work, and MAY subsequently act toward
+  another actor.
 
-Actor Chain Entry:
-: A JSON object or CBOR map identifying a single actor in the delegation chain, including its identity claims (`sub`, `iss`, `iat`) and an optional Proof of Residency (`por`). The token carries these entries inline for data-plane policy enforcement.
+Current actor:
+: The authenticated entity presently performing token exchange or presenting a
+  sender-constrained token to the next hop.
 
-Actor Chain Root:
-: The Merkle root hash of the complete set of per-actor signatures (`chain_sig` values) in the actor chain, included in the OAuth token as the `actor_chain_root` claim. This binds the data-plane token to the audit-plane evidence.
+Presenting actor:
+: The authenticated actor that presents a sender-constrained token to a
+  recipient.
 
-Actor Chain Registry:
-: A service endpoint that stores per-actor signature evidence (`chain_sig` for each entry) in an ordered, append-only log. Discovered via the Authorization Server's metadata (`governance_registry_endpoint`) and queried using the token's `sid` claim. Implementations MAY use a SCITT transparency log {{!I-D.ietf-scitt-architecture}} or equivalent ordered log.
+Recipient:
+: The actor or resource server identified as the intended target of an issued
+  token.
 
-Chain Depth:
-: The total number of Actor Chain Entries in an actor chain. Used by policy engines to enforce maximum delegation depth.
+Actor chain:
+: The ordered sequence of actors that have acted so far in one workflow
+  instance.
 
-Proof of Residency (PoR):
-: A cryptographic proof (as defined in {{!I-D.draft-mw-spice-transitive-attestation}}) binding a workload to a specific, verified local environment. When present in an Actor Chain Entry, it provides hardware-rooted assurance of the actor's execution context.
+Readable chain:
+: An `actor_chain` value carried in an ordinary token and visible to downstream
+  recipients.
 
-# The Problem: RFC 8693 Actor Limitations
+Committed chain state:
+: The cumulative cryptographic state that binds prior accepted chain state to a
+  newly accepted hop.
 
-## Single-Actor Semantics
+Step proof:
+: A profile-defined proof signed by the current actor that binds that actor's
+  participation to the workflow, prior chain state, and target context.
 
-{{!RFC8693}} Section 4.1 defines the `act` claim as a JSON object identifying **the** current actor. While nesting is permitted to represent prior actors, the specification explicitly limits their utility. Only the outermost `act` claim—representing the current actor—is relevant for access control. All prior actors exist solely for informational purposes.
+Workflow identifier (`sid`):
+: A stable identifier minted once at workflow start and retained for the
+  lifetime of the workflow instance.
 
-This design was appropriate for traditional web service delegation where chains are short (typically one or two hops) and the identity of the immediate caller is sufficient for authorization. It is insufficient for the emerging class of workloads described below.
+Cross-domain re-issuance:
+: A second token exchange performed at another domain's Authorization Server in
+  order to obtain a local token trusted by the next recipient, without
+  extending the actor chain.
 
-## AI Agent Delegation Chains
+Continuity:
+: The property that the inbound token is being presented by the actor that the
+  chain state indicates should be presenting it.
 
-Modern AI systems increasingly operate as networks of specialized agents. A typical interaction may involve:
+Append-only processing:
+: The rule that a newly acting actor is appended to the prior chain state,
+  without insertion, deletion, reordering, or modification of prior actors.
 
-```
-User -> Orchestrator Agent -> Planning Agent -> Tool Agent -> Data API
-```
+Terminal recipient:
+: A recipient that performs work locally and does not extend the actor chain
+  further.
 
-At each hop, the agent performs a token exchange ({{!RFC8693}}) to obtain credentials appropriate for calling the next service. Under current {{!RFC8693}} semantics, by the time the request reaches the Data API, only the Tool Agent is identified as the actor. The Orchestrator Agent and Planning Agent—which may have been manipulated via **prompt injection** into delegating authority they should not have—are invisible to policy enforcement.
+Refresh-Exchange:
+: A token-exchange operation by the same current actor that refreshes a short-
+  lived transport token without appending the actor chain, changing the active
+  profile, or generating a new step proof.
 
-This creates several concrete risks:
+# Problem Statement
 
-- **Lateral Movement**: A compromised agent deep in the chain can impersonate the authority of the originating actor without any cryptographic evidence of the actual delegation path.
-- **Policy Bypass**: Fine-grained policies like "only allow data access when the orchestrator is a known, trusted entity" cannot be expressed because the orchestrator's identity is not available for policy evaluation at the data plane.
-- **Audit Gaps**: Post-incident forensic analysis cannot reliably reconstruct the delegation path because the nested `act` claims are self-reported and unsigned.
+{{!RFC8693}} defines the top-level `act` claim for the current actor and allows
+nested prior actors. However, prior nested `act` claims are informational only
+for access-control decisions. In multi-hop systems, especially service-to-
+service and agentic systems, that is not sufficient.
 
-## Structural Limitations of Nested `act`
+Consider:
 
-Beyond the semantic restriction, the nested object structure of `act` in {{!RFC8693}} has practical limitations:
+~~~ text
+User -> Orchestrator -> Planner -> Tool Agent -> Data API
+~~~
 
-1. **Parsing Complexity**: Each prior actor requires traversing one additional level of JSON nesting. In high-throughput data-plane proxies (e.g., Envoy, Istio sidecars), deep nesting imposes parsing overhead.
-2. **Indexing**: It is not possible to efficiently query "the actor at position N" without recursively unwinding the nested structure.
-3. **Size Predictability**: The depth of nesting is unbounded, making it difficult to predict token sizes and allocate parsing buffers.
-4. **No Integrity**: Each nested `act` is a plain JSON object with no signature or hash binding. Any intermediary could insert, remove, or reorder prior actors without detection.
+By the time the request reaches the Data API, the immediate caller may be
+visible, but the upstream delegation path is not standardized as a policy input
+and is not bound across successive token exchanges in a way that can be
+independently validated or audited. This creates several concrete gaps:
 
-# The Solution: The Cryptographically Verifiable `actor_chain` Claim
+* downstream policy cannot reliably evaluate the full delegation path;
+* cross-exchange continuity is not standardized;
+* tampering by an actor and its home AS is not uniformly addressed;
+* forensic verification of per-hop participation is not standardized; and
+* ordinary tokens may disclose more prior-actor information than some
+  deployments are willing to reveal.
 
-## Overview
+# Relationship to RFC 8693 Claims
 
-This document defines a new claim, `actor_chain`, that provides a Cryptographically Verifiable Actor Chain. When used in a JWT, its value is a JSON array of Actor Chain Entries. When used in a CWT, its value is a CBOR array of Actor Chain Entries. The array is ordered chronologically: index 0 represents the originating actor, and the last index represents the current actor.
+This specification extends OAuth 2.0 Token Exchange {{!RFC8693}} without
+changing the existing meanings of `sub`, `act`, or `may_act`.
 
-The Authorization Server (AS) validates each actor at token exchange time and constructs the `actor_chain`. Each actor cryptographically signs its own identity claims, producing a per-entry `chain_sig`. The AS stores only its own actor entries in its registry (the Actor Chain Registry), while the token carries the identity entries and a Merkle root (`actor_chain_root`) binding them to the signed evidence. Within a single AS, the Merkle tree is constructed from `chain_sig` leaves. Across AS boundaries, the receiving AS uses the upstream AS's Merkle root (from the verified JWT) as a subtree binding — producing a new root that cryptographically links the downstream tree to the upstream ordering. The AS's signature over the entire token (JWS or COSE) provides data-plane integrity.
+The following rules apply:
 
-This architecture separates data-plane concerns (fast access control using identity entries) from audit-plane concerns (per-actor non-repudiation using stored signatures), following the same pattern as the companion Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications:
+* `sub` continues to identify the subject of the issued token.
+* `act`, when present, MUST identify the current actor represented by the
+  issued token.
+* `actor_chain`, when present, is the profile-defined ordered list of actors
+  that have acted so far in the workflow instance.
+* Nested prior `act` claims, if present for compatibility or deployment-
+  specific reasons, remain informational only for access-control purposes,
+  consistent with {{!RFC8693}}.
+* `may_act`, when present in an inbound token, MAY be used by the accepting
+  Authorization Server as one input when determining whether the authenticated
+  current actor is authorized to perform token exchange for the requested
+  target context.
 
-| Chain | Question | Token (data plane) | Registry (audit plane) |
-| :--- | :--- | :--- | :--- |
-| **Actor Chain** (this document) | WHO participated? | Identity entries + Merkle root | Per-actor `chain_sig` |
-| **Intent Chain** {{!I-D.draft-mw-spice-intent-chain}} | WHAT was produced? | Content refs + Merkle root | Per-entry `intent_sig` |
-| **Inference Chain** {{!I-D.draft-mw-spice-inference-chain}} | HOW was it computed? | Model refs + Merkle root | Per-entry `inference_sig` |
+Nothing in this specification redefines the delegation and impersonation
+semantics described in {{!RFC8693}}.
 
-By requiring per-actor signatures in all three chains and storing them in registries with Merkle roots in tokens, a Relying Party obtains O(1) data-plane verification while retaining full per-actor non-repudiation for audit.
+# Scope and Model
 
-## Claim Definition
+This document specifies a family of profiles for representing and validating
+actor progression across a linear workflow using OAuth 2.0 Token Exchange.
 
-### Token Claims (Data Plane)
+The base workflow model is linear:
 
-The following claims are included in the OAuth token:
+~~~ text
+A -> B -> C -> D
+~~~
 
-actor_chain:
-: REQUIRED. A JSON array of Actor Chain Entry objects. Each element is a JSON object with the following members.
+The first actor initializes the workflow. Each subsequent actor MAY:
 
-actor_chain_root:
-: RECOMMENDED. A string containing the Merkle root hash (SHA-256, Base64url-encoded) of the complete set of per-actor chain signatures. This binds the inline identity entries to the signed evidence stored in the Actor Chain Registry. Single-AS deployments that do not require audit-plane non-repudiation MAY omit this claim; in that case, the AS's JWT signature provides data-plane integrity for the `actor_chain` entries. Deployments involving multi-AS federation (where the delegation chain spans more than one Authorization Server) MUST include this claim, because no single AS can vouch for the entire chain and per-actor non-repudiation is required to verify cross-domain hops. Deployments requiring governance alignment with the Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and Inference Chain {{!I-D.draft-mw-spice-inference-chain}} specifications MUST include this claim.
+1. validate an inbound token;
+2. perform work; and
+3. exchange that token for a new token representing itself toward the next hop.
 
-sid:
-: RECOMMENDED. A string identifying the session to which this token belongs, as defined in OpenID Connect Back-Channel Logout 1.0 {{!OIDC.BackChannel}}. This specification reuses the registered `sid` claim to partition the Actor Chain Registry, Intent Registry ({{!I-D.draft-mw-spice-intent-chain}}), and Inference Registry ({{!I-D.draft-mw-spice-inference-chain}}) by session. MUST be present whenever `actor_chain_root` is present. When deployed alongside the Intent Chain, the `sid` value MUST equal the `session.session_id` value defined in {{!I-D.draft-mw-spice-intent-chain}}. The same `sid` is carried forward during each token exchange, ensuring all registry entries for a given interaction can be retrieved as a unit. The Actor Chain Registry endpoint is discovered via the Authorization Server's metadata (see (#registry-discovery)), not carried in the token.
+This document defines three profiles:
 
+* **Asserted Delegation Path**, which carries a readable `actor_chain` and
+  relies on AS-asserted chain continuity under a non-collusion assumption;
+* **Committed Delegation Path**, which preserves a readable `actor_chain` and
+  adds actor-signed step proofs plus cumulative committed state; and
+* **Commitment-Only Delegation Path**, which omits the readable
+  `actor_chain` from ordinary tokens and preserves only cumulative committed
+  state.
 
-### Actor Chain Entry Members
+This document does not define branching or fan-out semantics. A single accepted
+prior state yields at most one accepted successor state unless a future
+specification defines branching behavior. This intentional linearity keeps the
+base profiles simple for replay detection, audit reconstruction, and
+interoperability.
 
-sub:
-: REQUIRED (or selectively disclosed). A string identifying the actor, as defined in {{!RFC7519}} Section 4.1.2.
+# Protocol Overview
 
-iss:
-: REQUIRED (or selectively disclosed). A string identifying the issuer of the actor's identity, as defined in {{!RFC7519}} Section 4.1.1.
+## Workflow Progression
 
-iat:
-: REQUIRED (or selectively disclosed). The time at which this actor was appended to the chain, represented as a NumericDate as defined in {{!RFC7519}} Section 4.1.6.
+The actor chain advances only when an actor acts. Mere receipt of a token does
+not append the recipient.
 
-por:
-: OPTIONAL. A JSON object containing a Proof of Residency binding this actor to a verified execution environment. The structure of this object is defined in {{!I-D.draft-mw-spice-transitive-attestation}}.
+If `A` calls `B`, and `B` later calls `C`, then:
 
-### Registry Entry Members (Audit Plane)
+1. `A` begins the workflow and becomes the first acting actor.
+2. When `A` calls `B`, `B` validates a token representing `A`.
+3. When `B` later exchanges that token to call `C`, `B` becomes the next
+   acting actor.
+4. `C` is not appended merely because `C` received a token. `C` is appended
+   only if `C` later acts toward another hop.
 
-The following fields are stored per-entry in the Actor Chain Registry and are NOT included in the token:
+## Same-Domain and Cross-Domain Hops
 
-chain_sig:
-: REQUIRED. A compact JWS {{!RFC7515}} or COSE_Sign1 {{!RFC9052}} signature produced by this actor's private key over the canonical serialization of its own identity claims (`sub`, `iss`, `iat`, and `por` if present). The JWS header MUST include the `jwk` or `kid` member to identify the signing key. The signature proves this specific actor participated in the delegation chain. Ordering of entries is enforced by the Merkle tree structure (see (#chain-integrity)), not by cumulative hashing.
+Within one trust domain, the current actor exchanges its inbound token at its
+home Authorization Server, which validates prior state and issues a token for
+the next hop.
 
+Across a trust boundary, if the next recipient does not trust the current
+Authorization Server directly, the current actor performs a second token
+exchange at the next domain's Authorization Server. That second exchange
+preserves the already-established chain state and does not append the next
+recipient.
 
+## Trust Boundaries
 
-## Example Token (Data Plane)
+This specification provides different assurances depending on the selected
+profile:
 
-The token carries identity entries inline for policy enforcement and a Merkle root binding them to per-actor signatures stored in the registry. No per-actor signatures appear in the token itself.
+* **Asserted Delegation Path**: the issuing AS signature and chain assertion
+  are the primary trust anchor.
+* **Committed Delegation Path**: readable chain state is preserved and each
+  accepted hop is additionally bound to actor-signed proof and committed state.
+* **Commitment-Only Delegation Path**: readable prior actors are omitted from
+  ordinary tokens, while committed state and actor-signed proofs remain
+  available for stronger accountability and later verification.
 
-```json
-{
-  "aud": "https://data-api.example.com",
-  "iss": "https://auth.example.com",
-  "exp": 1700000100,
-  "nbf": 1700000000,
-  "sub": "user@example.com",
-  "sid": "session-123",
-  "actor_chain_root": "sha256:9f86d08...",
-  "actor_chain": [
-    {
-      "sub": "https://orchestrator.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000010,
-      "por": {
-        "wia_kid": "spiffe://example.com/wia/node-1",
-        "env_hash": "sha256:abc123..."
-      }
-    },
-    {
-      "sub": "https://planner.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000030
-    },
-    {
-      "sub": "https://tool-agent.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000050,
-      "por": {
-        "wia_kid": "spiffe://example.com/wia/node-3",
-        "env_hash": "sha256:ghi789..."
-      }
+# Common Requirements
+
+## Common Token Requirements
+
+Tokens issued under any profile defined by this document:
+
+* MUST be short-lived;
+* MUST be sender-constrained to the presenting actor; and
+* MUST contain:
+  * a profile identifier claim `acp`;
+  * a workflow identifier claim `sid`;
+  * a unique token identifier claim `jti`;
+  * an audience value `aud`; and
+  * an expiry value `exp`.
+
+Profiles that preserve readable chain state additionally carry `actor_chain`.
+
+Profiles that preserve committed chain state additionally carry
+`actor_chain_commitment`.
+
+## Workflow Identifier
+
+The `sid` value:
+
+* MUST be minted once at workflow start by the issuing Authorization Server;
+* MUST be generated using a CSPRNG with at least 128 bits of entropy;
+* MUST remain unchanged for the lifetime of that workflow instance; and
+* MUST NOT be used to signal profile selection.
+
+Profile selection MUST be signaled explicitly using:
+
+* the token request parameter `actor_chain_profile`; and
+* the corresponding token claim `acp`.
+
+## Target Context
+
+This specification uses the term `target_context` to refer to the intended
+authorization target bound into profile-defined step proofs and receiver
+acknowledgments.
+
+`target_context` MUST include `aud`.
+
+A deployment MAY additionally include resource identifiers, operation names,
+tool identifiers, method names, request classes, or other target-selection
+inputs used by local authorization policy.
+
+If no such additional values are available, `target_context` is identical to
+`aud`.
+
+Whenever `target_context` is incorporated into a profile-defined signature or
+commitment input, it MUST be canonicalized using JCS in JWT deployments and
+deterministic CBOR in CWT deployments before hashing or signing.
+
+## Sender Constraint
+
+A token issued under any profile in this document MUST be sender-constrained to
+the actor represented by that token.
+
+A recipient or Authorization Server validating such a token MUST verify the
+applicable sender-constrained proof before accepting the token.
+
+Failure of sender-constrained validation MUST cause rejection.
+
+## Actor and Recipient Proof Keys
+
+For committed-chain profiles and for `hop_ack`, any signature used as a
+profile-defined proof MUST be generated with an asymmetric key bound to the
+authenticated actor or recipient identity by local trust policy.
+
+For a committed-profile step proof, the ActorID represented in the proof, the
+key used to sign the proof, and the sender-constrained key used to present the
+corresponding token MUST all be bound to the same actor identity. When the same
+key is not reused for both functions, the Authorization Server MUST validate an
+explicit local binding between the proof-signing key and the sender-constrained
+presentation key before accepting the proof.
+
+For `hop_ack`, the recipient ActorID, the key used to sign the acknowledgment,
+and any sender-constrained key used by that recipient for the protected
+interaction MUST likewise be bound to the same recipient identity.
+
+Shared client secrets MUST NOT be the sole basis for independently verifiable
+step proofs or receiver acknowledgments.
+
+A deployment SHOULD reuse the same asymmetric key material used for sender-
+constrained token presentation, or another asymmetric key that is
+cryptographically bound to the same actor identity.
+
+## Intended Recipient Validation
+
+When a current actor submits an inbound token as a `subject_token` in token
+exchange, the accepting Authorization Server MUST verify that the authenticated
+current actor was an intended recipient of that inbound token according to local
+audience, resource, or equivalent validation rules.
+
+Possession of an inbound token alone is insufficient.
+
+## Replay and Freshness
+
+Recipients and Authorization Servers MUST enforce replay and freshness checks on
+inbound tokens according to local policy.
+
+For profiles that use actor-signed step proofs, the accepting Authorization
+Server:
+
+* MUST detect replay of a previously accepted step proof within its
+  replay-retention window; and
+* SHOULD reject a second accepted successor for the same `(sid, prior_state)`
+  tuple unless a future branching profile is in use.
+
+## Canonicalization
+
+All profile-defined signed or hashed inputs MUST use a canonical serialization
+defined by this specification.
+
+In JWT/JSON deployments, canonical profile-defined proof payloads MUST be
+serialized using JCS {{!RFC8785}}. In CWT/CBOR deployments, they MUST be
+serialized using deterministic CBOR encoding as defined in {{!RFC8949}},
+Section 4.2.
+
+## Actor Identity Representation
+
+This specification requires a canonical representation for actor identity in
+profile-defined chain entries and step proofs.
+
+Each actor identifier MUST be represented as an ActorID structure containing
+exactly two members:
+
+* `iss`: the issuer identifier naming the namespace in which the actor subject
+  value is defined; and
+* `sub`: the subject identifier of the actor within that issuer namespace.
+
+For JWT and JSON-based proof payloads, an ActorID is a JSON object with members
+`iss` and `sub`, serialized using JCS {{!RFC8785}}.
+
+For CWT and CBOR-based proof payloads, an ActorID is a deterministic CBOR map
+with integer label `1` for `iss` and integer label `2` for `sub`.
+
+An ActorID:
+
+* MUST be stable for equality comparison within a workflow instance;
+* MUST be bound to the authenticated actor identity used during
+  sender-constrained token presentation and token exchange;
+* MUST be compared using exact equality of the pair (`iss`, `sub`); and
+* SHOULD support pairwise or pseudonymous subject values where deployment
+  policy allows.
+
+Readable-chain profiles carry arrays of ActorID values in `actor_chain`.
+Privacy-preserving profiles bind ActorID values only inside step proofs and
+related evidence. In examples and formulas, `[A,B]` denotes a readable chain of
+ActorID values for actors `A` and `B`.
+
+## Artifact Typing
+
+JWT-based artifacts defined by this specification MUST use explicit `typ`
+values.
+
+The following values are defined:
+
+* `actc-step-proof+jwt`
+* `actc-commitment+jwt`
+* `actc-hop-ack+jwt`
+
+Verifiers MUST enforce mutually exclusive validation rules based on artifact
+type and MUST NOT accept one artifact type in place of another.
+
+CWT and COSE deployments MUST apply equivalent type discrimination by verifying
+the expected artifact class, exact `ctx` value, and artifact-specific payload
+structure defined by the relevant binding section of this specification.
+
+## Issued Token Type
+
+Unless another application profile explicitly states otherwise, tokens issued
+under this specification are access tokens.
+
+Token exchange responses MUST use the RFC 8693 token type fields consistently
+with the underlying representation and deployment.
+
+## Commitment Hash Algorithms
+
+Committed-chain profiles use a named hash algorithm for construction of
+`actor_chain_commitment`.
+
+Commitment hash algorithm identifiers are values from the IANA Named
+Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}.
+
+Implementations supporting committed-chain profiles MUST implement `sha-256`.
+Implementations SHOULD implement `sha-384`.
+
+Every `actor_chain_commitment` object and every committed-profile bootstrap
+context MUST carry an explicit `halg` value. Verifiers MUST NOT infer or
+substitute `halg` when it is absent.
+
+Verifiers MUST enforce a locally configured allow-list of acceptable
+commitment hash algorithms and MUST NOT accept algorithm substitution based
+solely on attacker-controlled inputs.
+
+## Commitment Function
+
+Committed profiles use `actor_chain_commitment` to bind each accepted hop to the
+prior accepted state. The commitment hash algorithm is selected once for the
+workflow by the issuing Authorization Server during bootstrap and remains fixed
+for the lifetime of that workflow instance.
+
+Each `actor_chain_commitment` value is a signed commitment object whose payload
+contains:
+
+* `ctx`: the context string `actor-chain-commitment-v1`;
+* `sid`: the workflow identifier;
+* `acp`: the active profile identifier;
+* `halg`: the hash algorithm identifier;
+* `prev`: the prior commitment digest, or the bootstrap `initial_chain_seed` at
+  workflow start;
+* `step_hash`: `Hash_halg(step_proof_bytes)`; and
+* `curr`: `Hash_halg(CanonicalEncode({ctx, sid, acp, halg, prev, step_hash}))`.
+
+The `halg` value MUST be a text string naming a hash algorithm from the IANA
+Named Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}. This
+specification permits only `sha-256` and `sha-384` for
+`actor_chain_commitment`. Hash algorithms with truncated outputs, including
+truncated `sha-256` variants, MUST NOT be used. Other registry values MUST NOT
+be used with this specification unless a future Standards Track specification
+updates this document.
+
+When a profile-defined proof input refers to a prior
+`actor_chain_commitment`, the value incorporated into the proof input MUST be
+that prior commitment's verified `curr` digest, not the raw serialized
+commitment object.
+
+The abstract function used throughout this document is therefore:
+
+~~~ text
+Commit_AS(prev_digest, step_proof_bytes, halg)
+  = AS-signed commitment object over payload {
+      ctx,
+      sid,
+      acp,
+      halg,
+      prev = prev_digest,
+      step_hash = Hash_halg(step_proof_bytes),
+      curr = Hash_halg(CanonicalEncode({ctx, sid, acp, halg, prev, step_hash}))
     }
-  ]
-}
-```
-
-## Example Registry Entries (Audit Plane)
-
-The Actor Chain Registry stores the full per-actor signature evidence:
-
-```json
-{
-  "session_id": "session-123",
-  "actor_chain_root": "sha256:9f86d08...",
-  "entries": [
-    {
-      "sub": "https://orchestrator.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000010,
-      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
-    },
-    {
-      "sub": "https://planner.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000030,
-      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
-    },
-    {
-      "sub": "https://tool-agent.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000050,
-      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
-    }
-  ]
-}
-```
+~~~
+
+The exact wire encoding of the signed commitment object is defined in the JWT
+and CWT bindings in Appendix A and Appendix B.
+
+# Authorization Server Metadata
+
+An Authorization Server supporting this specification SHOULD publish metadata
+describing supported actor-chain capabilities.
+
+This specification defines the following Authorization Server metadata values:
+
+* `actor_chain_profiles_supported`:
+  array of supported actor-chain profile identifiers. Each value MUST be the
+  exact identifier string used both as the `actor_chain_profile` token request
+  parameter value and as the `acp` claim value;
+* `actor_chain_commitment_hashes_supported`:
+  array of supported commitment hash algorithm identifiers;
+* `actor_chain_receiver_ack_supported`:
+  boolean indicating whether the Authorization Server supports processing and
+  policy for `hop_ack`; and
+* `actor_chain_refresh_supported`:
+  boolean indicating whether the Authorization Server supports Refresh-Exchange
+  processing under this specification.
+
+If omitted, clients MUST NOT assume support for any actor-chain profile beyond
+out-of-band agreement.
+
+# Cross-Domain Re-Issuance
+
+If the next hop does not trust the current Authorization Server directly, the
+current actor MUST perform a second token exchange at the next domain's
+Authorization Server.
+
+The cross-domain Authorization Server MUST:
+
+* validate the inbound token signature and issuer trust according to local
+  policy;
+* validate the selected actor-chain profile;
+* validate the preserved chain-state structure;
+* preserve `acp`;
+* preserve `sid`;
+* preserve `actor_chain`, if present;
+* preserve `actor_chain_commitment`, if present, exactly as verified;
+* continue to represent the same current actor; and
+* NOT append the next recipient.
+
+The cross-domain Authorization Server MAY mint a new local `jti`, apply a new
+local expiry, change token format or envelope, and add local trust or policy
+claims. It MUST NOT alter the verified preserved chain state.
+
+# Refresh-Exchange
+
+A current actor MAY use token exchange to refresh a short-lived transport token
+without appending the actor chain or regenerating a step proof.
+
+A Refresh-Exchange request MUST include:
+
+* `actor_chain_refresh=true`;
+* the current inbound actor-chain token as the RFC 8693 `subject_token`; and
+* the same authenticated current actor that is represented by that token.
+
+A Refresh-Exchange request MUST NOT broaden the active profile, represented
+actor identity, readable chain state, committed chain state, or target context.
+The requested target context MUST be identical to, or narrower than, the target
+context already represented by the inbound token according to local policy.
+
+When processing Refresh-Exchange, the Authorization Server MUST:
 
-Within a single AS domain, the Merkle tree is constructed from the `chain_sig` values as ordered leaf nodes (index 0 is the leftmost leaf). Across AS boundaries, the receiving AS uses the upstream AS's Merkle root as a leaf node in its own tree (see (#subtree-root-model)). Because the subtree model produces heterogeneous leaf types (signatures and upstream roots), each leaf MUST be domain-separated with a type prefix before hashing (see (#merkle-leaf-domain-separation)). The ordering of entries is cryptographically enforced by the Merkle tree structure — reordering entries changes the leaf positions, which changes the Merkle root. The resulting root hash is included in the token as `actor_chain_root`. An auditor can reconstruct the Merkle tree recursively from each AS's registry entries and verify it matches the root in the token.
+* validate the inbound token and the identity of the current actor;
+* verify sender constraint and intended-recipient semantics as applicable;
+* verify that the request does not append the chain, alter preserved chain
+  state, or broaden target context; and
+* issue a replacement token with a new `jti` and refreshed `exp`.
 
-## Token Exchange Flow
+For Refresh-Exchange, the Authorization Server MUST preserve `sid`, `acp`,
+`actor_chain`, and `actor_chain_commitment`, if present. A new step proof MUST
+NOT be required, and a new commitment object MUST NOT be created.
 
-When an actor (Service B) receives a token containing an `actor_chain` and needs to call a downstream service (Service C), the following token exchange flow occurs:
+A Refresh-Exchange MAY rotate the sender-constrained presentation key only if
+the actor provides a key-transition proof that binds the new presentation key
+to the same `sid` and ActorID under local policy, and the Authorization Server
+verifies and records that proof. Such proof MAY be satisfied by continuity
+mechanisms provided by the sender-constrained binding in use or by another
+locally trusted proof-of-possession transition method. Otherwise, the sender-
+constrained key binding MUST be preserved. Historical step proofs remain bound
+to the keys used when those proofs were created and MUST be verified against
+those historical bindings, not against a later rotated key.
 
-1. **Service B** signs the canonical serialization of its own identity claims (`sub`, `iss`, `iat`) with its private key, producing `chain_sig`.
-2. **Service B** sends a token exchange request to the Authorization Server (AS) per {{!RFC8693}} Section 2.1.
-3. The `subject_token` contains the existing `actor_chain`.
-4. The `actor_token` identifies Service B and includes its `chain_sig`.
-5. The AS validates the existing `actor_chain`:
-    - Verifies the JWT signature on the `subject_token`.
-    - Validates actor identities through its own policy (e.g., client registration, mTLS certificate).
-    - Enforces any `max_chain_depth` policy.
-6. The AS validates Service B's `chain_sig` against Service B's public key.
-7. The AS stores Service B's entry (identity claims + `chain_sig`) in its own Actor Chain Registry.
-8. The AS computes the updated Merkle root. If the AS issued the `subject_token` (same-AS hop), it appends the new `chain_sig` as a leaf to its existing tree. If a different AS issued the `subject_token` (cross-AS hop), the AS uses the upstream `actor_chain_root` from the verified JWT as a subtree leaf and the new `chain_sig` as a sibling leaf (see (#subtree-root-model)).
-9. The AS constructs a new token with:
-    - The extended `actor_chain` array (identity entries only: `sub`, `iss`, `iat`, optional `por`).
-    - The updated `actor_chain_root` (new Merkle root).
-    - The `sid` identifying the session.
-10. The AS signs the entire JWT and issues the token.
+A recipient or coordinating component MUST treat a token obtained by
+Refresh-Exchange as representing the same accepted chain state as the inbound
+token from which it was refreshed. If a sender-constrained key transition
+occurred, recipients still validate historical step proofs against the keys
+bound when those proofs were produced and rely on Authorization-Server records
+or other retained evidence for the key-transition event itself.
 
-## Data-Plane Policy Enforcement
+# Error Handling
 
-Unlike the nested `act` claim in {{!RFC8693}}, the `actor_chain` claim is explicitly designed to be used in access control decisions. Relying Parties and data-plane proxies MAY apply authorization policies based on any entry in the actor chain.
+Token exchange errors in this specification build on OAuth 2.0 and OAuth 2.0
+Token Exchange.
 
-### Policy Examples
+An Authorization Server processing a token exchange request:
 
-The following are illustrative examples of policies that become expressible with the `actor_chain` claim:
+* MUST return `invalid_request` for malformed or missing profile-defined
+  parameters, malformed bootstrap context, malformed ActorID values, malformed
+  commitment objects, or unsupported profile bindings;
+* MUST return `invalid_target` when the requested audience, target context, or
+  recipient is not permitted or not supported; and
+* SHOULD return `invalid_grant` when the `subject_token` fails validation,
+  sender-constrained verification fails, the intended-recipient check fails,
+  continuity fails at token exchange, replay or freshness checks fail,
+  `actor_chain_step_proof` verification fails, or the submitted prior state is
+  inconsistent with the claimed profile state.
 
-**Origin-Based Policy**: Allow access only if the originating actor (index 0) is a trusted orchestrator:
+Recipients and Authorization Servers MUST return protocol-appropriate error
+signals for authentication, authorization, profile-validation, and continuity
+failures.
 
-```
-actor_chain[0].sub == "https://orchestrator.example.com"
-```
+In HTTP deployments, this typically maps to 400-series status codes and OAuth-
+appropriate error values. In non-HTTP deployments, functionally equivalent
+protocol-native error signaling MUST be used.
 
-**Domain Restriction**: Deny access if any actor in the chain belongs to an untrusted domain:
+Error responses and logs MUST NOT disclose undisclosed prior actors, full step
+proofs, request-context digests, or other sensitive proof material unless the
+deployment explicitly requires such disclosure for diagnostics.
 
-```
-for_all(entry in actor_chain):
-  entry.iss in ["https://auth.example.com",
-                 "https://auth.partner.com"]
-```
+# Common Validation Procedures
 
-**Chain Depth Limit**: Reject tokens with delegation chains longer than a configured maximum:
+## Recipient Validation of an Inbound Token
 
-```
-len(actor_chain) <= 5
-```
+Unless a profile states otherwise, a recipient validating an inbound actor-chain
+token MUST verify:
 
-**Residency Requirement**: Require that all actors in the chain have a valid Proof of Residency:
+* token signature;
+* issuer trust;
+* audience and target-context consistency according to local policy;
+* expiry;
+* sender constraint; and
+* replay and freshness state.
 
-```
-for_all(entry in actor_chain):
-  entry.por is present AND entry.por is valid
-```
+## Authorization Server Validation of Token Exchange
 
-**Path-Based Policy**: Allow access only through a specific delegation path:
+Unless a profile states otherwise, an Authorization Server processing a token
+exchange under this specification MUST verify:
 
-```
-actor_chain[0].sub == "https://orchestrator.example.com" AND
-actor_chain[1].sub == "https://planner.example.com"
-```
+* the inbound `subject_token`;
+* the identity of the current actor;
+* replay and freshness constraints;
+* intended-recipient semantics for the inbound token; and
+* authorization to act for the requested target context.
 
-### Integration with Data-Plane Proxies
+## Current-Actor Validation of a Returned Token
 
-The flat array structure of `actor_chain` is designed for efficient processing by data-plane proxies such as Envoy, Istio sidecars, and API gateways. Proxies can:
+Unless a profile states otherwise, a current actor validating a returned token
+from token exchange MUST verify the token signature, profile identifier, and
+any profile-specific append-only or commitment checks before presenting that
+token to the next hop.
 
-1. Extract the `actor_chain` array from the JWT payload with a single JSON path expression.
-2. Iterate linearly over the entries without recursive descent.
-3. Index specific entries by position (e.g., `actor_chain[0]` for the originator).
-4. Compute `len(actor_chain)` for depth-based policies without parsing nested structures.
-5. Emit structured log entries per Actor Chain Entry for distributed tracing and forensic analysis.
+# Asserted Delegation Path Profile
 
-# Chain Integrity Verification
+## Profile Identifier
 
-Verification of the actor chain operates at two levels, reflecting the data-plane / audit-plane separation.
+The profile value for this profile is:
 
-## Data-Plane Verification
+* `actor_chain_profile=asserted-delegation-path`
+* `acp=asserted-delegation-path`
 
-A Relying Party receiving a token with the `actor_chain` claim MUST perform the following verification steps at request time:
+## Objective
 
-1. **JWT Signature Verification**: Verify the outer JWT signature per standard JWT processing rules. This provides integrity for the entire token, including the `actor_chain` and `actor_chain_root` (if present).
+The Asserted Delegation Path profile extends token exchange by carrying a
+readable `actor_chain` and requiring chain-continuity validation by both the
+current actor and the issuing Authorization Server at each hop.
 
-2. **Structural Validation**: Verify that `actor_chain` is a JSON array with at least one element. Verify that each element contains the required identity fields (`sub`, `iss`, `iat`).
+## Security Model
 
-3. **PoR Verification** (if present):
-    - Verify each PoR assertion according to {{!I-D.draft-mw-spice-transitive-attestation}}.
+This profile provides hop-by-hop readable chain integrity based on issuer-asserted chain state and continuity checks.
 
-4. **Policy Evaluation**:
-    - Apply local authorization policy against the verified actor chain.
+This profile assumes that an actor does not collude with its home Authorization
+Server.
 
-If any verification step fails, the Relying Party MUST reject the token.
+## Bootstrap
 
-## Tiered Verification
+At workflow start, actor `A` MUST request a token from `AS1` with:
 
-The appropriate level of actor chain checking depends on the risk level of the operation:
+* `actor_chain_profile=asserted-delegation-path`
+* `audience=B`
 
-| Risk Level | Data-Plane (sync) | Audit-Plane (async) | Use Case |
-| :--- | :--- | :--- | :--- |
-| Low | Verify JWT signature | — | Read operations |
-| Medium | Verify JWT signature + actor identities | — | Create/update |
-| High | Verify JWT signature + actor identities | Full forensic verification via registry | Delete, transfer, admin |
-| Critical | Verify JWT signature + actor identities | Full forensic + cross-chain (intent + inference) | Regulatory, cross-border settlements |
+If `AS1` accepts the request, `AS1` MUST issue `T_A` containing at least:
 
-## Audit-Plane Verification (Forensic)
+* `acp=asserted-delegation-path`
+* `actor_chain=[A]`
+* `sid`
+* `jti`
+* `aud=B`
+* `exp`
 
-For forensic analysis, regulatory compliance, or zero-trust verification, an auditor performs recursive verification across registries (see (#recursive-audit-verification) for the detailed algorithm):
+## Hop Processing
 
-1. **Retrieve entries**: Starting from the token's `iss` claim, discover the AS's `governance_registry_endpoint` and query by `sid`. For cross-AS chains, the auditor follows `prior_root` references to discover upstream registries. For cross-chain verification, the auditor retrieves Actor, Intent, and Inference registry entries using the shared `sid` value to correlate all three evidence sets.
+When `A` calls `B`, `A` MUST present `T_A` to `B`.
 
-2. **Ordering and Completeness Check**: Assert that the registry entries match the `actor_chain` array in the archived token — each actor must be present in the correct position.
+`B` MUST perform recipient validation as described in
+"Recipient Validation of an Inbound Token".
 
-3. **Per-Entry Signature Verification**: For each entry in each registry:
-    - **Verify chain_sig**: Verify `chain_sig` against the canonical serialization of the entry's identity claims (`sub`, `iss`, `iat`) using the actor's public key (discoverable via `iss` JWKS endpoint or SPIFFE trust bundle). This proves the actor participated in the delegation.
+`B` MUST extract the verified `actor_chain`.
 
-4. **Recursive Merkle Root Verification**: Reconstruct each AS's local Merkle subtree from its registry entries. For cross-AS chains, reconstruct the upstream subtree first, then use its root as a leaf to reconstruct the downstream tree. Verify that the final computed root matches the `actor_chain_root` in the archived token.
+`B` MUST verify that the last actor in `T_A.actor_chain` is `A`.
 
-This two-tier verification model ensures that data-plane latency remains O(1) while full per-actor non-repudiation is available on demand.
+If that continuity check fails, `B` MUST reject the request.
 
-# Relation to Other IETF Work
+## Token Exchange
 
-This proposal extends and complements several ongoing efforts:
+To call `C`, `B` MUST submit `T_A` to `AS1` as the RFC 8693 `subject_token`.
 
-| Specification | Relationship |
-| :--- | :--- |
-| **RFC 8693** {{!RFC8693}} | This document extends {{!RFC8693}} by defining `actor_chain` as a replacement for the informational-only nested `act` claim. The `actor_chain` claim is backward-compatible: an AS MAY populate both `act` (for legacy consumers) and `actor_chain` (for chain-aware consumers). |
-| **Transitive Attestation** {{!I-D.draft-mw-spice-transitive-attestation}} | Provides the platform attestation proof (agent to local WIA) that complements the delegation proof (agent to actor-chain) provided by this document. |
-| **SPICE Architecture** {{!I-D.ietf-spice-arch}} | Defines the overarching workload identity architecture within which this extension operates. |
-| **WIMSE Architecture** {{!I-D.ietf-wimse-arch}} | This proposal aligns with the WIMSE delegation and impersonation patterns for distributed microservices architectures. |
-| **Attestation-Based Auth** {{!I-D.ietf-oauth-attestation-based-client-auth}} | Provides the client-to-AS attestation mechanism that can be leveraged to populate the hardware-rooted `por` claims in Actor Chain Entries. |
-| **SCITT** {{!I-D.ietf-scitt-architecture}} | Verifiable actor chains can be recorded in SCITT transparency logs to provide long-term, tamper-proof auditability of delegation paths. |
-| **RATS** {{!RFC9334}} | Provides the attestation foundation for PoR assertions embedded in Actor Chain Entries. |
-| **DPoP** {{!RFC9449}} | `actor_chain` complements DPoP by providing delegation-chain context alongside proof-of-possession. |
+`AS1` MUST perform token-exchange validation as described in
+"Authorization Server Validation of Token Exchange".
 
-## Delegation vs. Platform Attestation
+`AS1` MUST read the prior chain from `T_A` and append `B`.
 
-This specification addresses the **delegation** axis of agent-to-agent communication, providing a cryptographically verifiable trail of identity delegation across a network of services. In contrast, Transitive Attestation {{!I-D.draft-mw-spice-transitive-attestation}} addresses the **platform attestation** axis of an agent's relationship with its local hosting environment (e.g., a Workload Identity Agent on a TEE-enabled node). 
+If the prior chain is `[A]`, the new chain is `[A,B]`.
 
-By embedding platform attestation Proofs of Residency (PoR) within delegation Actor Chain Entries, a Relying Party gains end-to-end assurance that every entity in a global delegation chain is both a recognized identity and is executing within a verified, secure environment.
+`AS1` MUST issue `T_B` containing at least:
 
-## Backward Compatibility with RFC 8693
+* `acp=asserted-delegation-path`
+* `actor_chain=[A,B]`
+* `sid`
+* `jti`
+* `aud=C`
+* `exp`
 
-An Authorization Server implementing this extension SHOULD populate both the `act` claim (per {{!RFC8693}} Section 4.1) and the `actor_chain` claim in issued tokens. This ensures that:
+## Returned Token Validation
 
-- **Legacy consumers** that understand only `act` continue to function correctly, seeing the current actor in the top-level `act` claim.
-- **Chain-aware consumers** can use `actor_chain` for fine-grained policy enforcement and audit.
+Upon receipt of `T_B`, `B` MUST perform current-actor returned-token
+validation as described in "Current-Actor Validation of a Returned Token".
 
-The `act` claim, when present alongside `actor_chain`, MUST identify the same entity as the last entry in the `actor_chain` array.
+`B` MUST verify that `T_B.actor_chain` is exactly the previously verified chain
+from `T_A` with `B` appended.
 
-# Scalability Considerations
+If that append-only check fails, `B` MUST reject `T_B`.
 
-## Token Size
+## Next-Hop Validation
 
-The `actor_chain` identity entries are embedded inline in the JWT. Each Actor Chain Entry adds approximately 150-300 bytes (identity claims only; no signatures). For a chain of depth 5, this adds approximately 0.75-1.5KB to the token. The `actor_chain_root` adds a fixed 44 bytes regardless of chain depth. Authorization Servers SHOULD enforce `max_chain_depth` to bound token size. A RECOMMENDED default maximum of 10 entries limits the actor chain contribution to approximately 3KB.
+Upon receipt of the final B-token, `C` MUST perform recipient validation as
+described in "Recipient Validation of an Inbound Token".
 
-For the CWT representation, Actor Chain Entries use CBOR maps with integer keys, and `chain_sig` in the registry uses COSE_Sign1 {{!RFC9052}}, further reducing overhead.
+`C` MUST extract the verified `actor_chain`.
 
-## Signature Verification Cost
+`C` MUST use the verified `actor_chain` for authorization decisions.
 
-Data-plane signature verification cost is O(1) — the Relying Party verifies only the outer JWT signature. The `actor_chain_root` is trusted as part of the signed payload. Per-actor signature verification is deferred to the audit plane, where it is O(n) but occurs asynchronously and only when needed.
+## Security Result
 
-## Verification Caching
+Under the non-collusion assumption, prior actors MUST NOT be silently inserted,
+removed, reordered, or altered during token exchange.
 
-Relying Parties MAY cache actor chain verification results, keyed by the `actor_chain_root` (which uniquely identifies the complete chain). A cached verification result is valid for the lifetime of the enclosing JWT (`exp` claim).
+## Limits
 
-## Trust Model
+This profile does not address tampering by a colluding actor and its home
+Authorization Server.
 
-The `actor_chain` provides two layers of integrity serving different planes:
+This profile does not by itself address malicious application payloads.
 
-1. **Data plane** — AS outer signature (JWT/CWT): The Authorization Server signs the entire token, including the `actor_chain` identity entries and the `actor_chain_root`. If the Relying Party trusts the AS, this single signature provides sufficient assurance for real-time access control decisions.
+This profile does not by itself prevent confused-deputy behavior.
 
-2. **Audit plane** — Per-actor signatures (registry): Each actor's `chain_sig` in the registry proves that specific actor participated in this specific delegation path. This evidence is independently verifiable and non-repudiable — a compromised AS cannot fabricate an actor's `chain_sig` without that actor's private key.
+# Committed Delegation Path Profile
 
-The `actor_chain_root` binds these two planes: it is a signed claim in the token AND the Merkle root of the registry signatures. Any tampering with either plane is detectable.
+## Profile Identifier
 
-### Multi-AS Identity Federation
+The profile value for this profile is:
 
-In federated deployments, a delegation chain may span multiple Authorization Servers. For example: `b (AS1) -> a (AS1) -> c (AS1) -> f (AS2) -> d (AS2) -> e (AS2)`.
+* `actor_chain_profile=committed-delegation-path`
+* `acp=committed-delegation-path`
 
-The data-plane token is signed by whichever AS issued the final token (AS2 in this example). For real-time access control, the Relying Party trusts AS2. For audit-plane verification — such as confirming that `b` actually initiated the chain through AS1 — the auditor retrieves the registry entries and verifies each actor's `chain_sig` against that actor's public key, discoverable via the `iss` claim (JWKS endpoint) or SPIFFE ID (trust bundle). No single AS needs to be trusted for the entire chain.
+## Objective
 
-Federated deployments SHOULD:
+The Committed Delegation Path profile builds on the Asserted Delegation Path
+profile by adding per-hop actor-signed step proofs and cumulative committed
+state, while preserving a readable `actor_chain` for downstream authorization.
 
-- Publish actor signing keys via standard discovery mechanisms (JWKS endpoints, SPIFFE trust bundles).
-- Include `kid` or `jwk` in each `chain_sig` JWS header for key resolution.
-- Enforce cross-domain trust policies on the `iss` field of each Actor Chain Entry.
+## Security Model
 
-#### Session ID (`sid`) Carry-Forward
+This profile preserves readable chain-based authorization and provides stronger
+accountability and non-repudiation than the Asserted Delegation Path profile.
 
-The `sid` value is carried forward unchanged across all token exchanges in a delegation chain, including cross-AS hops. When AS2 receives a token exchange request containing a token issued by AS1, AS2 reuses the `sid` from the inbound token in the newly issued token and in its own registry entries. This means:
+This profile does not guarantee inline prevention of every invalid token that
+could be issued by a colluding actor and its home Authorization Server.
 
-- The `sid` acts as a global correlation key across all registries in the federation.
-- An auditor can query both AS1's and AS2's registries with the same `sid` to reconstruct the full cross-domain chain.
-- This model assumes `sid` values are globally unique (e.g., UUIDs generated by the originating AS).
+The evidentiary value of this profile depends on retention or discoverability of
+step proofs, exchange records, and associated verification material.
 
-No per-AS session identifier mapping is required. A future version of this document MAY define per-AS sid namespacing for deployments requiring AS-level namespace sovereignty.
+## Bootstrap
 
-#### Subtree Root Model
+### Bootstrap Context Request
 
-Each AS stores only its own actor entries in its registry and uses the upstream AS's Merkle root as a subtree binding. The receiving AS (AS2) does not rebuild a flat tree over all entries; instead, it treats the upstream root from the verified JWT as a leaf node in its own Merkle tree:
+At workflow start, actor `A` MUST request bootstrap context from `AS1` with:
 
-```
-Within AS1:  r2 = Merkle(σ_0, σ_1)       -- local entries only
-At AS2:      r3 = Merkle(r2, σ_2)         -- upstream root as leaf
-```
+* `actor_chain_profile=committed-delegation-path`
+* `audience=B`
 
-This construction cryptographically binds AS2's tree to AS1's ordering and completeness — reordering or dropping any of AS1's entries would change `r2`, which would change `r3`. The approach adds zero token bloat (the token still carries only the final root) and naturally mirrors the federation topology.
+`AS1` selects `halg` for the workflow according to local policy and the
+supported values advertised in Authorization Server metadata.
 
-The subtree model follows naturally from the control-plane constraint: during token exchange, AS2 has only the current actor's `chain_sig` (σ_2) and the upstream root (`r2`) from the verified JWT. AS2 does not have access to AS1's individual signatures at exchange time — those are retrieved asynchronously during audit-plane verification.
+`AS1` MUST generate:
 
-#### Merkle Leaf Domain Separation
+* `sid`;
+* `halg`; and
+* `initial_chain_seed`.
 
-Because the subtree model produces heterogeneous leaf types — actor signatures (`chain_sig`) and upstream Merkle roots (`prior_root`) — each leaf MUST be domain-separated with a type prefix before hashing. This prevents type confusion attacks where a hash value could be misinterpreted as a signature or vice versa.
+The `halg` value in the bootstrap context MUST be either `sha-256` or
+`sha-384` and MUST remain fixed for the lifetime of the workflow instance.
 
-```
-leaf_hash(chain_sig)  = H(0x01 || chain_sig)    -- actor signature leaf
-leaf_hash(prior_root) = H(0x02 || prior_root)    -- upstream subtree root leaf
-```
+`initial_chain_seed` MUST be derived as:
 
-Within a single AS (all leaves are `chain_sig`), only the `0x01` prefix is used. The `0x02` prefix is introduced only at AS boundaries where the upstream root appears as a leaf. Implementations MUST use these prefixes consistently at both construction time (AS) and verification time (auditor).
+* `Hash_halg("actor-chain-readable-committed-init" || sid)`
 
-### Cross-AS Merkle Construction
+`AS1` MUST return bootstrap context containing at least:
 
-When a delegation chain crosses an AS boundary, the following Merkle construction applies:
+* `sid`;
+* `halg`;
+* `initial_chain_seed`;
+* `audience=B`; and
+* a short expiry.
 
-1. The receiving AS (AS2) verifies the inbound JWT signature (control-plane trust in AS1).
-2. AS2 extracts `actor_chain_root` (r2) from the verified token.
-3. AS2 stores only the new actor's entry ({c, σ_2}) in its own registry (R2), along with `prior_root: r2` as a reference to the upstream subtree.
-4. AS2 computes the new root: `r3 = Merkle(r2, σ_2)`.
-5. AS2 issues a new token with `actor_chain_root: r3`.
+The bootstrap context MUST be integrity protected by `AS1` and MUST be single
+use.
 
-For chains spanning more than two ASes (e.g., AS1 → AS2 → AS3), the construction is recursive: AS3 uses AS2's root as a leaf, producing `r4 = Merkle(r3, σ_3)`.
+### Initial Actor Step Proof
 
-### Recursive Audit Verification
+`A` MUST construct:
 
-An auditor performing forensic verification uses the archived token as the ground truth and walks the registry entries in-order — simultaneously verifying ordering, participation, and integrity in a single O(n) pass.
+* `actor_chain=[A]`
 
-The algorithm traverses each AS's registry entries in chain order, matching leaf position `i` against `actor_chain[i]` from the archived token:
+`A` MUST compute a step proof:
 
-```
-// Retrieve evidence from each AS's registry (by sid)
-R1_entries = query R1 by sid   // [{a, σ_0}, {b, σ_1}]
-R2_entries = query R2 by sid   // [{c, σ_2}], prior_root: r2
+* `chain_sig_A = Sign_A("actor-chain-readable-committed-step-sig-v1" || sid || initial_chain_seed || [A] || target_context=TC_B)`
 
-// In-order traversal: verify each leaf against actor_chain[i]
-// — R1 scope (AS1)
-for i, entry in enumerate(R1_entries):
-    assert entry.sub == actor_chain[i].sub   // ordering + completeness
-    verify σ_i against pk of actor_chain[i]   // participation proof
+using canonical encoding.
 
-r2 = Merkle(σ_0, σ_1)                        // reconstruct AS1 subtree
+`A` MUST submit a token request containing:
 
-// — R2 scope (AS2), subtree binding
-for i, entry in enumerate(R2_entries, offset=len(R1_entries)):
-    assert entry.sub == actor_chain[i].sub
-    verify σ_i against pk of actor_chain[i]
+* `actor_chain_profile=committed-delegation-path`;
+* `actor_chain_step_proof=chain_sig_A`; and
+* the `AS1` bootstrap context.
 
-r3 = Merkle(r2, σ_2)                         // reconstruct cross-AS root
-assert r3 == actor_chain_root in archived token
-```
+### Bootstrap Issuance
 
-Each iteration does three things simultaneously:
+`AS1` MUST verify:
 
-1. **Ordering** — leaf position `i` must correspond to `actor_chain[i]`
-2. **Participation** — `σ_i` is valid for that actor's public key
-3. **Completeness** — any missing or extra leaf changes the Merkle root
+* the bootstrap context;
+* the identity of `A`; and
+* the validity of `chain_sig_A`.
 
-If any check fails — an actor is missing, out of order, a signature is invalid, or the reconstructed root does not match — the chain is provably tampered.
+If verification succeeds, `AS1` MUST compute:
 
-## Chain Integrity
+* `actor_chain_commitment = Commit_AS1(initial_chain_seed, chain_sig_A)`
 
-The Merkle tree structure in the registry provides tamper evidence for the entire delegation path. Within a single AS, the `chain_sig` values form the ordered leaf nodes of the Merkle tree. Across AS boundaries, the subtree root model (see (#subtree-root-model)) cryptographically binds downstream trees to upstream ordering — the receiving AS uses the upstream Merkle root as a leaf, so any tampering with the upstream entries changes the upstream root, which changes the downstream root. The resulting `actor_chain_root` is committed in the signed token. Insertion, deletion, or reordering of entries produces a different Merkle root that no longer matches the token's `actor_chain_root`. A fabricated entry would also fail verification because the attacker cannot produce a valid `chain_sig` without the actor's private key.
+`AS1` MUST then issue `T_A` containing at least:
 
-## Replay Protection
+* `acp=committed-delegation-path`
+* `actor_chain=[A]`
+* `actor_chain_commitment`
+* `sid`
+* `jti`
+* `aud=B`
+* `exp`
 
-Each Actor Chain Entry includes an `iat` (issued-at) timestamp. Relying Parties SHOULD enforce a maximum age on Actor Chain Entries to prevent replay of stale chains. Additionally, the standard JWT claims `exp` and `nbf` on the enclosing token provide overall token-level freshness.
+## Hop Processing
 
-## Chain Depth Limits
+When `A` calls `B`, `A` MUST present `T_A` to `B`.
 
-Unbounded actor chains pose a risk of token size explosion and processing overhead. Authorization Servers SHOULD enforce a configurable maximum chain depth (`max_chain_depth`). A RECOMMENDED default maximum is 10 entries. Relying Parties MAY independently enforce their own chain depth limits.
+`B` MUST verify:
+
+* token signature;
+* issuer trust;
+* audience;
+* expiry;
+* sender constraint; and
+* replay and freshness state.
+
+`B` MUST extract:
+
+* `actor_chain`;
+* `actor_chain_commitment`; and
+* `sid`.
+
+`B` MUST verify that the last actor in the readable chain is `A`.
+
+If that continuity check fails, `B` MUST reject the request.
+
+## Token Exchange
+
+To call `C`, `B` MUST:
+
+* construct `new_actor_chain=[A,B]`; and
+* set `prior_commitment_digest` to the verified `curr` value extracted from `T_A.actor_chain_commitment`.
+
+`B` MUST compute:
+
+* `chain_sig_B = Sign_B("actor-chain-readable-committed-step-sig-v1" || sid || prior_commitment_digest || [A,B] || target_context=TC_C)`
+
+using canonical encoding.
+
+`B` MUST submit to `AS1`:
+
+* `T_A` as the RFC 8693 `subject_token`; and
+* `actor_chain_step_proof=chain_sig_B`.
+
+`AS1` MUST verify:
+
+* `T_A`;
+* the identity of `B`;
+* replay and freshness constraints;
+* that `B` was an intended recipient of the inbound `subject_token`;
+* that `B` is authorized to act for the requested target context; and
+* that `chain_sig_B` binds:
+  * the same `sid`;
+  * the same prior commitment;
+  * the reconstructed `new_actor_chain`; and
+  * the requested target context `TC_C`.
+
+If verification succeeds, `AS1` MUST compute:
+
+* `actor_chain_commitment = Commit_AS1(prior_commitment_digest, chain_sig_B)`
+
+`AS1` MUST issue `T_B` containing at least:
+
+* `acp=committed-delegation-path`
+* `actor_chain=[A,B]`
+* `actor_chain_commitment`
+* `sid`
+* `jti`
+* `aud=C`
+* `exp`
+
+## Returned Token Validation
+
+Upon receipt of `T_B`, `B` MUST verify the token signature and profile fields.
+
+`B` MUST verify that:
+
+* the returned readable chain is exactly `[A,B]`; and
+* the returned `actor_chain_commitment` equals
+  `Commit_AS1(prior_commitment_digest, chain_sig_B)`.
+
+If either check fails, `B` MUST reject `T_B`.
+
+## Next-Hop Validation
+
+Upon receipt of the final B-token, `C` MUST verify:
+
+* issuer trust;
+* token signature;
+* audience;
+* expiry;
+* sender constraint; and
+* replay and freshness state.
+
+`C` MUST extract:
+
+* `actor_chain`;
+* `actor_chain_commitment`; and
+* `sid`.
+
+`C` MUST use the readable `actor_chain` for authorization decisions.
+
+## Attack Handling
+
+A claim that actor `V` participated in the chain MUST fail unless a valid step
+proof for `V` can be produced and verified against the corresponding prior
+committed state and `sid`.
+
+If an actor is omitted from a later readable chain, that omitted actor MAY prove
+prior participation by presenting:
+
+* an earlier token showing the prior chain state; and
+* the corresponding committed state and verifiable step proof, or an immutable
+  Authorization-Server exchange record.
+
+A denial of participation by actor `X` MUST fail if a valid step proof for `X`
+is available and verifies.
+
+## Security Result
+
+This profile preserves readable chain-based authorization while making tampering
+materially easier to detect, prove, and audit.
+
+## Limits
+
+This profile does not by itself solve malicious application payloads.
+
+This profile does not by itself solve confused-deputy behavior.
+
+This profile does not by itself solve privacy minimization or workflow
+branching.
+
+# Commitment-Only Delegation Path Profile
+
+## Profile Identifier
+
+The profile value for this profile is:
+
+* `actor_chain_profile=commitment-only-delegation-path`
+* `acp=commitment-only-delegation-path`
+
+## Objective
+
+The Commitment-Only Delegation Path profile builds on the Committed Delegation
+Path profile by omitting the readable `actor_chain` from ordinary tokens and
+retaining only cumulative committed state.
+
+## Security Model
+
+This profile minimizes prior-actor disclosure in ordinary tokens.
+
+This profile preserves sender-constrained current-actor continuity and
+cumulative committed state, but ordinary recipients see only an opaque
+commitment object and not a readable prior-actor path.
+
+This profile does not preserve readable prior-actor authorization at downstream
+hops. Prior-actor integrity is ordinarily verifiable only by the issuing
+Authorization Server or an auditor with access to retained step proofs or
+exchange records.
+
+This profile does not guarantee inline prevention of every invalid token that
+could be issued by a colluding actor and its home Authorization Server.
+
+The evidentiary value of this profile depends on retention or discoverability of
+step proofs, exchange records, and associated verification material.
+
+## Bootstrap
+
+### Bootstrap Context Request
+
+At workflow start, actor `A` MUST request bootstrap context from `AS1` with:
+
+* `actor_chain_profile=commitment-only-delegation-path`
+* `audience=B`
+
+`AS1` selects `halg` for the workflow according to local policy and the
+supported values advertised in Authorization Server metadata.
+
+`AS1` MUST generate:
+
+* `sid`;
+* `halg`; and
+* `initial_chain_seed`.
+
+The `halg` value in the bootstrap context MUST be either `sha-256` or
+`sha-384` and MUST remain fixed for the lifetime of the workflow instance.
+
+`initial_chain_seed` MUST be derived as:
+
+* `Hash_halg("actor-chain-private-committed-init" || sid)`
+
+`AS1` MUST return bootstrap context containing at least:
+
+* `sid`;
+* `halg`;
+* `initial_chain_seed`;
+* `audience=B`; and
+* a short expiry.
+
+The bootstrap context MUST be integrity protected by `AS1` and MUST be single
+use.
+
+### Initial Actor Step Proof
+
+`A` MUST compute:
+
+* `chain_sig_A = Sign_A("actor-chain-private-committed-step-sig-v1" || sid || initial_chain_seed || actor=ActorID(A) || target_context=TC_B)`
+
+using canonical encoding.
+
+`A` MUST submit a token request containing:
+
+* `actor_chain_profile=commitment-only-delegation-path`;
+* `actor_chain_step_proof=chain_sig_A`; and
+* the `AS1` bootstrap context.
+
+### Bootstrap Issuance
+
+`AS1` MUST verify:
+
+* the bootstrap context;
+* the identity of `A`; and
+* the validity of `chain_sig_A`.
+
+If verification succeeds, `AS1` MUST compute:
+
+* `actor_chain_commitment = Commit_AS1(initial_chain_seed, chain_sig_A)`
+
+`AS1` MUST then issue `T_A` containing at least:
+
+* `acp=commitment-only-delegation-path`
+* `actor_chain_commitment`
+* `sid`
+* `jti`
+* `aud=B`
+* `exp`
+
+`T_A` MUST NOT contain a readable `actor_chain`.
+
+## Hop Processing
+
+When `A` calls `B`, `A` MUST present `T_A` to `B`.
+
+`B` MUST verify:
+
+* token signature;
+* issuer trust;
+* audience;
+* expiry;
+* sender constraint; and
+* replay and freshness state.
+
+`B` MUST extract:
+
+* `actor_chain_commitment`; and
+* `sid`.
+
+`B` MUST verify that the token is being presented by `A`.
+
+If that continuity check fails, `B` MUST reject the request.
+
+## Token Exchange
+
+To call `C`, `B` MUST set:
+
+* `prior_commitment_digest` to the verified `curr` value extracted from `T_A.actor_chain_commitment`.
+
+`B` MUST compute:
+
+* `chain_sig_B = Sign_B("actor-chain-private-committed-step-sig-v1" || sid || prior_commitment_digest || actor=ActorID(B) || target_context=TC_C)`
+
+using canonical encoding.
+
+`B` MUST submit to `AS1`:
+
+* `T_A` as the RFC 8693 `subject_token`; and
+* `actor_chain_step_proof=chain_sig_B`.
+
+`AS1` MUST verify:
+
+* `T_A`;
+* the identity of `B`;
+* replay and freshness constraints;
+* that `B` was an intended recipient of the inbound `subject_token`;
+* that `B` is authorized to act for the requested target context; and
+* that `chain_sig_B` binds:
+  * the same `sid`;
+  * the same prior commitment;
+  * the identity of `B`; and
+  * the requested target context `TC_C`.
+
+If verification succeeds, `AS1` MUST compute:
+
+* `actor_chain_commitment = Commit_AS1(prior_commitment_digest, chain_sig_B)`
+
+`AS1` MUST issue `T_B` containing at least:
+
+* `acp=commitment-only-delegation-path`
+* `actor_chain_commitment`
+* `sid`
+* `jti`
+* `aud=C`
+* `exp`
+
+`T_B` MUST NOT contain a readable `actor_chain`.
+
+## Returned Token Validation
+
+Upon receipt of `T_B`, `B` MUST verify the token signature and profile fields.
+
+`B` MUST verify that the returned commitment equals:
+
+* `Commit_AS1(prior_commitment_digest, chain_sig_B)`
+
+If that check fails, `B` MUST reject `T_B`.
+
+## Next-Hop Validation
+
+Upon receipt of the final B-token, `C` MUST verify:
+
+* issuer trust;
+* token signature;
+* audience;
+* expiry;
+* sender constraint; and
+* replay and freshness state.
+
+`C` MUST extract:
+
+* `actor_chain_commitment`; and
+* `sid`.
+
+`C` MUST verify that the token is being presented by `B`.
+
+`C` MUST use the verified presenting actor for authorization decisions.
+
+`C` MUST NOT infer the identities or number of prior actors from
+`actor_chain_commitment` alone. Inline verification at `C` establishes current-
+actor continuity and preserved commitment continuity only; it does not by
+itself reveal or validate the full prior delegation path.
+
+## Attack Handling
+
+A claim that actor `V` participated in the workflow MUST fail unless a valid
+step proof for `V` can be produced and verified against the corresponding prior
+committed state and `sid`.
+
+If an actor is omitted from a later committed state, downstream recipients might
+not detect that omission inline because readable prior-actor disclosure is
+absent.
+
+That omitted actor MAY prove prior participation by presenting:
+
+* an earlier token showing the prior committed state; and
+* the corresponding step proof or immutable Authorization-Server exchange
+  record.
+
+A denial of participation by actor `X` MUST fail if a valid step proof for `X`
+is available and verifies against the corresponding prior committed state.
+
+## Security Result
+
+This profile reduces ordinary-token disclosure and token size while preserving
+per-hop continuation proofs at the acting hop and cumulative committed state
+across hops.
+
+## Limits
+
+This profile does not preserve readable prior-actor authorization at downstream
+hops.
+
+This profile does not by itself allow downstream hops to detect omission,
+insertion, or reordering of prior actors inline once readable disclosure is
+removed.
+
+This profile does not hide prior actors from the Authorization Server that
+processes token exchange.
+
+This profile does not by itself solve malicious application payloads.
+
+This profile does not by itself solve confused-deputy behavior.
+
+This profile does not by itself solve workflow branching.
+
+# Optional Receiver Acknowledgment Extension
+
+A recipient MAY produce a receiver acknowledgment artifact, called `hop_ack`,
+for an inbound actor-chain token. This OPTIONAL extension does not alter chain
+progression semantics.
+
+A valid `hop_ack` proves that the recipient accepted responsibility for the
+identified hop, bound to the workflow identifier, prior chain state or prior
+commitment state, presenting actor, recipient, target context, and request-
+context digest.
+
+`hop_ack` MUST NOT by itself append the recipient to the actor chain.
+
+A recipient MUST NOT emit `hop_ack` with status `accepted` until it has either:
+
+* completed the requested operation; or
+* durably recorded sufficient state to recover, retry, or otherwise honor the
+  accepted request according to local reliability policy.
+
+A deployment MAY require `hop_ack` for selected hops, including terminal hops.
+When `hop_ack` is required by policy, the calling actor and any coordinating
+component MUST treat that hop as not accepted unless a valid `hop_ack` is
+received and verified.
+
+`hop_ack` does not by itself prove successful completion or correctness of the
+requested operation.
+
+Recipients are not required to issue `hop_ack` for rejected, malformed,
+abusive, unauthorized, or rate-limited requests. Absence of `hop_ack` is
+sufficient to prevent proof of acceptance.
+
+The acknowledgment payload MUST include at least:
+
+* `ctx` = `actor-chain-hop-ack-v1`;
+* `sid`;
+* `acp`;
+* inbound token `jti`;
+* presenting actor ActorID;
+* recipient ActorID;
+* `target_context`;
+* `req_hash`; and
+* `ack`, whose value MUST be `accepted`.
+
+A `hop_ack` MUST be signed by the recipient using JWS or COSE, according to the
+same token-format family used by the deployment. If a deployment cannot
+construct a canonical request-context object for `req_hash`, it MUST use
+`hop_ack` only when the inbound token is single-use for one protected request.
+
+# Threat Model
+
+This specification defines a multi-hop, multi-actor delegation model across one
+or more trust domains. The security properties provided depend on the selected
+profile, the correctness of sender-constrained token enforcement, the trust
+relationship among participating Authorization Servers, and the availability of
+step proofs or exchange records where relied upon.
+
+## Assets
+
+The protocol seeks to protect the following assets:
+
+* continuity of the delegation path;
+* integrity of prior-actor ordering and membership;
+* continuity of the presenting actor;
+* binding of each hop to the intended target;
+* resistance to replay of previously accepted hop state;
+* audit evidence for later investigation and proof; and
+* minimization of prior-actor disclosure where privacy-preserving profiles are
+  used.
+
+## Adversaries
+
+Relevant adversaries include:
+
+* an external attacker that steals or replays a token;
+* a malicious actor attempting to insert, omit, reorder, or repurpose hop
+  state;
+* a malicious actor colluding with its home Authorization Server;
+* a malicious downstream recipient attempting to over-interpret or misuse an
+  inbound token;
+* an untrusted or compromised upstream Authorization Server in a multi-domain
+  path; and
+* an unsolicited victim service reached by a validly issued token without
+  having agreed to participate.
+
+## Assumptions
+
+This specification assumes:
+
+* verifiers can validate token signatures and issuer trust;
+* sender-constrained enforcement is correctly implemented;
+* the authenticated actor identity used in token exchange is bound to the actor
+  identity represented in profile-defined proofs; and
+* deployments that rely on later proof verification retain, or can discover,
+  the verification material needed to validate archived step proofs and exchange
+  records.
+
+## Security Goals
+
+The protocol aims to provide the following properties:
+
+* in the Asserted Delegation Path profile, silent insertion, removal,
+  reordering, or modification of prior actors is prevented under the assumption
+  that an actor does not collude with its home Authorization Server;
+* in the Committed Delegation Path profile, each accepted hop is additionally
+  bound to an actor-signed step proof and cumulative committed state, improving
+  detectability, provability, and non-repudiation; and
+* in the Commitment-Only Delegation Path profile, ordinary tokens omit
+  readable prior-actor state while preserving presenting-actor continuity and
+  cumulative committed state for later verification.
+
+## Non-Goals
+
+This specification does not by itself provide:
+
+* integrity or safety guarantees for application payload content;
+* complete prevention of confused-deputy behavior;
+* concealment of prior actors from the Authorization Server that processes
+  token exchange;
+* branching or fan-out semantics within a single linear workflow instance; or
+* universal inline prevention of every invalid token that could be issued by a
+  colluding actor and its home Authorization Server.
+
+## Residual Risks
+
+Even when all checks succeed, a valid token chain does not imply that the
+requested downstream action is authorized by local business policy. Recipients
+MUST evaluate authorization using the verified presenting actor, token subject,
+intended target, and local policy.
+
+Deployments that depend on independently verifiable provenance for high-risk
+operations SHOULD require synchronous validation of committed proof state or
+otherwise treat the issuing Authorization Server as the sole trust anchor.
+
+# Security Considerations
+
+## Sender-Constrained Enforcement is Foundational
+
+The security of these profiles depends strongly on sender-constrained token
+enforcement. If a token can be replayed by an attacker that is not the bound
+actor, continuity checks become materially weaker.
+
+## Canonicalization Errors Break Interoperability and Proof Validity
+
+Any ambiguity in canonical serialization, actor identity representation, target
+representation, or proof payload encoding can cause false verification failures
+or inconsistent commitment values across implementations.
+
+## Readable Chain Does Not Prevent Payload Abuse
+
+A valid readable `actor_chain` does not imply that the application-layer request
+content is safe, correct, or policy-conformant. Recipients MUST apply local
+payload validation and authorization.
+
+## Committed Profiles Depend on Proof Retention
+
+The evidentiary benefits of the committed profiles depend on retention or
+discoverability of step proofs, exchange records, and relevant verification
+material. Without such retention, the profiles still provide structured
+committed state, but post hoc provability and non-repudiation are materially
+weakened.
+
+## Commitment-Only Delegation Path Removes Inline Prior-Actor Visibility
+
+Recipients using the Commitment-Only Delegation Path profile can validate the
+presenting actor and preserved commitment continuity, but cannot authorize based
+on readable prior-actor membership or order from the ordinary token alone.
+
+## Cross-Domain Re-Issuance Must Preserve Chain State
+
+A cross-domain Authorization Server that re-issues a local token for the next
+recipient MUST preserve the relevant chain state unchanged. Any such
+re-issuance MUST continue to represent the current actor and MUST NOT append the
+recipient.
+
+## Intended Recipient Checks Reduce Confused-Deputy Risk
+
+Accepting Authorization Servers MUST ensure that the authenticated current actor
+was an intended recipient of the inbound `subject_token`. This reduces a class
+of deputy and repurposing attacks, though it does not eliminate all
+confused-deputy scenarios.
+
+## Chain Depth
+
+Authorization Servers SHOULD enforce a configurable maximum chain depth. A
+RECOMMENDED default is 10 entries. Relying Parties MAY enforce stricter limits.
 
 ## Key Management
 
-Each actor in the chain signs its own identity claims with its private key. Actors SHOULD use short-lived keys and/or hardware-protected keys (e.g., via the PoR mechanism). The same signing key MAY be used for the actor's `chain_sig` in the actor chain, its contributions to the Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and the Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, providing a unified key management model across all three governance chains.
+Actors SHOULD use short-lived keys and/or hardware-protected keys. Deployments
+that require long-term auditability MUST retain, or make durably discoverable,
+the historical verification material needed to validate archived step proofs and
+receiver acknowledgments after key rotation.
 
-## Privacy of Prior Actors
+# Privacy Considerations
 
-The `actor_chain` exposes the identities of all actors in the delegation path to every Relying Party that receives the token. While this is necessary for certain audit and policy requirements, it may conflict with privacy goals. For example, in a chain `a -> b -> c -> d -> e`, the originating actor `a` may require its identity to be hidden from `e` while still ensuring the integrity of the delegation.
+Readable-chain profiles disclose prior actors to downstream recipients.
+Deployments that do not require readable prior-actor authorization SHOULD
+consider the Commitment-Only Delegation Path profile.
 
-Deployments SHOULD consider the following anonymization and privacy-preserving techniques:
+The stable workflow identifier `sid` correlates all accepted hops within one
+workflow instance. Accordingly, `sid` MUST be opaque and MUST NOT encode actor
+identity, profile selection, business semantics, or target meaning.
 
-### Pseudonymous Identifiers
+Even in the privacy-preserving profile, the Authorization Server processing
+token exchange observes the authenticated current actor and retained chain-
+related proofs. Accordingly, that profile reduces ordinary-token disclosure but
+does not hide prior actors from the issuing Authorization Server.
 
-Instead of using globally unique or stable identifiers (like email addresses or client IDs), the Authorization Server (AS) can issue pairwise pseudonyms for actors. In the chain `a -> b -> c -> d -> e`:
-- The AS replaces `sub: "a"` with a pseudonym `sub: "pseudo-xyz"` that is only meaningful to the AS.
-- Relying Party `e` sees that the chain started with a verified actor, but does not know it was `a`.
-- The AS maintains a mapping to allow for forensic reconstruction if authorized.
+Deployments concerned with minimization SHOULD consider:
 
-### Selective Disclosure (SD-JWT)
+* pairwise or pseudonymous actor identifiers;
+* omission of auxiliary claims unless receiving policy depends on them; and
+* future selective-disclosure companion profiles.
 
-Selective Disclosure for JWTs (SD-JWT) {{!I-D.ietf-oauth-selective-disclosure-jwt}} is a promising mechanism for hiding actor identities from downstream Relying Parties while preserving chain integrity. However, the interaction between SD-JWT Disclosure mechanics and per-actor `chain_sig` signatures requires further specification. A future version of this document will define how `chain_sig` is computed when Actor Chain Entries contain selectively disclosed claims. This is tracked as an open work item.
+## Selective Disclosure
 
-### Identity Bridging for Anonymity
+This specification does not define a selective-disclosure encoding for
+`actor_chain`. JWT-based selective disclosure, where used, MUST follow SD-JWT
+{{!RFC9901}}. CWT-based selective disclosure, where used, MUST follow SD-CWT
+{{!I-D.ietf-spice-sd-cwt}} or its successor.
 
-An Identity Bridge {{!I-D.ietf-spice-arch}} MAY act as an "Anonymizer" by performing a token exchange that replaces sensitive predecessor entries in the `actor_chain` with generic or pseudonymous identifiers, while still vouching for the chain's security properties.
+This specification defines only the actor-chain-specific constraints on such
+use:
 
-### Encryption (JWE)
+* selective disclosure MUST preserve actor-chain order semantics;
+* step proofs, receiver acknowledgments, and chain commitments are computed from
+  the full issued values, not from a later disclosed subset; and
+* a verifier MUST treat undisclosed information as unavailable and MUST require
+  disclosure of any information needed for authorization.
 
-The entire `actor_chain` claim can be encrypted using JWE {{!RFC7516}} so that only the final intended audience `e` can decrypt it, preventing intermediate actors like `b`, `c`, and `d` from seeing the IDs of their predecessors. Alternatively, the chain can be nestedly encrypted for different parties in the path.
+# Audit and Logging Considerations
 
-## Confused Deputy Mitigation
+Authorization Servers supporting these profiles SHOULD retain records keyed by
+`sid` and `jti`.
 
-A confused deputy attack—where a legitimate actor is tricked into delegating to a malicious downstream—is detectable because the malicious downstream actor's identity appears in the chain, providing forensic evidence of the attack path. The malicious actor's own cryptographic `chain_sig` (retrievable from the registry) provides non-repudiable evidence of its participation.
+For committed profiles, such records SHOULD include:
+
+* prior token reference;
+* authenticated actor identity;
+* step proof reference or value;
+* issued token reference;
+* committed chain state;
+* requested audience or target context; and
+* timestamps.
+
+Actors SHOULD also retain local records sufficient to support replay detection,
+incident investigation, and later proof of participation.
+
+# Appendix A. JWT Binding (Normative)
+
+This appendix defines the JWT and JWS wire representation for profile-defined
+ActorID values, step proofs, receiver acknowledgments, and commitment
+objects.
+
+## ActorID in JWT
+
+An ActorID is a JSON object with exactly two members:
+
+* `iss`: a string containing the issuer identifier; and
+* `sub`: a string containing the subject identifier.
+
+The object MUST be serialized using JCS {{!RFC8785}} whenever it is included in
+profile-defined proof or commitment inputs.
+
+The `actor_chain` claim, when present in a JWT, is a JSON array of ActorID
+objects.
+
+## Step Proof in JWT
+
+The `actor_chain_step_proof` token request parameter value MUST be a compact JWS
+string. The JWS protected header MUST contain `typ=actc-step-proof+jwt`. The
+JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.
+
+For the Committed Delegation Path profile, the payload MUST contain:
+
+* `ctx`;
+* `sid`;
+* `prev`;
+* `target_context`; and
+* `actor_chain`.
+
+For the Commitment-Only Delegation Path profile, the payload MUST contain:
+
+* `ctx`;
+* `sid`;
+* `prev`;
+* `target_context`; and
+* `actor`.
+
+The `prev` member MUST be the base64url encoding of the prior commitment digest
+or bootstrap seed bytes. The `actor_chain` member MUST be a JSON array of
+ActorID objects. The `actor` member MUST be one ActorID object. The
+`target_context` member MUST be either a JCS-serialized JSON string equal to
+`aud` or a JCS-serialized JSON object that includes `aud` and any additional
+target-selection members used by local policy. Before any proof input is hashed
+or signed, `target_context` MUST be canonicalized using JCS exactly once;
+verifiers MUST reproduce the same JCS bytes when validating the proof.
+
+The JWS algorithm MUST be an asymmetric algorithm. The `none` algorithm MUST
+NOT be used. The JWS verification key MUST be bound to the same ActorID as the
+sender-constrained presentation key for the corresponding actor.
+
+## Receiver Acknowledgment in JWT
+
+A `hop_ack`, when used in a JWT deployment, MUST be a compact JWS string. The
+JWS protected header MUST contain `typ=actc-hop-ack+jwt`. The JWS payload MUST
+be the UTF-8 encoding of a JCS-serialized JSON object with at least these
+members:
+
+* `ctx`;
+* `sid`;
+* `acp`;
+* `jti`;
+* `target_context`;
+* `req_hash`;
+* `presenter`;
+* `recipient`; and
+* `ack`.
+
+The `presenter` and `recipient` members MUST be ActorID objects. The `ack`
+member MUST have the value `accepted`. The `target_context` member MUST follow
+the same representation rules defined for step proofs. The `req_hash` member
+MUST be the base64url encoding of a digest over the canonical request-context
+object. The JWS signer MUST be the recipient, and the verification key MUST be
+bound to the same recipient ActorID as any sender-constrained presentation key
+used for the protected interaction.
+
+## Commitment Object in JWT
+
+The `actor_chain_commitment` claim value MUST be a compact JWS string. The JWS
+protected header MUST contain `typ=actc-commitment+jwt`.
+
+The JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object with
+exactly these members:
+
+* `ctx`;
+* `sid`;
+* `acp`;
+* `halg`;
+* `prev`;
+* `step_hash`; and
+* `curr`.
+
+The `halg` member MUST be either `sha-256` or `sha-384`. The members `prev`,
+`step_hash`, and `curr` MUST be the base64url encodings of raw hash bytes.
+
+The JWS payload signer MUST be the issuing Authorization Server. A verifier
+MUST validate the JWS signature, verify that `halg` is locally permitted, then
+validate that `curr` equals:
+
+~~~ text
+Hash_halg(JCS({ctx, sid, acp, halg, prev, step_hash}))
+~~~
+
+# Appendix B. CWT Binding (Normative)
+
+This appendix defines the CWT and COSE wire representation for profile-defined
+ActorID values, step proofs, receiver acknowledgments, and commitment
+objects.
+
+## ActorID in CWT
+
+An ActorID is a deterministic CBOR map with exactly two integer-labeled
+members:
+
+* `1`: issuer identifier (`iss`); and
+* `2`: subject identifier (`sub`).
+
+The values for labels `1` and `2` MUST be CBOR text strings.
+
+The `actor_chain` claim, when present in a CWT, is an array of such ActorID
+maps.
+
+## Step Proof in CWT
+
+The `actor_chain_step_proof` token request parameter value MUST be the
+base64url encoding of a COSE_Sign1 object {{!RFC9052}}.
+
+The COSE_Sign1 payload MUST be a deterministic-CBOR-encoded map. Verifiers MUST
+validate the exact `ctx` value and expected artifact-specific payload shape.
+
+For the Committed Delegation Path profile, the payload map MUST contain:
+
+* `1`: `ctx`;
+* `2`: `sid`;
+* `3`: `prev`;
+* `4`: `target_context`; and
+* `5`: `actor_chain`.
+
+For the Commitment-Only Delegation Path profile, the payload map MUST
+contain:
+
+* `1`: `ctx`;
+* `2`: `sid`;
+* `3`: `prev`;
+* `4`: `target_context`; and
+* `6`: `actor`.
+
+The value of `3` MUST be a byte string containing the prior commitment digest or
+bootstrap seed bytes. The value of `5` MUST be an array of ActorID maps. The
+value of `6` MUST be one ActorID map. The value of `4` MUST be either a CBOR
+text string equal to `aud` or a deterministic-CBOR-encoded map that includes
+`aud` and any additional target-selection members used by local policy. Before
+any proof input is hashed or signed, `target_context` MUST be canonicalized
+using deterministic CBOR exactly once; verifiers MUST reproduce the same bytes
+when validating the proof.
+
+The COSE algorithm MUST be asymmetric. Unprotected unauthenticated payloads MUST
+NOT be used. The COSE verification key MUST be bound to the same ActorID as the
+sender-constrained presentation key for the corresponding actor.
+
+## Receiver Acknowledgment in CWT
+
+A `hop_ack`, when used in a CWT deployment, MUST be the base64url encoding of a
+COSE_Sign1 object {{!RFC9052}}. The COSE_Sign1 payload MUST be a
+deterministic-CBOR-encoded map containing at least:
+
+* `1`: `ctx`;
+* `2`: `sid`;
+* `3`: `acp`;
+* `4`: `jti`;
+* `5`: `target_context`;
+* `6`: `req_hash`;
+* `7`: `presenter`;
+* `8`: `recipient`; and
+* `9`: `ack`.
+
+The values of `7` and `8` MUST be ActorID maps. The value of `9` MUST be the
+text string `accepted`. The value of `5` MUST follow the same representation
+rules defined for step proofs. The value of `6` MUST be a byte string
+containing a digest over the canonical request-context object. The COSE signer
+MUST be the recipient, and the verification key MUST be bound to the same
+recipient ActorID as any sender-constrained presentation key used for the
+protected interaction.
+
+## Commitment Object in CWT
+
+The `actor_chain_commitment` claim value MUST be a byte string containing a
+COSE_Sign1 object.
+
+The COSE_Sign1 payload MUST be a deterministic-CBOR-encoded map with exactly
+these members:
+
+* `1`: `ctx`;
+* `2`: `sid`;
+* `3`: `acp`;
+* `4`: `halg`;
+* `5`: `prev`;
+* `6`: `step_hash`; and
+* `7`: `curr`.
+
+The value of `4` MUST be the text string `sha-256` or `sha-384`. The values of
+`5`, `6`, and `7` MUST be byte strings containing raw hash bytes.
+
+The payload signer MUST be the issuing Authorization Server. A verifier MUST
+validate the COSE signature, verify that `halg` is locally permitted, then
+validate that `curr` equals:
+
+~~~ text
+Hash_halg(Deterministic-CBOR({1:ctx, 2:sid, 3:acp, 4:halg, 5:prev, 6:step_hash}))
+~~~
+
+# Appendix C. Compact End-to-End Examples (Informative)
+
+## Example 1: Asserted Delegation Path in One Domain
+
+Assume `A`, `B`, and `C` are governed by `AS1`.
+
+1. `A` requests a token for `B` under the Asserted Delegation Path profile.
+2. `AS1` issues `T_A` with `actor_chain=[A]` and `aud=B`.
+3. `A` calls `B` and presents `T_A`.
+4. `B` validates `T_A`, verifies continuity, and exchanges `T_A` at `AS1` for
+   a token to `C`.
+5. `AS1` authenticates `B`, verifies that `B` was an intended recipient of the
+   inbound token, appends `B`, and issues `T_B` with `actor_chain=[A,B]` and
+   `aud=C`.
+6. `B` validates that the returned chain is exactly the prior chain plus `B`.
+7. `B` presents `T_B` to `C`.
+8. `C` validates the token and authorizes based on the readable chain `[A,B]`.
+
+## Example 2: Committed Delegation Path Across Two Domains
+
+Assume `A` and `B` are governed by `AS1`, while `C` is governed by `AS2`.
+
+1. `A` obtains bootstrap context from `AS1`, signs `chain_sig_A`, and receives
+   `T_A` with `actor_chain=[A]` and `actor_chain_commitment`.
+2. `A` calls `B` with `T_A`.
+3. `B` validates `T_A`, constructs `[A,B]`, signs `chain_sig_B`, and exchanges
+   `T_A` at `AS1` for a token to `C`.
+4. `AS1` verifies `chain_sig_B`, updates the commitment, and issues `T_B` with
+   `actor_chain=[A,B]` and `aud=C`.
+5. Because `C` does not trust `AS1` directly, `B` performs a second exchange at
+   `AS2`.
+6. `AS2` preserves `acp`, `sid`, `actor_chain=[A,B]`, and
+   `actor_chain_commitment`, and issues a local token trusted by `C` that still
+   represents `B`.
+7. `C` validates the local token, sees the readable chain `[A,B]`, and
+   authorizes accordingly.
+
+## Example 3: Commitment-Only Delegation Path
+
+Assume `A`, `B`, and `C` use the Commitment-Only Delegation Path profile.
+
+1. `A` obtains bootstrap context, signs `chain_sig_A`, and receives `T_A` with
+   `actor_chain_commitment`, but no readable `actor_chain`.
+2. `A` calls `B` with `T_A`.
+3. `B` validates `T_A`, verifies that `A` is the presenter, signs
+   `chain_sig_B`, and exchanges `T_A` at its home AS to obtain `T_B` for `C`.
+4. `T_B` contains the updated `actor_chain_commitment`, but no readable chain.
+5. `B` presents `T_B` to `C`.
+6. `C` validates the token and authorizes based on the verified presenting actor
+   `B` and local policy. `C` MUST NOT infer prior-actor identity or count from
+   the commitment alone.
+
+# Appendix D. Future Considerations (Informative)
+
+## Terminal Recipient Handling
+
+This specification defines special handling for the first actor in order to
+initialize chain state. It does not define corresponding terminal-hop semantics
+for a final recipient that performs work locally and does not extend the chain
+further.
+
+Future work MAY define:
+
+* a terminal receipt proving that the recipient accepted the request;
+* an execution attestation proving that the recipient executed a specific
+  operation; and
+* a result attestation binding an outcome or result digest to the final
+  committed state.
+
+## Receiver Acceptance and Unsolicited Victim Mitigation
+
+This specification deliberately does not append a recipient merely because that
+recipient was contacted. It also defines an OPTIONAL `hop_ack` extension that
+lets a recipient prove accepted responsibility for a hop.
+
+However, this specification still does not by itself prevent a malicious actor
+from sending a validly issued token to an unsolicited victim service. Future
+work MAY define stronger receiver-driven protections, including:
+
+* stronger result attestations for completed terminal work;
+* a challenge-response model for high-risk terminal hops; and
+* recipient-issued nonces or capabilities that MUST be bound into the final
+  accepted hop.
+
+## Selective Disclosure
+
+Future work MAY define companion profiles that selectively disclose actor-chain
+information to specific recipients while retaining full committed state for
+audit. Any such work should defer disclosure syntax, presentation mechanics,
+and verifier processing to SD-JWT {{!RFC9901}} for JWT representations and to
+SD-CWT {{!I-D.ietf-spice-sd-cwt}} for CWT representations, while defining only
+the actor-chain-specific semantics needed by this specification.
+
+## Branching and Fan-Out
+
+This specification models a linear workflow. A future branching profile will
+need to distinguish multiple valid successors from the same prior committed
+state, rather than treating every additional successor as a replay or replay-
+like state collision.
+
+One possible approach is to introduce explicit branch identifiers and a tree-
+structured commitment model in which parallel successors become sibling nodes
+under a common root. Such a profile could support inclusion proofs, partial
+disclosure, and more efficient branch verification than the linear base model,
+while preserving a stable workflow root.
+
+Those semantics are intentionally out of scope for this base specification.
+
+## Evidence Discovery and Governance Interoperability
+
+Committed profiles derive much of their value from later verification of step
+proofs and exchange records. Future work MAY standardize interoperable evidence
+discovery, retention, and verification-material publication.
+
+Any such specification should define, at minimum, evidence object typing,
+authorization and privacy controls for cross-domain retrieval, stable lookup
+keys such as `jti` or `sid`, error handling, and retention expectations.
+
+# Appendix E. Design Rationale and Relation to Other Work (Informative)
+
+This document complements {{!RFC8693}} by defining chain-aware token-exchange
+profiles. It also aligns with the broader SPICE architecture and companion
+provenance work while remaining useful on its own.
+
+This specification defines three profiles instead of one deployment mode so
+that implementations can choose among readable chain-based authorization,
+stronger committed-state accountability, and reduced ordinary-token disclosure
+without changing the core progression model.
+
+The base specification remains linear. Branching, richer selective disclosure,
+and evidence-discovery protocols remain future work because they require
+additional identifiers, validation rules, and interoperability work.
+
+# Appendix F. Implementation Conformance Checklist (Informative)
+
+An implementation is conformant only if it correctly implements the profile it
+claims to support and all common requirements on which that profile depends.
+
+At a minimum, implementers should verify that they have addressed the following:
+
+* stable generation and preservation of `sid`;
+* sender-constrained validation for every inbound token;
+* exact ActorID equality over (`iss`, `sub`);
+* canonical serialization for all proof and commitment inputs;
+* intended-recipient validation during token exchange;
+* replay and freshness handling for tokens and step proofs;
+* exact append-only checks for readable-chain profiles;
+* exact commitment verification for committed profiles;
+* proof-key binding between ActorID, proof signer, and sender-constrained
+  presentation key;
+* non-broadening Refresh-Exchange processing, if supported;
+* policy for when `hop_ack` is optional or required; and
+* privacy-preserving handling of logs and error messages.
 
 # IANA Considerations
 
+This specification does not create a new hash-algorithm registry.
+`actor_chain_commitment` uses hash algorithm names from the IANA Named
+Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the
+algorithm restrictions defined in this document.
+
 ## JSON Web Token Claims Registration
 
-This document requests registration of the following claims in the "JSON Web Token Claims" registry established by {{!RFC7519}}:
+This document requests registration of the following claims in the "JSON Web
+Token Claims" registry established by {{!RFC7519}}:
 
-- **Claim Name**: `actor_chain`
-- **Claim Description**: A Cryptographically Verifiable Actor Chain — an ordered array of actor identity entries representing the complete delegation chain.
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
+* **Claim Name**: `actor_chain`
+* **Claim Description**: Ordered array of actor identity entries representing
+  the delegation path.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-- **Claim Name**: `actor_chain_root`
-- **Claim Description**: Merkle root hash of per-actor cryptographic signatures in the actor chain.
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
+* **Claim Name**: `actor_chain_commitment`
+* **Claim Description**: Committed chain state binding accepted hop progression
+  for the active profile.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
+
+* **Claim Name**: `acp`
+* **Claim Description**: Actor-chain profile identifier for the issued token.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
 ## CBOR Web Token Claims Registration
 
-This document requests registration of the following claims in the "CBOR Web Token (CWT) Claims" registry established by {{!RFC8392}}:
+This document requests registration of the following claims in the "CBOR Web
+Token (CWT) Claims" registry established by {{!RFC8392}}:
 
-- **Claim Name**: `actor_chain`
-- **Claim Description**: A Cryptographically Verifiable Actor Chain.
-- **CBOR Key**: TBD (e.g., 40)
-- **Claim Type**: array
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
+* **Claim Name**: `actor_chain`
+* **Claim Description**: Ordered array of actor identity entries representing
+  the delegation path.
+* **CBOR Key**: TBD
+* **Claim Type**: array
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-- **Claim Name**: `actor_chain_root`
-- **Claim Description**: Merkle root hash of per-actor COSE_Sign1 signatures.
-- **CBOR Key**: TBD (e.g., 41)
-- **Claim Type**: tstr
-- **Change Controller**: IETF
-- **Specification Document(s)**: [this document]
+* **Claim Name**: `actor_chain_commitment`
+* **Claim Description**: Committed chain state binding accepted hop progression
+  for the active profile.
+* **CBOR Key**: TBD
+* **Claim Type**: bstr
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-# Design Rationale
+* **Claim Name**: `acp`
+* **Claim Description**: Actor-chain profile identifier for the issued token.
+* **CBOR Key**: TBD
+* **Claim Type**: tstr
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-This section summarizes why the data-plane / audit-plane separation with Merkle root binding was chosen for the actor chain.
 
-## Why Not Inline Per-Actor Signatures?
+## Media Type Registration
 
-An earlier design included per-actor `chain_sig` directly in each Actor Chain Entry within the token. This approach was rejected for three reasons:
+This document requests registration of the following media types in the
+"Media Types" registry established by {{!RFC6838}}:
 
-1. **Token size**: Each JWS `chain_sig` adds ~200-300 bytes per entry. For a chain of depth 6, this adds ~1.5-2KB to every token — significant for high-throughput data planes and constrained IoT devices.
+* **Media Type Name**: `application`
+* **Media Subtype Name**: `actc-step-proof+jwt`
+* **Required Parameters**: N/A
+* **Optional Parameters**: N/A
+* **Encoding Considerations**: binary
+* **Security Considerations**: see [this document]
+* **Interoperability Considerations**: N/A
+* **Published Specification**: [this document]
+* **Applications that use this media type**: OAuth 2.0 Token Exchange actor-chain step proofs
+* **Fragment Identifier Considerations**: N/A
+* **Additional Information**:
+  * Magic Number(s): N/A
+  * File Extension(s): N/A
+  * Macintosh File Type Code(s): N/A
+* **Person & email address to contact for further information**: IETF
+* **Intended Usage**: COMMON
+* **Restrictions on Usage**: N/A
+* **Author**: IETF
+* **Change Controller**: IETF
 
-2. **Data-plane latency**: Verifying O(n) signatures per request is unnecessary when the Relying Party trusts the issuing AS. Most data-plane decisions require only the actor identities, not cryptographic proof of participation.
+* **Media Type Name**: `application`
+* **Media Subtype Name**: `actc-commitment+jwt`
+* **Required Parameters**: N/A
+* **Optional Parameters**: N/A
+* **Encoding Considerations**: binary
+* **Security Considerations**: see [this document]
+* **Interoperability Considerations**: N/A
+* **Published Specification**: [this document]
+* **Applications that use this media type**: OAuth 2.0 Token Exchange actor-chain commitments
+* **Fragment Identifier Considerations**: N/A
+* **Additional Information**:
+  * Magic Number(s): N/A
+  * File Extension(s): N/A
+  * Macintosh File Type Code(s): N/A
+* **Person & email address to contact for further information**: IETF
+* **Intended Usage**: COMMON
+* **Restrictions on Usage**: N/A
+* **Author**: IETF
+* **Change Controller**: IETF
 
-3. **Redundancy**: The AS already signs the entire token. Inline per-actor signatures duplicate the integrity guarantee for the common case where the RP trusts the AS.
+* **Media Type Name**: `application`
+* **Media Subtype Name**: `actc-hop-ack+jwt`
+* **Required Parameters**: N/A
+* **Optional Parameters**: N/A
+* **Encoding Considerations**: binary
+* **Security Considerations**: see [this document]
+* **Interoperability Considerations**: N/A
+* **Published Specification**: [this document]
+* **Applications that use this media type**: OAuth 2.0 Token Exchange actor-chain receiver acknowledgments
+* **Fragment Identifier Considerations**: N/A
+* **Additional Information**:
+  * Magic Number(s): N/A
+  * File Extension(s): N/A
+  * Macintosh File Type Code(s): N/A
+* **Person & email address to contact for further information**: IETF
+* **Intended Usage**: COMMON
+* **Restrictions on Usage**: N/A
+* **Author**: IETF
+* **Change Controller**: IETF
 
-## Why Per-Actor Signatures At All?
+## OAuth Authorization Server Metadata Registration
 
-Per-actor signatures are essential for governance because:
+This document requests registration of the following metadata names in the
+"OAuth Authorization Server Metadata" registry established by {{!RFC8414}}:
 
-1. **Non-repudiation**: An actor cannot deny having participated in a delegation chain. This is critical for regulatory compliance and post-incident forensic analysis.
+* **Metadata Name**: `actor_chain_profiles_supported`
+* **Metadata Description**: Supported actor-chain profile identifiers.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-2. **Multi-AS trust**: In federated deployments (e.g., `b (AS1) -> a (AS1) -> c (AS1) -> f (AS2) -> d (AS2) -> e (AS2)`), no single AS can vouch for the entire chain. Per-actor signatures allow an auditor to verify each actor's participation independently of any AS.
+* **Metadata Name**: `actor_chain_commitment_hashes_supported`
+* **Metadata Description**: Supported commitment hash algorithm identifiers.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-3. **Governance alignment**: The Intent Chain and Inference Chain specifications already require per-actor signatures for content and computation provenance. Without per-actor signatures in the actor chain, the WHO dimension of the governance framework would lack the same level of assurance as WHAT and HOW.
+* **Metadata Name**: `actor_chain_receiver_ack_supported`
+* **Metadata Description**: Indicates support for receiver acknowledgments
+  (`hop_ack`) under this specification.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-## Why the Merkle Root?
+* **Metadata Name**: `actor_chain_refresh_supported`
+* **Metadata Description**: Indicates support for Refresh-Exchange under this
+  specification.
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-The Merkle root (`actor_chain_root`) provides the binding between the data-plane token and the audit-plane registry without inflating the token. It has constant size (44 bytes) regardless of chain depth. For single-AS chains, an auditor verifies the root by reconstructing the Merkle tree from the registry's `chain_sig` values. For cross-AS chains, the auditor recursively reconstructs each AS's subtree (see (#recursive-audit-verification)). If the final computed root matches the token's `actor_chain_root`, the registry evidence across all ASes is proven authentic.
+## OAuth Parameter Registration
 
-This is the same pattern used by the Intent Chain (`intent_root`) and Inference Chain (`inference_root`), creating a unified, architecturally consistent governance framework across all three chains.
+This document requests registration of the following parameter names in the
+relevant OAuth parameter registry:
 
-## Federated Audit Without Shared Infrastructure
+* **Parameter Name**: `actor_chain_profile`
+* **Parameter Usage Location**: OAuth token endpoint request
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-The subtree root model (see (#multi-as-identity-federation)) enables a fully federated audit plane without requiring a shared data store, cross-AS replication, or a central audit authority. Each AS maintains sovereignty over its own registry:
+* **Parameter Name**: `actor_chain_step_proof`
+* **Parameter Usage Location**: OAuth token endpoint request
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
-- **AS1** stores `{σ_0, σ_1}` in R1.
-- **AS2** stores `{σ_2}` and `prior_root: r2` in R2.
-
-No AS writes to another AS's registry, and no shared database is required. The token's `actor_chain_root` — a single 44-byte Merkle root — is the only cross-AS coordination point, and it is established during the normal token exchange flow.
-
-An auditor reconstructs the full chain by following standard OAuth discovery: resolve each `iss` claim to its AS metadata, discover the `governance_registry_endpoint`, and query by `sid`. The subtree binding `r3 = Merkle(r2, σ_2)` provides the cryptographic proof that the registries are consistent with each other and with the token.
-
-This architecture mirrors how federated identity already works — each AS manages its own keys, metadata, and tokens — and extends it to audit evidence. No additional federated infrastructure is required beyond what the token exchange and AS metadata already provide.
-
-## Registry Availability
-
-Deployments where the Actor Chain Registry is unavailable (network partition, registry outage) do not affect data-plane operation — the token's AS-signed `actor_chain` entries are sufficient for real-time access control. The `actor_chain_root` in the signed token acts as a commitment: even during a registry outage, the signed evidence cannot be tampered with because the root is fixed at token issuance.
-
-For high-availability requirements, deployments SHOULD:
-
-- Replicate registry entries across availability zones.
-- Use append-only log services designed for high durability (e.g., SCITT transparency logs).
-- Cache recently-verified registry entries at the audit plane.
-
-## Registry Hosting
-
-The Actor Chain Registry is an append-only log partitioned by session (`sid`). Per-session entries accumulate as token exchanges occur (one entry per actor per session), and each entry is small (~200-400 bytes including compact JWS `chain_sig`).
-
-A federated IAM/IdM platform (e.g., Keycloak, Microsoft Entra, Okta, PingFederate) is a natural host for the Actor Chain Registry because:
-
-- The Authorization Server already mediates every token exchange ({{!RFC8693}}) and can append registry entries as a side-effect of token issuance.
-- IAM platforms already manage the signing key infrastructure (JWKS endpoints, SPIFFE trust bundles) needed to verify `chain_sig` values.
-- Federation and cross-domain trust — the core of multi-AS actor chains — are the IAM's primary competency.
-
-Most enterprise IAM/IdM platforms support configurable data stores. To host the Actor Chain Registry, the data store MUST be configured for append-only semantics:
-
-- **No update or delete** of registry entries after creation.
-- **Session-scoped partitioning** (`sid`) for isolation and efficient retrieval.
-- **Immutable storage backends** such as append-only database tables, write-once object storage (e.g., S3 Object Lock), Kafka topics with log compaction disabled, or SCITT transparency logs.
-
-### Credential Isolation
-
-Registry entries MUST NOT contain OAuth tokens, bearer credentials, or signing keys. The relationship between tokens and registry entries is one-directional: the token's `sid` claim identifies the session whose entries are stored in the registry, but the registry MUST NOT store or reference the token itself. This separation ensures that compromise of the registry does not expose bearer credentials that could be used for unauthorized access.
-
-An IAM/IdM platform that co-locates token issuance and registry storage MUST enforce strict access control boundaries between the token store and the registry store. The token MUST NOT be reconstructable from registry entries alone — registry entries contain only identity claims and per-actor signatures, never the complete token payload or the AS signing key.
-
-### Registry Discovery
-
-The Actor Chain Registry endpoint is NOT carried in the token. Instead, it is discovered via the Authorization Server's metadata, consistent with standard OAuth 2.0 discovery conventions.
-
-The AS MUST publish a `governance_registry_endpoint` field in its Authorization Server Metadata ({{!RFC8414}}). This endpoint serves as the base URL for all governance registries (Actor, Intent, Inference).
-
-A Relying Party or auditor discovers the registry as follows:
-
-1. Resolve the `iss` claim from the token to the AS's metadata document (e.g., `{iss}/.well-known/oauth-authorization-server`).
-2. Extract the `governance_registry_endpoint` value from the metadata.
-3. Query the registry using the token's `sid` claim as the session key.
-
-The registry endpoint MUST support retrieval by `sid` and chain type. A GET request to the governance registry endpoint returns a JSON object containing the `sid`, the computed `actor_chain_root`, and the full `entries` array:
-
-```
-GET {governance_registry_endpoint}/actor?sid={sid}
-```
-
-Response:
-
-```json
-{
-  "sid": "session-123",
-  "actor_chain_root": "sha256:9f86d08...",
-  "entries": [
-    {
-      "sub": "https://orchestrator.example.com",
-      "iss": "https://auth.example.com",
-      "iat": 1700000010,
-      "chain_sig": "eyJhbGciOiJFUzI1NiIsImt..."
-    }
-  ]
-}
-```
-
-In a federated IAM deployment, the governance registry endpoint MAY serve all three chain types under a unified base:
-
-```
-GET {governance_registry_endpoint}/actor?sid={sid}
-GET {governance_registry_endpoint}/intent?sid={sid}
-GET {governance_registry_endpoint}/inference?sid={sid}
-```
-
-Alternatively, separate endpoints MAY be published for each chain type (e.g., `governance_actor_registry_endpoint`, `governance_inference_registry_endpoint`) when inference proof sizes require a separate storage backend.
-
-Deployments that omit `actor_chain_root` (single-AS, no governance) require no registry infrastructure beyond the Authorization Server's existing token exchange capability.
+* **Parameter Name**: `actor_chain_refresh`
+* **Parameter Usage Location**: OAuth token endpoint request
+* **Change Controller**: IETF
+* **Specification Document(s)**: [this document]
 
 {backmatter}
 
@@ -786,12 +2130,86 @@ Deployments that omit `actor_chain_root` (single-AS, no governance) require no r
   </front>
 </reference>
 
-<reference anchor="I-D.ietf-oauth-selective-disclosure-jwt" target="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt">
+<reference anchor="I-D.ietf-spice-sd-cwt" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-sd-cwt">
   <front>
-    <title>Selective Disclosure for JWTs (SD-JWT)</title>
-    <author initials="D." surname="Fett" fullname="Daniel Fett"/>
-    <date month="October" day="7" year="2024"/>
+    <title>Selective Disclosure CBOR Web Tokens (SD-CWT)</title>
+    <date month="January" day="13" year="2026"/>
   </front>
+</reference>
+
+<reference anchor="IANA.Hash.Algorithms" target="https://www.iana.org/assignments/named-information">
+  <front>
+    <title>Named Information Hash Algorithm Registry</title>
+    <author fullname="IANA"/>
+  </front>
+</reference>
+
+<reference anchor="RFC6838" target="https://www.rfc-editor.org/info/rfc6838">
+  <front>
+    <title>Media Type Specifications and Registration Procedures</title>
+    <author initials="N." surname="Freed" fullname="Ned Freed"/>
+    <author initials="J." surname="Klensin" fullname="John Klensin"/>
+    <author initials="T." surname="Hansen" fullname="Tony Hansen"/>
+    <date month="January" year="2013"/>
+  </front>
+  <seriesInfo name="BCP" value="13"/>
+  <seriesInfo name="RFC" value="6838"/>
+</reference>
+
+<reference anchor="RFC6920" target="https://www.rfc-editor.org/info/rfc6920">
+  <front>
+    <title>Naming Things with Hashes</title>
+    <author initials="S." surname="Farrell" fullname="Stephen Farrell"/>
+    <author initials="D." surname="Kutscher" fullname="Dirk Kutscher"/>
+    <author initials="C." surname="Dannewitz" fullname="Christian Dannewitz"/>
+    <author initials="B." surname="Ohlman" fullname="Bengt Ohlman"/>
+    <author initials="A." surname="Keranen" fullname="Ari Keranen"/>
+    <author initials="P." surname="Hallam-Baker" fullname="Phill Hallam-Baker"/>
+    <date month="April" year="2013"/>
+  </front>
+  <seriesInfo name="RFC" value="6920"/>
+</reference>
+
+<reference anchor="RFC2119" target="https://www.rfc-editor.org/info/rfc2119">
+  <front>
+    <title>Key words for use in RFCs to Indicate Requirement Levels</title>
+    <author initials="S." surname="Bradner" fullname="Scott Bradner"/>
+    <date month="March" year="1997"/>
+  </front>
+  <seriesInfo name="BCP" value="14"/>
+  <seriesInfo name="RFC" value="2119"/>
+</reference>
+
+<reference anchor="RFC8174" target="https://www.rfc-editor.org/info/rfc8174">
+  <front>
+    <title>Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</title>
+    <author initials="B." surname="Leiba" fullname="Barry Leiba"/>
+    <date month="May" year="2017"/>
+  </front>
+  <seriesInfo name="BCP" value="14"/>
+  <seriesInfo name="RFC" value="8174"/>
+</reference>
+
+<reference anchor="RFC7515" target="https://www.rfc-editor.org/info/rfc7515">
+  <front>
+    <title>JSON Web Signature (JWS)</title>
+    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
+    <author initials="J." surname="Bradley" fullname="John Bradley"/>
+    <author initials="N." surname="Sakimura" fullname="Nat Sakimura"/>
+    <date month="May" year="2015"/>
+  </front>
+  <seriesInfo name="RFC" value="7515"/>
+</reference>
+
+<reference anchor="RFC7519" target="https://www.rfc-editor.org/info/rfc7519">
+  <front>
+    <title>JSON Web Token (JWT)</title>
+    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
+    <author initials="J." surname="Bradley" fullname="John Bradley"/>
+    <author initials="N." surname="Sakimura" fullname="Nat Sakimura"/>
+    <date month="May" year="2015"/>
+  </front>
+  <seriesInfo name="RFC" value="7519"/>
 </reference>
 
 <reference anchor="RFC8392" target="https://www.rfc-editor.org/info/rfc8392">
@@ -801,25 +2219,81 @@ Deployments that omit `actor_chain_root` (single-AS, no governance) require no r
     <author initials="E." surname="Wahlstroem" fullname="Erik Wahlstroem"/>
     <author initials="S." surname="Erdtman" fullname="Samuel Erdtman"/>
     <author initials="H." surname="Tschofenig" fullname="Hannes Tschofenig"/>
-    <date year="2018" month="May"/>
+    <date month="May" year="2018"/>
   </front>
   <seriesInfo name="RFC" value="8392"/>
+</reference>
+
+<reference anchor="RFC8414" target="https://www.rfc-editor.org/info/rfc8414">
+  <front>
+    <title>OAuth 2.0 Authorization Server Metadata</title>
+    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
+    <author initials="N." surname="Sakimura" fullname="Nat Sakimura"/>
+    <date month="June" year="2018"/>
+  </front>
+  <seriesInfo name="RFC" value="8414"/>
+</reference>
+
+<reference anchor="RFC8693" target="https://www.rfc-editor.org/info/rfc8693">
+  <front>
+    <title>OAuth 2.0 Token Exchange</title>
+    <author initials="W." surname="Denniss" fullname="William Denniss"/>
+    <author initials="J." surname="Bradley" fullname="John Bradley"/>
+    <author initials="H." surname="Tschofenig" fullname="Hannes Tschofenig"/>
+    <author initials="T." surname="Lodderstedt" fullname="Torsten Lodderstedt"/>
+    <date month="January" year="2020"/>
+  </front>
+  <seriesInfo name="RFC" value="8693"/>
+</reference>
+
+<reference anchor="RFC8785" target="https://www.rfc-editor.org/info/rfc8785">
+  <front>
+    <title>JSON Canonicalization Scheme (JCS)</title>
+    <author initials="A." surname="Rundgren" fullname="Anders Rundgren"/>
+    <date month="June" year="2020"/>
+  </front>
+  <seriesInfo name="RFC" value="8785"/>
+</reference>
+
+<reference anchor="RFC8949" target="https://www.rfc-editor.org/info/rfc8949">
+  <front>
+    <title>Concise Binary Object Representation (CBOR)</title>
+    <author initials="C." surname="Bormann" fullname="Carsten Bormann"/>
+    <author initials="P." surname="Hoffman" fullname="Paul Hoffman"/>
+    <date month="December" year="2020"/>
+  </front>
+  <seriesInfo name="RFC" value="8949"/>
 </reference>
 
 <reference anchor="RFC9052" target="https://www.rfc-editor.org/info/rfc9052">
   <front>
     <title>CBOR Object Signing and Encryption (COSE): Structures and Process</title>
     <author initials="J." surname="Schaad" fullname="Jim Schaad"/>
-    <date year="2022" month="August"/>
+    <date month="August" year="2022"/>
   </front>
   <seriesInfo name="RFC" value="9052"/>
 </reference>
 
-<reference anchor="OIDC.BackChannel" target="https://openid.net/specs/openid-connect-backchannel-1_0.html">
+<reference anchor="RFC9334" target="https://www.rfc-editor.org/info/rfc9334">
   <front>
-    <title>OpenID Connect Back-Channel Logout 1.0</title>
-    <author initials="M." surname="Jones" fullname="Michael B. Jones"/>
-    <author initials="J." surname="Bradley" fullname="John Bradley"/>
-    <date year="2022" month="September"/>
+    <title>Remote ATtestation procedureS (RATS) Architecture</title>
+    <author initials="H." surname="Birkholz" fullname="Henk Birkholz"/>
+    <author initials="T." surname="Fossati" fullname="Thomas Fossati"/>
+    <author initials="N." surname="Smith" fullname="Nancy Cam-Winget"/>
+    <author initials="W." surname="Pan" fullname="Wei Pan"/>
+    <author initials="C." surname="Tschofenig" fullname="Carsten Tschofenig"/>
+    <date month="January" year="2023"/>
   </front>
+  <seriesInfo name="RFC" value="9334"/>
+</reference>
+
+<reference anchor="RFC9901" target="https://www.rfc-editor.org/info/rfc9901">
+  <front>
+    <title>Selective Disclosure for JSON Web Tokens</title>
+    <author initials="D." surname="Fett" fullname="Daniel Fett"/>
+    <author initials="K." surname="Yasuda" fullname="Kristina Yasuda"/>
+    <author initials="B." surname="Campbell" fullname="Brian Campbell"/>
+    <date month="November" year="2025"/>
+  </front>
+  <seriesInfo name="RFC" value="9901"/>
 </reference>
