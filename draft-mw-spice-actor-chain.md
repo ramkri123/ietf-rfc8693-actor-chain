@@ -2,7 +2,7 @@
 title = "Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange"
 abbrev = "SPICE-ACTOR-CHAINS"
 category = "std"
-docname = "draft-mw-spice-actor-chain-13"
+docname = "draft-mw-spice-actor-chain-01"
 ipr = "trust200902"
 area = "Security"
 workgroup = "SPICE"
@@ -11,7 +11,7 @@ date = 2026-03-16
 
 [seriesInfo]
 name = "Internet-Draft"
-value = "draft-mw-spice-actor-chain-13"
+value = "draft-mw-spice-actor-chain-01"
 stream = "IETF"
 status = "standard"
 
