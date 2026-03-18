@@ -1,0 +1,3130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.miek.nl" -->
+<rfc version="3" ipr="trust200902" docName="draft-mw-spice-actor-chain-03" submissionType="IETF" category="std" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" indexInclude="true">
+
+<front>
+<title abbrev="SPICE-ACTOR-CHAINS">Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange</title><seriesInfo value="draft-mw-spice-actor-chain-03" stream="IETF" status="standard" name="Internet-Draft"></seriesInfo>
+<author initials="A." surname="Prasad" fullname="A Prasad"><organization>Oracle</organization><address><postal><street></street>
+</postal><email>a.prasad@oracle.com</email>
+</address></author><author initials="R." surname="Krishnan" fullname="Ram Krishnan"><organization>JPMorgan Chase &amp; Co</organization><address><postal><street></street>
+</postal><email>ramkri123@gmail.com</email>
+</address></author><author initials="D." surname="Lopez" fullname="Diego R. Lopez"><organization>Telefonica</organization><address><postal><street></street>
+</postal><email>diego.r.lopez@telefonica.com</email>
+</address></author><author initials="S." surname="Addepalli" fullname="Srinivasa Addepalli"><organization>Aryaka</organization><address><postal><street></street>
+</postal><email>srinivasa.addepalli@aryaka.com</email>
+</address></author><date year="2026" month="March" day="18"></date>
+<area>Security</area>
+<workgroup>SPICE</workgroup>
+<keyword>actor chain</keyword>
+<keyword>spice</keyword>
+<keyword>oauth</keyword>
+<keyword>rfc8693</keyword>
+<keyword>token exchange</keyword>
+<keyword>workload identity</keyword>
+<keyword>delegation</keyword>
+<keyword>AI agents</keyword>
+<keyword>MCP</keyword>
+<keyword>A2A</keyword>
+
+<abstract>
+<t>This document defines five actor-chain profiles for OAuth 2.0 Token Exchange
+{{!RFC8693}}. {{!RFC8693}} permits nested <tt>act</tt> claims, but prior actors remain
+informational only and token exchange does not define how a delegation path is
+preserved and validated across successive exchanges.</t>
+<t>This document defines profile-specific processing for linear multi-hop
+workflows. The five profiles are: Asserted Chain with Full Disclosure; Asserted
+Chain with Subset Disclosure; Committed Chain with Full Disclosure; Committed Chain with Subset Disclosure; and Committed Chain with No Chain Disclosure.</t>
+<t>These profiles preserve the existing meanings of <tt>sub</tt> and <tt>act</tt>, support same-domain and cross-domain delegation, require sender-constrained tokens, and
+provide different tradeoffs among readable chain-based authorization,
+cryptographic accountability, auditability, privacy, and long-running workflow
+support.</t>
+</abstract>
+
+</front>
+
+<middle>
+
+<section anchor="introduction"><name>Introduction</name>
+<t>In service-to-service, tool-calling, and agent-to-agent systems, including
+those implementing the Model Context Protocol (MCP) and the Agent2Agent
+(A2A) protocol, a workload often receives a token, performs work, and then
+exchanges that token to call another workload. {{!RFC8693}} defines token exchange and the <tt>act</tt> claim for
+the current actor, but it does not define a standardized model for preserving
+and validating delegation-path continuity across successive exchanges.</t>
+<t>This document defines five interoperable actor-chain profiles for OAuth 2.0
+Token Exchange. Across those profiles, ordinary tokens keep the familiar JSON
+Web Token (JWT) subject and actor model while adding interoperable actor-chain
+state for later validation, forwarding, and audit. For compactness on the wire, some
+actor-chain-specific claims use short names; the exact claim set and claim
+roles are defined later in Common Token Requirements and in the profile
+sections.</t>
+<t>A few recurring artifacts appear throughout the document. An <strong>ordinary token</strong>
+is the sender-constrained access token issued for presentation to the next hop.
+Committed profiles additionally use an actor-signed <strong>step proof</strong>, a
+<strong>bootstrap context</strong> issued by the Authorization Server (AS) when starting a
+workflow, and optionally a recipient-signed <strong>hop acknowledgment</strong>
+(<tt>hop_ack</tt>). Committed
+proofs and acknowledgments also bind a <strong>target context</strong>, which is the
+canonical representation of the next-hop audience together with any other
+profile-relevant target-selection inputs.</t>
+<t>The design separates inline authorization from later proof and audit. Main-body
+sections focus on the interoperable protocol rules needed to issue, exchange,
+validate, and consume actor-chain tokens correctly. Implementers primarily
+interested in interoperable behavior can focus first on Common Basics, Common
+Validation Procedures, the profile sections, and Appendix A. Special preserve-state exchanges, metadata, and deeper enforcement details are surfaced later so
+that the normal profile flow can be read without interruption. Readers who want
+to start with motivation and deployment framing can begin with Appendix H and
+Appendix D, then return here and to Scope and Model for the implementation-first protocol view. Extended background, problem framing, threat analysis,
+and operational guidance appear in the appendices.</t>
+<t>All profiles assume sender-constrained tokens together with ordinary replay and
+freshness protections, but the detailed enforcement rules for those mechanisms
+appear later so they do not interrupt the initial flow narrative.</t>
+<t>This document defines a JWT / JSON Web Signature (JWS) binding for the
+interoperable base specification. A future version or companion specification
+MAY define an equivalent COSE/CBOR binding.</t>
+</section>
+
+<section anchor="terminology"><name>Terminology</name>
+<t>The key words &quot;MUST&quot;, &quot;MUST NOT&quot;, &quot;REQUIRED&quot;, &quot;SHALL&quot;, &quot;SHALL NOT&quot;, &quot;SHOULD&quot;,
+&quot;SHOULD NOT&quot;, &quot;RECOMMENDED&quot;, &quot;NOT RECOMMENDED&quot;, &quot;MAY&quot;, and &quot;OPTIONAL&quot; in this
+document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
+when, and only when, they appear in all capitals, as shown here.</t>
+<t>This document also leverages terminology from OAuth 2.0 Token Exchange
+{{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS
+Architecture {{!RFC9334}}.</t>
+
+<ul>
+<li><t><strong>Actor</strong>: A workload, service, application component, agent, or other
+authenticated entity that receives a token, performs work, and MAY
+subsequently act toward another actor.</t>
+</li>
+<li><t><strong>Current actor</strong>: The authenticated entity presently performing token
+exchange.</t>
+</li>
+<li><t><strong>Presenting actor</strong>: The authenticated actor that presents a
+sender-constrained token to a recipient.</t>
+</li>
+</ul>
+<t>Example: when <tt>B</tt> exchanges a token at the Authorization Server, <tt>B</tt> is the
+  current actor. When <tt>B</tt> later presents the resulting sender-constrained token
+  to <tt>C</tt>, <tt>B</tt> is the presenting actor.</t>
+
+<ul>
+<li><t><strong>Recipient</strong>: The actor or resource server identified as the intended target
+of an issued token.</t>
+</li>
+<li><t><strong>Actor chain</strong>: The ordered sequence of actors that have acted so far in one
+workflow instance.</t>
+</li>
+<li><t><strong>Ordinary token</strong>: The sender-constrained access token issued for
+presentation to the next hop. It is distinct from step proofs, bootstrap
+context handles, commitment objects, and receiver acknowledgments.</t>
+</li>
+<li><t><strong>Readable chain</strong>: An <tt>ach</tt> value carried in an ordinary token and visible
+to downstream recipients.</t>
+</li>
+<li><t><strong>Actor-visible chain</strong>: The exact ordered actor sequence that the current
+actor is permitted to know and extend for the next hop. In the Committed Chain with Subset Disclosure profile, this is the exact inbound disclosed <tt>ach</tt>
+verified by that actor, with the actor appended when it later acts. In the
+Committed Chain with No Chain Disclosure profile, bootstrap uses the singleton chain
+<tt>[A]</tt>; each non-bootstrap hop uses the exact pair
+<tt>[PresentingActor, CurrentActor]</tt>.</t>
+</li>
+<li><t><strong>Committed chain state</strong>: The cumulative cryptographic state that binds
+prior accepted chain state to a newly accepted hop.</t>
+</li>
+<li><t><strong>Step proof</strong>: A profile-defined proof signed by the current actor that
+binds that actor's participation to the workflow, prior chain state, and
+target context.</t>
+</li>
+<li><t><strong>Target context</strong>: The canonical representation of the next-hop target that
+a profile-defined proof or acknowledgment binds to. It always includes the
+intended audience and MAY additionally include other target-selection inputs.
+If no such additional inputs are used, it is identical to <tt>aud</tt>.</t>
+</li>
+<li><t><strong>Bootstrap context</strong>: An opaque handle issued by the Authorization Server
+only to start a committed-profile workflow. It lets the initial actor redeem
+bound bootstrap state at the token endpoint without carrying that state
+inline.</t>
+</li>
+<li><t><strong>Workflow identifier (<tt>sid</tt>)</strong>: A stable identifier minted once at workflow
+start and retained for the lifetime of the workflow instance.</t>
+</li>
+<li><t><strong>Cross-domain re-issuance</strong>: A second token exchange performed at another
+domain's Authorization Server in order to obtain a local token trusted by the
+next recipient, without extending the actor chain.</t>
+</li>
+<li><t><strong>Home Authorization Server</strong>: The Authorization Server at which the current
+actor normally performs the chain-extending token exchange for the next hop.
+In same-domain operation it is the issuer that validates prior chain state
+and issues the next ordinary token.</t>
+</li>
+<li><t><strong>Continuity</strong>: The property that the inbound token is being presented by the
+actor that the chain state indicates should be presenting it.</t>
+</li>
+<li><t><strong>Append-only processing</strong>: The rule that a new actor is appended to
+the prior chain state, without insertion, deletion, reordering, or
+modification of prior actors.</t>
+</li>
+<li><t><strong>Terminal recipient</strong>: A recipient that performs work locally and does not
+extend the actor chain further.</t>
+</li>
+<li><t><strong>Refresh-Exchange</strong>: A token-exchange operation by the same current actor
+that refreshes a short-lived transport token without appending the actor
+chain, changing the active profile, or generating a new step proof.</t>
+</li>
+</ul>
+</section>
+
+<section anchor="relationship-to-rfc-8693-claims"><name>Relationship to RFC 8693 Claims</name>
+<t>This specification extends OAuth 2.0 Token Exchange {{!RFC8693}} without
+changing the existing meanings of <tt>sub</tt>, <tt>act</tt>, or <tt>may_act</tt>.</t>
+<t>The following rules apply:</t>
+
+<ul spacing="compact">
+<li><tt>sub</tt> continues to identify the subject of the issued token.</li>
+<li><tt>act</tt> MUST identify the current actor represented by the
+issued token.</li>
+<li><tt>ach</tt>, when present, carries the profile-defined ordered actor chain for that artifact. In full-disclosure readable profiles it is the full readable chain to date; in subset-disclosure profiles it is a recipient-specific disclosed subset that ends in the current actor; and in committed step proofs it is the proof-bound actor-visible chain for the hop.</li>
+<li>Nested prior <tt>act</tt> claims, if present for compatibility or deployment-specific
+reasons, remain informational only for access-control purposes,
+consistent with {{!RFC8693}}.</li>
+<li>Tokens issued under this specification MUST include <tt>sub</tt> and <tt>act</tt> so that
+downstream parties can preserve RFC 8693 subject and current-actor semantics
+while also carrying actor-chain state.</li>
+<li><tt>may_act</tt>, when present in an inbound token, MAY be used by the accepting
+Authorization Server as one input when determining whether the authenticated
+current actor is authorized to perform token exchange for the requested
+target context.</li>
+</ul>
+<t>Nothing in this specification redefines the delegation and impersonation
+semantics described in {{!RFC8693}}.</t>
+</section>
+
+<section anchor="scope-and-model"><name>Scope and Model</name>
+<t>This document specifies a family of profiles for representing and validating
+actor progression across a linear workflow using OAuth 2.0 Token Exchange.</t>
+<t>Implementers primarily interested in interoperable behavior can focus first on
+Common Basics, Common Validation Procedures, the profile sections, and
+Appendices A, B, G, and H. Special preserve-state exchanges, metadata, and the
+deeper enforcement rules are intentionally surfaced later so the reader can
+learn the ordinary profile flow first. The appendices later in the document
+contain background, rationale, threat discussion, and operational guidance that
+may be useful for review and deployment planning but are not required for a
+first implementation pass.</t>
+<t>The base workflow model is linear:</t>
+<t>{::nomarkdown}
+&lt;artwork type=&quot;ascii-art&quot;&gt;
+A -&gt; B -&gt; C -&gt; D
+&lt;/artwork&gt;
+{:/nomarkdown}</t>
+<t>The first actor initializes the workflow. Each subsequent actor MAY:</t>
+
+<ol spacing="compact">
+<li>validate an inbound token;</li>
+<li>perform work; and</li>
+<li>exchange that token for a new token representing itself toward the next hop.</li>
+</ol>
+<t>This document defines five profiles:</t>
+
+<ul spacing="compact">
+<li><strong>Asserted Chain with Full Disclosure</strong>, which carries a readable <tt>ach</tt> and
+relies on AS-asserted chain continuity under a non-collusion assumption;</li>
+<li><strong>Asserted Chain with Subset Disclosure</strong>, which carries a recipient-specific
+disclosed subset in readable <tt>ach</tt> and relies on the issuing AS for
+both chain continuity and disclosure policy;</li>
+<li><strong>Committed Chain with Subset Disclosure</strong>, which preserves cumulative
+committed state and lets the Authorization Server disclose a recipient-specific
+ordered subset of the actor-visible chain while the current actor
+signs the exact actor-visible chain it was allowed to see and extend;</li>
+<li><strong>Committed Chain with Full Disclosure</strong>, which is the committed
+full-disclosure case in which every actor and downstream recipient sees the
+full readable chain; and</li>
+<li><strong>Committed Chain with No Chain Disclosure</strong>, which is the committed
+no-chain-disclosure case in which ordinary tokens omit <tt>ach</tt> and downstream
+authorization is based on the presenting actor only.</li>
+</ul>
+<t>The five profiles are organized in two branches so that later profiles can be
+read as deltas, not as full restatements:</t>
+
+<ul spacing="compact">
+<li>the <strong>asserted branch</strong>, rooted at Asserted Chain with Full Disclosure; and</li>
+<li>the <strong>committed branch</strong>, consisting of one common committed-processing
+section plus three disclosure modes: subset disclosure, full disclosure, and
+no chain disclosure.</li>
+</ul>
+<t>Each derived profile inherits all requirements of its branch root or common
+committed-processing section except as modified in that profile. Readers
+therefore need only read:</t>
+
+<ul spacing="compact">
+<li><strong>Asserted Chain with Full Disclosure</strong> for the asserted branch;</li>
+<li><strong>Common Processing for the Committed Branch</strong> plus the three concise
+committed profile sections for the committed branch; and</li>
+<li>the concise delta sections for the two subset-disclosure variants.</li>
+</ul>
+<t>The same small set of objects recurs throughout the rest of the document:
+ordinary tokens carry hop-to-hop state, committed profiles add actor-signed
+step proofs and <tt>achc</tt>, bootstrap is used only to start a committed-profile
+workflow, and <tt>target_context</tt> names the canonical next-hop target that proofs
+and acknowledgments bind. Keeping those four objects in mind makes the later
+profile sections much easier to read.</t>
+<t>The following table is a quick orientation aid.</t>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Readable <tt>ach</tt> in ordinary tokens</th>
+<th><tt>achc</tt></th>
+<th>Subset disclosure</th>
+<th>Next-hop authorization basis</th>
+<th>Primary trust/evidence model</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Asserted Chain with Full Disclosure</td>
+<td>Full</td>
+<td>No</td>
+<td>No</td>
+<td>Full readable chain</td>
+<td>AS-asserted continuity</td>
+</tr>
+
+<tr>
+<td>Asserted Chain with Subset Disclosure</td>
+<td>Disclosed subset</td>
+<td>No</td>
+<td>Yes</td>
+<td>Disclosed readable subset</td>
+<td>AS-asserted continuity plus AS disclosure policy</td>
+</tr>
+
+<tr>
+<td>Committed Chain with Subset Disclosure</td>
+<td>Disclosed subset</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Disclosed readable subset plus commitment continuity</td>
+<td>Actor-signed visible-chain proofs plus recipient-specific disclosure</td>
+</tr>
+
+<tr>
+<td>Committed Chain with Full Disclosure</td>
+<td>Full</td>
+<td>Yes</td>
+<td>No</td>
+<td>Full readable chain</td>
+<td>Actor-signed visible-chain proofs plus cumulative commitment</td>
+</tr>
+
+<tr>
+<td>Committed Chain with No Chain Disclosure</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+<td>Presenting actor only</td>
+<td>Actor-signed visible-chain proofs plus cumulative commitment</td>
+</tr>
+</tbody>
+</table><t>The committed branch is best read as one common set of bootstrap, proof,
+commitment, and returned-token rules, followed by its disclosure modes. The
+special preserve-state exchanges, deeper enforcement requirements, and metadata
+sections can then be read afterward.</t>
+<t>Application logic may branch, fan out, and run in parallel. This document
+standardizes hop-by-hop actor-chain evidence, not a full call-graph language.
+If later work needs standardized shared-root branching semantics, a future
+specification can add them, for example by binding a branch <tt>sid</tt> to a parent
+<tt>sid</tt> during bootstrap or a branch-creation exchange and defining any later
+merge or branch-selection behavior. Complete call-graph construction is
+typically an audit or forensic concern rather than an online authorization
+requirement, and retained Authorization Server records, timestamps, and causal
+links among presenting actors, current actors, and subsequent actors can often
+reveal much of the effective call graph even without such an extension,
+though this base specification alone does not guarantee a complete
+standardized graph across separate <tt>sid</tt> values.</t>
+<t>An issued token MAY still carry an <tt>aud</tt> string or array according to JWT and
+OAuth conventions, but for any one step it defines one canonical next-hop
+<tt>target_context</tt>.</t>
+<t>Repeated ActorID values within one linear workflow instance are permitted. A
+sequence such as <tt>[A,B,C,D,A,E]</tt> denotes that actor <tt>A</tt> acted more than once in
+the same workflow instance. Collecting all accepted hop evidence for one <tt>sid</tt>,
+such as retained tokens, proofs, commitments, and exchange records, can
+therefore reconstruct the accepted hop sequence, including repeated-actor
+revisits.</t>
+</section>
+
+<section anchor="protocol-overview"><name>Protocol Overview</name>
+
+<section anchor="workflow-progression"><name>Workflow Progression</name>
+<t>The actor chain advances only when an actor acts. Mere receipt of a token does
+not append the recipient.</t>
+<t>If <tt>A</tt> calls <tt>B</tt>, and <tt>B</tt> later calls <tt>C</tt>, then:</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> begins the workflow and becomes the initial actor.</li>
+<li>When <tt>A</tt> calls <tt>B</tt>, <tt>B</tt> validates a token representing <tt>A</tt>.</li>
+<li>When <tt>B</tt> later exchanges that token to call <tt>C</tt>, <tt>B</tt> becomes the next
+actor.</li>
+<li><tt>C</tt> is not appended merely because <tt>C</tt> received a token. <tt>C</tt> is appended
+only if <tt>C</tt> later acts toward another hop.</li>
+</ol>
+<t>Compact end-to-end examples appear in Appendix B.</t>
+</section>
+
+<section anchor="same-domain-and-cross-domain-hops"><name>Same-Domain and Cross-Domain Hops</name>
+<t>Within one trust domain, the current actor exchanges its inbound token at its
+home Authorization Server, meaning the Authorization Server that validates the
+prior chain state for that actor and issues the next ordinary token.</t>
+<t>Across a trust boundary, if the next recipient does not trust the current
+Authorization Server directly, the current actor performs a second token
+exchange at the next domain's Authorization Server. That second exchange
+preserves the already-established chain state and does not append the next
+recipient.</t>
+<t>The trust/evidence differences among profiles are summarized in the profile
+matrix above and discussed further in Appendix J. The special preserve-state
+cases for cross-domain re-issuance and Refresh-Exchange are defined later, after
+the ordinary profile flows.</t>
+</section>
+</section>
+
+<section anchor="common-basics"><name>Common Basics</name>
+<t>This section introduces the recurring fields, token contents, and
+cryptographic objects needed to read the profile flows. More detailed
+enforcement rules, including sender constraint, proof-key binding,
+intended-recipient checks, and replay or freshness handling, are collected
+later in &quot;Common Security and Enforcement Requirements&quot; so that the main
+profile story can be read first.</t>
+
+<section anchor="common-token-requirements"><name>Common Token Requirements</name>
+<t>Unless stated otherwise, &quot;ordinary token&quot; below refers to the sender-constrained access token issued to the current actor for presentation to the
+next hop. This section is about those tokens, not about committed-profile step
+proofs, bootstrap context handles, or <tt>hop_ack</tt> objects.</t>
+<t>Tokens issued under any profile defined by this document:</t>
+
+<ul spacing="compact">
+<li>MUST be short-lived;</li>
+<li>MUST be sender-constrained to the presenting actor; and</li>
+<li><t>MUST contain:</t>
+
+<ul spacing="compact">
+<li>a profile identifier claim <tt>achp</tt>;</li>
+<li>a workflow identifier claim <tt>sid</tt>;</li>
+<li>a subject claim <tt>sub</tt>;</li>
+<li>a current-actor claim <tt>act</tt>;</li>
+<li>a unique token identifier claim <tt>jti</tt>;</li>
+<li>an audience value <tt>aud</tt>; and</li>
+<li>an expiry value <tt>exp</tt>.</li>
+</ul></li>
+</ul>
+<t>The token claims used by this document have these roles:</t>
+
+<ul spacing="compact">
+<li><tt>achp</tt> identifies the selected actor-chain profile;</li>
+<li><tt>sub</tt> identifies the token subject;</li>
+<li><tt>act</tt> identifies the current actor;</li>
+<li><tt>ach</tt>, when present, carries the profile-defined ordered actor chain for
+that artifact; and</li>
+<li><tt>achc</tt>, when present, carries cumulative committed chain state for stronger
+tamper evidence and auditability.</li>
+</ul>
+<t>Profiles that preserve readable chain state additionally carry <tt>ach</tt>.</t>
+<t>In full-disclosure readable profiles, <tt>ach</tt> carries the full readable chain to
+date. In subset-disclosure profiles, <tt>ach</tt> carries the recipient-specific
+disclosed subset that ends in the current actor. In committed step proofs,
+<tt>ach</tt> is the proof-bound actor-visible chain for that hop.</t>
+<t>Profiles that preserve committed chain state additionally carry <tt>achc</tt>.</t>
+<t>Under the base profiles defined by this document, same-domain token exchange,
+cross-domain re-issuance, and Refresh-Exchange preserve the inbound <tt>sub</tt>
+claim. This document does not define a same-workflow subject-transition
+mechanism.</t>
+</section>
+
+<section anchor="workflow-identifier"><name>Workflow Identifier</name>
+<t>The <tt>sid</tt> value:</t>
+
+<ul spacing="compact">
+<li>MUST be minted once at workflow start by the issuing Authorization Server;</li>
+<li>MUST be generated using a cryptographically secure pseudorandom number
+generator (CSPRNG) with at least 122 bits of entropy;</li>
+<li>MUST remain unchanged for the lifetime of that workflow instance; and</li>
+<li>MUST NOT be used to signal profile selection.</li>
+</ul>
+<t>Implementation note: standard UUID version 4 (UUIDv4), which provides 122 bits
+of random entropy, is acceptable for <tt>sid</tt> in this version. Deployments MAY use stronger
+generation (for example, full 128-bit random values) by local policy.</t>
+<t>Profile selection MUST be signaled explicitly using the token request parameter
+<tt>actor_chain_profile</tt> and the corresponding token claim
+<tt>achp</tt>.</t>
+</section>
+
+<section anchor="target-context-requirements"><name>Target Context Requirements</name>
+<t><tt>target_context</tt> is the canonical next-hop target value bound into committed-profile step proofs and, when used, into <tt>hop_ack</tt>. In many deployments it is
+just <tt>aud</tt>. Deployments that need finer-grained binding can extend it with
+other target-selection inputs.</t>
+<t>The following normative requirements apply to <tt>target_context</tt>.</t>
+<t><tt>target_context</tt> MUST carry the verified audience information exactly in the
+profile-defined canonical representation. If <tt>aud</tt> is a string,
+<tt>target_context</tt> MAY be that same JSON string or a JSON object that includes
+an <tt>aud</tt> member with that same string value. If <tt>aud</tt> is an array of strings,
+<tt>target_context</tt> MUST represent that array exactly, either as that same JSON
+array value or as a JSON object whose <tt>aud</tt> member is that exact array.</t>
+<t>A deployment MAY additionally include resource identifiers, operation names,
+tool identifiers, method names, request classes, or other target-selection
+inputs used by local authorization policy.</t>
+<t>If no such additional values are available, <tt>target_context</tt> is identical to
+<tt>aud</tt>.</t>
+<t>Whenever <tt>target_context</tt> is incorporated into a profile-defined signature or
+commitment input in this JWT-based version, it MUST be represented as a JSON
+value and canonicalized exactly once as part of the enclosing JSON
+Canonicalization Scheme (JCS)-serialized payload object. Equality checks over
+<tt>target_context</tt> MUST therefore compare the exact JSON value after JCS
+canonicalization. Implementations MUST NOT
+collapse an audience array to a string, reorder array elements, or otherwise
+rewrite the verified audience structure before signing or comparing
+<tt>target_context</tt>.</t>
+</section>
+
+<section anchor="canonicalization"><name>Canonicalization</name>
+<t>All profile-defined signed or hashed inputs MUST use a canonical serialization
+defined by this specification.</t>
+<t>In this version of the specification, <tt>CanonicalEncode(x)</tt> means JCS
+{{!RFC8785}} applied to the JSON value <tt>x</tt>.</t>
+<t><tt>Hash_halg(x)</tt> denotes the raw hash output produced by applying the selected
+commitment hash algorithm <tt>halg</tt> to the octet sequence <tt>x</tt>.</t>
+<t>Canonical profile-defined proof payloads MUST be serialized using JCS {{!RFC8785}}.</t>
+</section>
+
+<section anchor="actor-identity-representation"><name>Actor Identity Representation</name>
+<t>This specification requires a canonical representation for actor identity in
+profile-defined chain entries and step proofs.</t>
+<t>Each actor identifier MUST be represented as an ActorID structure containing
+exactly two members:</t>
+
+<ul spacing="compact">
+<li><tt>iss</tt>: the issuer identifier naming the namespace in which the actor subject
+value is defined; and</li>
+<li><tt>sub</tt>: the subject identifier of the actor within that issuer namespace.</li>
+</ul>
+<t>An ActorID is a JSON object with members <tt>iss</tt> and <tt>sub</tt>, serialized using JCS {{!RFC8785}} when incorporated into profile-defined signed or hashed inputs.</t>
+<t>An ActorID:</t>
+
+<ul spacing="compact">
+<li>MUST be stable for equality comparison within a workflow instance;</li>
+<li>MUST be bound to the authenticated actor identity used during
+sender-constrained token presentation and token exchange;</li>
+<li>MUST be compared using exact equality of the pair (<tt>iss</tt>, <tt>sub</tt>); and</li>
+<li>SHOULD support pairwise or pseudonymous subject values where deployment
+policy allows.</li>
+</ul>
+<t>When deriving an ActorID from a validated inbound token:</t>
+
+<ul spacing="compact">
+<li>for the token subject, use <tt>{ &quot;iss&quot;: token.iss, &quot;sub&quot;: token.sub }</tt>;</li>
+<li>for a validated <tt>act</tt> claim that contains both <tt>iss</tt> and <tt>sub</tt>, use those two
+values directly; and</li>
+<li>for a validated <tt>act</tt> claim that contains <tt>sub</tt> but omits <tt>iss</tt>, use the
+enclosing token's <tt>iss</tt> as the ActorID <tt>iss</tt> value and the <tt>act.sub</tt> value as
+the ActorID <tt>sub</tt> value.</li>
+</ul>
+<t>If no usable <tt>act</tt> claim is present and a profile needs the presenting actor,
+that actor MUST be derived from the validated sender-constrained presenter
+identity under local policy and mapped into the same ActorID representation the
+issuing Authorization Server uses for proof construction.</t>
+<t>Readable-chain profiles carry arrays of ActorID values in <tt>ach</tt>.
+Privacy-preserving profiles bind ActorID values only inside step proofs and
+related evidence. In examples and formulas, <tt>[A,B]</tt> denotes a readable chain of
+ActorID values for actors <tt>A</tt> and <tt>B</tt>.</t>
+</section>
+
+<section anchor="artifact-typing"><name>Artifact Typing</name>
+<t>JWT-based artifacts defined by this specification MUST use explicit <tt>typ</tt>
+values.</t>
+<t>The following JWT <tt>typ</tt> values are defined:</t>
+
+<ul spacing="compact">
+<li><tt>ach-step-proof+jwt</tt></li>
+<li><tt>ach-commitment+jwt</tt></li>
+<li><tt>ach-hop-ack+jwt</tt></li>
+</ul>
+<t>Verifiers MUST enforce mutually exclusive validation rules based on artifact
+type and MUST NOT accept one artifact type in place of another. They MUST verify
+the expected JWT <tt>typ</tt>, exact <tt>ctx</tt> value where applicable, and artifact-specific payload structure defined by the relevant binding section of this
+specification.</t>
+</section>
+
+<section anchor="issued-token-type"><name>Issued Token Type</name>
+<t>Unless another application profile explicitly states otherwise, tokens issued
+under this specification are access tokens.</t>
+<t>Token exchange responses MUST use the RFC 8693 token type fields consistently
+with the underlying representation and deployment.</t>
+</section>
+
+<section anchor="commitment-hash-algorithms"><name>Commitment Hash Algorithms</name>
+<t>Committed-chain profiles use a named hash algorithm for construction of
+<tt>achc</tt>.</t>
+<t>Commitment hash algorithm identifiers are values from the IANA Named
+Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}.</t>
+<t>Implementations supporting committed-chain profiles MUST implement <tt>sha-256</tt>.
+Implementations SHOULD implement <tt>sha-384</tt>.</t>
+<t>Every <tt>achc</tt> object and every committed-profile bootstrap
+context MUST carry an explicit <tt>halg</tt> value. Verifiers MUST NOT infer or
+substitute <tt>halg</tt> when it is absent.</t>
+<t>Verifiers MUST enforce a locally configured allow-list of acceptable
+commitment hash algorithms and MUST NOT accept algorithm substitution based
+solely on attacker-controlled inputs.</t>
+</section>
+
+<section anchor="commitment-function"><name>Commitment Function</name>
+<t>Committed profiles use <tt>achc</tt> to bind each accepted hop to the
+prior accepted state. The commitment hash algorithm is selected once for the
+workflow by the issuing Authorization Server during bootstrap and remains fixed
+for the lifetime of that workflow instance.</t>
+<t>Each <tt>achc</tt> value is a signed commitment object whose payload
+contains:</t>
+
+<ul spacing="compact">
+<li><tt>ctx</tt>: the context string <tt>actor-chain-commitment-v1</tt>;</li>
+<li><tt>iss</tt>: the issuer identifier of the Authorization Server that signs this
+commitment object;</li>
+<li><tt>sid</tt>: the workflow identifier;</li>
+<li><tt>achp</tt>: the active profile identifier;</li>
+<li><tt>halg</tt>: the hash algorithm identifier;</li>
+<li><tt>prev</tt>: the prior commitment digest, or the bootstrap <tt>initial_chain_seed</tt> at
+workflow start;</li>
+<li><tt>step_hash</tt>: <tt>b64url(Hash_halg(step_proof_bytes))</tt>; and</li>
+<li><tt>curr</tt>: <tt>b64url(Hash_halg(CanonicalEncode({ctx, iss, sid, achp, halg, prev, step_hash})))</tt>.</li>
+</ul>
+<t>Let <tt>prev_digest</tt> denote the prior committed-state digest for the step being
+processed: at bootstrap it is the <tt>initial_chain_seed</tt>, and for later steps it
+is the verified <tt>curr</tt> value extracted from the inbound <tt>achc</tt>.
+For the JWT binding defined in this version, let <tt>step_proof_bytes</tt> denote the
+ASCII bytes of the exact compact JWS string submitted as
+<tt>actor_chain_step_proof</tt>.
+Let <tt>as_issuer_id</tt> denote the issuer identifier that the Authorization Server
+places into the commitment object's <tt>iss</tt> member, typically its issuer value.
+The commitment hash therefore binds the transmitted step-proof artifact, not
+merely its decoded payload.</t>
+<t>The <tt>halg</tt> value MUST be a text string naming a hash algorithm from the IANA
+Named Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}. This
+specification permits only <tt>sha-256</tt> and <tt>sha-384</tt> for
+<tt>achc</tt>. Hash algorithms with truncated outputs, including
+truncated <tt>sha-256</tt> variants, MUST NOT be used. Other registry values MUST NOT
+be used with this specification unless a future Standards Track specification
+updates this document.</t>
+<t>When a profile-defined proof input refers to a prior
+<tt>achc</tt>, the value incorporated into the proof input MUST be
+that prior commitment's verified <tt>curr</tt> digest string, copied directly from the
+validated <tt>achc</tt> payload, not the raw serialized commitment object.</t>
+<t>The abstract function used throughout this document is therefore:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+Commit_AS(as_issuer_id, sid, achp, prev_digest, step_proof_bytes, halg)
+  = AS-signed commitment object over payload {
+      ctx,
+      iss,
+      sid,
+      achp,
+      halg,
+      prev = prev_digest,
+      step_hash = b64url(Hash_halg(step_proof_bytes)),
+      curr = b64url(Hash_halg(CanonicalEncode({ctx, iss, sid, achp, halg, prev, step_hash})))
+    }
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The exact wire encoding of the signed commitment object is defined in the JWT binding in Appendix A. In calls to <tt>Commit_AS</tt>, the <tt>iss</tt> input is the issuer identifier of the Authorization Server signing the new commitment object, and <tt>sid</tt> and <tt>achp</tt> are the workflow and profile values being preserved for that workflow state.</t>
+</section>
+
+<section anchor="common-cryptographic-operations"><name>Common Cryptographic Operations</name>
+<t>The committed profiles use a small number of proof-input templates. This
+section defines them once so that profile sections can state only their
+profile-specific substitutions.</t>
+<t>Let:</t>
+
+<ul spacing="compact">
+<li><tt>profile</tt> be the active <tt>achp</tt> value;</li>
+<li><tt>sid</tt> be the stable workflow identifier;</li>
+<li><tt>prev_state</tt> be either the returned base64url <tt>initial_chain_seed</tt> from
+bootstrap or the verified prior commitment digest string from <tt>achc.curr</tt>, as
+required by the profile;</li>
+<li><tt>visible_actor_chain_for_hop</tt> be the exact ordered actor-visible chain for
+the hop after appending the authenticated current actor;</li>
+<li><tt>TC_next</tt> be the canonical <tt>target_context</tt> for the next hop, often just the
+next <tt>aud</tt> value but extended when local policy needs finer-grained target
+binding; and</li>
+<li><tt>[N]</tt> denote the canonical ActorID JSON object representation of the
+authenticated current actor.</li>
+</ul>
+<t>Symbols such as <tt>TC_B</tt>, <tt>TC_C</tt>, and <tt>TC_next</tt> denote the canonical
+<tt>target_context</tt> for the corresponding next hop.</t>
+<t>Committed profiles instantiate the following proof-input template:</t>
+<t>visible committed chain template:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+Sign_N({
+  &quot;ctx&quot;: ds(profile),
+  &quot;sid&quot;: sid,
+  &quot;prev&quot;: prev_state,
+  &quot;ach&quot;: visible_actor_chain_for_hop,
+  &quot;target_context&quot;: TC_next
+})
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The domain-separation string <tt>ds</tt> is profile-specific:</t>
+
+<ul spacing="compact">
+<li><tt>actor-chain-readable-committed-step-sig-v1</tt> for Committed Chain with Full Disclosure;</li>
+<li><tt>actor-chain-private-committed-step-sig-v1</tt> for Committed Chain with No Chain Disclosure; and</li>
+<li><tt>actor-chain-selectively-disclosed-committed-step-sig-v1</tt> for Committed
+Chain with Subset Disclosure.</li>
+</ul>
+<t>These strings remain distinct even though the committed-branch step-proof
+payload members are structurally aligned. The signed step-proof payload does not
+carry <tt>achp</tt> or another explicit proof-mode identifier, and the meaning of the
+<tt>ach</tt> member remains profile-dependent. Distinct domain-separation strings are
+therefore REQUIRED to bind the proof to the intended committed-profile
+semantics and to prevent cross-profile proof confusion or accidental proof
+reuse.</t>
+<t>The profile-specific meaning of <tt>visible_actor_chain_for_hop</tt> is:</t>
+
+<ul spacing="compact">
+<li>for <strong>Committed Chain with Full Disclosure</strong>, the full readable chain for the hop after
+appending the authenticated current actor;</li>
+<li>for <strong>Committed Chain with Subset Disclosure</strong>, the exact inbound
+disclosed <tt>ach</tt> verified by the current actor, with that current actor
+appended; and</li>
+<li>for <strong>Committed Chain with No Chain Disclosure</strong>, the profile-defined actor-visible
+chain for the hop: bootstrap uses the singleton <tt>[A]</tt>; each non-bootstrap
+hop uses the exact pair <tt>[PresentingActor, CurrentActor]</tt>.</li>
+</ul>
+<t>For subset-disclosure committed operation, any readable <tt>ach</tt> disclosed to
+the next recipient MUST be derived from the proof-bound
+<tt>visible_actor_chain_for_hop</tt>, MUST be an ordered subsequence of it, and MUST
+include the current actor as its last element. For zero-disclosure operation,
+ordinary tokens omit the <tt>ach</tt> claim entirely even though the current actor still
+signs the profile-defined actor-visible chain for the hop.</t>
+</section>
+</section>
+
+<section anchor="profile-selection-and-session-immutability"><name>Profile Selection and Session Immutability</name>
+<t>This specification uses capability discovery plus explicit profile selection,
+not interactive profile negotiation.</t>
+<t>An actor requesting a token under this specification MUST select exactly one
+<tt>actor_chain_profile</tt> value for that request. The Authorization Server MUST
+either issue a token whose <tt>achp</tt> equals that requested profile identifier or
+reject the request.</t>
+<t>For a given accepted chain state identified by <tt>sid</tt>, <tt>achp</tt> is immutable.
+Any token exchange, cross-domain re-issuance, or Refresh-Exchange that would
+change <tt>achp</tt> for that accepted chain state MUST be rejected. A current actor
+MUST reject any returned token whose <tt>achp</tt> differs from the profile it
+requested or from the preserved profile state already represented by the
+inbound token.</t>
+<t>Profile switching therefore requires starting a new workflow instance with a
+new <tt>sid</tt>, not continuing an existing accepted chain state.</t>
+</section>
+
+<section anchor="common-validation-procedures"><name>Common Validation Procedures</name>
+<t>This section gives the short validation checklists that the profile sections reuse. Detailed enforcement rules for sender constraint, proof-key binding, intended-recipient handling, and replay or freshness are collected later in &quot;Common Security and Enforcement Requirements&quot;.</t>
+
+<section anchor="recipient-validation-of-an-inbound-token"><name>Recipient Validation of an Inbound Token</name>
+<t>Unless a profile states otherwise, a recipient validating an inbound actor-chain
+token MUST verify:</t>
+
+<ul spacing="compact">
+<li>token signature;</li>
+<li>issuer trust;</li>
+<li>profile identifier (<tt>achp</tt>);</li>
+<li>presence and correct format of profile-required structural claims (<tt>ach</tt>
+and/or <tt>achc</tt> according to <tt>achp</tt>);</li>
+<li>if the recipient directly relies on <tt>achc</tt> as evidence, rather than relying on
+a locally trusted enclosing token issuer, validation of its <tt>typ</tt> header and
+JWS signature according to local policy and Appendix A;</li>
+<li>audience and target-context consistency according to local policy;</li>
+<li>expiry;</li>
+<li>sender constraint; and</li>
+<li>replay and freshness state.</li>
+</ul>
+</section>
+
+<section anchor="authorization-server-validation-of-token-exchange"><name>Authorization Server Validation of Token Exchange</name>
+<t>Unless a profile states otherwise, an Authorization Server processing a token
+exchange under this specification MUST verify:</t>
+
+<ul spacing="compact">
+<li>the inbound <tt>subject_token</tt>;</li>
+<li>the identity of the current actor;</li>
+<li>replay and freshness constraints;</li>
+<li>intended-recipient semantics for the inbound token, except when
+<tt>actor_chain_refresh=true</tt> or <tt>actor_chain_cross_domain=true</tt>; and</li>
+<li>authorization to act for the requested target context.</li>
+</ul>
+<t>For token exchange, sender-constrained validation applies differently to the
+inbound token and to the current exchange request. The Authorization Server
+MUST validate the current actor's authentication and any applicable sender-constrained proof for the exchange request itself. It MUST validate the inbound
+<tt>subject_token</tt> as an inbound token under this specification, but it MUST NOT
+require the current actor to produce a fresh sender-constrained proof using the
+previous actor's private key solely to redeem that inbound <tt>subject_token</tt> at
+the token endpoint.</t>
+</section>
+
+<section anchor="current-actor-validation-of-a-returned-token"><name>Current-Actor Validation of a Returned Token</name>
+<t>Unless a profile states otherwise, a current actor validating a returned token
+from token exchange MUST verify the token signature, profile identifier,
+workflow identifier continuity, subject continuity, current-actor continuity,
+expiry, that the returned target context corresponds to what was requested for
+that operation according to local policy, and any profile-specific append-only
+or commitment checks before presenting that token to the next hop.</t>
+<t>The returned <tt>sid</tt> MUST equal the workflow identifier already in progress, the
+returned <tt>sub</tt> claim MUST equal the inbound token's <tt>sub</tt> value for these base
+profiles, and the returned <tt>act</tt> claim MUST continue to identify the same
+current actor that performed the exchange. An unexpected change in <tt>achp</tt> is a
+profile-continuity failure and MUST cause rejection of the returned token.</t>
+</section>
+</section>
+
+<section anchor="profiles"><name>Profiles</name>
+<t>The profile selection table appears earlier in &quot;Scope and Model&quot;. The sections
+below present the ordinary chain-extending profile flows first. Special
+preserve-state exchanges, metadata, and deeper enforcement details appear
+later so they do not interrupt the main profile story.</t>
+</section>
+
+<section anchor="asserted-chain-with-full-disclosure-profile"><name>Asserted Chain with Full Disclosure Profile</name>
+
+<section anchor="profile-identifier"><name>Profile Identifier</name>
+<t>The profile identifier string for this profile is
+<tt>asserted-chain-full</tt>. It is used as the <tt>actor_chain_profile</tt> token
+request parameter value and as the <tt>achp</tt> token claim value.</t>
+</section>
+
+<section anchor="objective"><name>Objective</name>
+<t>The Asserted Chain with Full Disclosure profile extends token exchange by carrying a
+readable <tt>ach</tt> and requiring chain-continuity validation by both the
+current actor and the issuing Authorization Server at each hop.</t>
+</section>
+
+<section anchor="security-model"><name>Security Model</name>
+<t>This profile provides hop-by-hop readable chain integrity based on issuer-asserted chain state and continuity checks.</t>
+<t>This profile assumes that an actor does not collude with its home Authorization
+Server.</t>
+</section>
+
+<section anchor="bootstrap"><name>Bootstrap</name>
+<t>At workflow start, actor <tt>A</tt> MUST request a token from <tt>AS1</tt> with:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=client_credentials</tt>;</li>
+<li><tt>actor_chain_profile=asserted-chain-full</tt>; and</li>
+<li>the requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both)
+sufficient to identify <tt>B</tt> as the initial target context.</li>
+</ul>
+<t>If <tt>AS1</tt> accepts the request, <tt>AS1</tt> MUST establish the workflow subject
+according to local policy before issuing <tt>T_A</tt>. At bootstrap under these
+base profiles, <tt>AS1</tt> MUST set <tt>sub</tt> either to the authenticated client
+identity or to an explicitly requested and authorized delegating user
+identity. <tt>AS1</tt> MUST then issue <tt>T_A</tt> containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>achp=asserted-chain-full</tt></li>
+<li><tt>sub</tt></li>
+<li><tt>act</tt></li>
+<li><tt>ach=[A]</tt></li>
+<li><tt>sid</tt></li>
+<li><tt>jti</tt></li>
+<li><tt>aud=B</tt></li>
+<li><tt>exp</tt></li>
+</ul>
+</section>
+
+<section anchor="hop-processing"><name>Hop Processing</name>
+<t>When <tt>A</tt> calls <tt>B</tt>, <tt>A</tt> MUST present <tt>T_A</tt> to <tt>B</tt>.</t>
+<t><tt>B</tt> MUST perform recipient validation as described in
+&quot;Recipient Validation of an Inbound Token&quot;.</t>
+<t><tt>B</tt> MUST extract the verified <tt>ach</tt> and verify that its last actor is
+<tt>A</tt>.</t>
+<t>If that continuity check fails, <tt>B</tt> MUST reject the request.</t>
+</section>
+
+<section anchor="token-exchange"><name>Token Exchange</name>
+<t>To call <tt>C</tt>, <tt>B</tt> MUST submit to <tt>AS1</tt> at least:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:token-exchange</tt>;</li>
+<li><tt>actor_chain_profile=asserted-chain-full</tt>;</li>
+<li><tt>T_A</tt> as the RFC 8693 <tt>subject_token</tt>;</li>
+<li><tt>subject_token_type=urn:ietf:params:oauth:token-type:access_token</tt>; and</li>
+<li>the requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both as
+needed by local policy) sufficient to identify <tt>C</tt> as the next target
+context.</li>
+</ul>
+<t><tt>AS1</tt> MUST perform token-exchange validation as described in
+&quot;Authorization Server Validation of Token Exchange&quot;.</t>
+<t><tt>AS1</tt> MUST read the prior chain from <tt>T_A</tt>, append <tt>B</tt>, and issue <tt>T_B</tt>
+containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>achp=asserted-chain-full</tt></li>
+<li><tt>sub</tt></li>
+<li><tt>act</tt></li>
+<li><tt>ach=[A,B]</tt></li>
+<li><tt>sid</tt></li>
+<li><tt>jti</tt></li>
+<li><tt>aud=C</tt></li>
+<li><tt>exp</tt></li>
+</ul>
+</section>
+
+<section anchor="returned-token-validation"><name>Returned Token Validation</name>
+<t>Upon receipt of <tt>T_B</tt>, <tt>B</tt> MUST perform current-actor returned-token
+validation as described in &quot;Current-Actor Validation of a Returned Token&quot;.</t>
+<t><tt>B</tt> MUST verify that <tt>T_B.ach</tt> is exactly the previously verified chain
+from <tt>T_A</tt> with <tt>B</tt> appended.</t>
+<t>If that append-only check fails, <tt>B</tt> MUST reject <tt>T_B</tt>.</t>
+</section>
+
+<section anchor="next-hop-validation"><name>Next-Hop Validation</name>
+<t>Upon receipt of the final B-token, <tt>C</tt> MUST perform recipient validation as
+described in &quot;Recipient Validation of an Inbound Token&quot;.</t>
+<t><tt>C</tt> MUST extract the verified <tt>ach</tt> and use it for authorization
+decisions.</t>
+</section>
+
+<section anchor="security-result"><name>Security Result</name>
+<t>Under the non-collusion assumption, prior actors MUST NOT be silently inserted,
+removed, reordered, or altered during token exchange.</t>
+</section>
+</section>
+
+<section anchor="asserted-chain-with-subset-disclosure-profile"><name>Asserted Chain with Subset Disclosure Profile</name>
+
+<section anchor="profile-identifier-1"><name>Profile Identifier</name>
+<t>The profile identifier string for this profile is
+<tt>asserted-chain-subset</tt>. It is used as the
+<tt>actor_chain_profile</tt> token request parameter value and as the <tt>achp</tt> token
+claim value.</t>
+</section>
+
+<section anchor="objective-1"><name>Objective</name>
+<t>This profile inherits the Asserted Chain with Full Disclosure profile and changes the
+readable chain carried across hops: the issuing Authorization Server MAY carry
+and disclose only a recipient-specific ordered subset of the asserted chain
+state for the hop.</t>
+</section>
+
+<section anchor="inheritance-and-security-model"><name>Inheritance and Security Model</name>
+<t>Except as modified below, all requirements of the Asserted Chain with Full Disclosure
+profile apply.</t>
+<t>The disclosed <tt>ach</tt> seen by a recipient MUST be an ordered subsequence
+of the asserted chain state for that hop and MUST include the current actor as
+its last element.</t>
+<t>A recipient MUST treat undisclosed prior actors as unavailable and MUST NOT
+infer adjacency, absence, or exact chain length from the disclosed subset
+alone.</t>
+<t>This profile relies on the issuing Authorization Server for continuity of the
+carried-forward asserted subset chain state and for disclosure policy. Actors
+hidden from the readable chain at one hop are outside the guaranteed carried-forward state of this profile. Cross-domain re-issuance preserves only the
+verified disclosed subset chain state carried in the inbound token; it does not
+transfer any hidden full-chain state. An issuing Authorization Server MAY retain
+richer local audit records, including previously hidden actors; when such local
+records exist within one issuing Authorization Server, it SHOULD append the
+current actor to those local records for audit purposes. Such local records are
+outside the interoperable carried-forward state of this profile and MUST NOT be
+projected into returned tokens unless disclosed by policy. Deployments that
+require hidden full-chain continuity across domains MUST use a committed
+profile or another trusted state-transfer mechanism. This profile does not
+provide the step-proof-based accountability or cumulative commitment state of
+the committed profiles.</t>
+</section>
+
+<section anchor="modified-bootstrap-and-issuance"><name>Modified Bootstrap and Issuance</name>
+<t>At bootstrap, the initial actor MUST request a token with at least:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=client_credentials</tt>;</li>
+<li><tt>actor_chain_profile=asserted-chain-subset</tt>; and</li>
+<li>the requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both)
+sufficient to identify the initial target context.</li>
+</ul>
+<t>At bootstrap and at each later exchange, wherever the Asserted Chain with Full Disclosure
+profile would issue a token containing a readable <tt>ach</tt>, this profile
+MUST instead issue a recipient-specific disclosed <tt>ach</tt> for the intended
+recipient.</t>
+</section>
+
+<section anchor="modified-hop-processing-and-validation"><name>Modified Hop Processing and Validation</name>
+<t>Where the Asserted Chain with Full Disclosure profile requires presentation or validation
+of a readable <tt>ach</tt>, this profile instead requires presentation and
+validation of the disclosed subset chain.</t>
+</section>
+
+<section anchor="modified-token-exchange"><name>Modified Token Exchange</name>
+<t>For this profile, the current actor MUST submit at least:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:token-exchange</tt>;</li>
+<li><tt>actor_chain_profile=asserted-chain-subset</tt>;</li>
+<li>the inbound token as the RFC 8693 <tt>subject_token</tt>;</li>
+<li><tt>subject_token_type=urn:ietf:params:oauth:token-type:access_token</tt>; and</li>
+<li>the requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both as
+needed by local policy) sufficient to identify the next target context.</li>
+</ul>
+<t>For this profile, the issuing Authorization Server MUST derive the next-hop
+asserted chain state from the inbound readable <tt>ach</tt> exactly as verified for
+the current actor. In this profile, that verified inbound readable <tt>ach</tt> is the
+authoritative carried-forward asserted subset chain state for the next hop; any
+actors hidden before the current hop are outside the guaranteed carried-forward
+state of this profile. The issuing Authorization Server MUST append the current
+actor to that verified inbound readable chain state and then derive the
+recipient-specific disclosed subset <tt>ach</tt> for the returned token by dropping
+zero or more prior actors from that resulting chain state. It MUST NOT insert,
+reorder, or alter actor identities, and it MUST NOT drop the current actor.</t>
+<t>The current recipient and the current actor MUST verify that the last disclosed
+actor is the presenting actor for the inbound token or, for a returned token,
+the current actor that requested exchange.</t>
+<t>Unlike the Asserted Chain with Full Disclosure profile, the current actor and downstream
+recipient do not independently validate the hidden undisclosed portion of the
+prior chain. They validate only the disclosed subset they receive.</t>
+</section>
+
+<section anchor="next-hop-authorization"><name>Next-Hop Authorization</name>
+<t>A recipient MAY use the verified disclosed <tt>ach</tt> for authorization
+decisions.</t>
+<t>A recipient MUST use only the disclosed <tt>ach</tt> for authorization and
+MUST treat undisclosed prior actors as unavailable.</t>
+</section>
+
+<section anchor="security-result-1"><name>Security Result</name>
+<t>Under the non-collusion assumption, silent insertion, removal, reordering, or
+alteration of the disclosed chain seen by a recipient is prevented with respect
+to what the issuing Authorization Server asserted for that recipient.</t>
+<t>This profile does not by itself prevent confused-deputy behavior.</t>
+</section>
+</section>
+
+<section anchor="common-processing-for-the-committed-branch"><name>Common Processing for the Committed Branch</name>
+<t>This section defines the bootstrap, proof, commitment, token-exchange, and
+returned-token rules shared by the three committed profiles. In this branch,
+ordinary tokens still carry the hop-to-hop token state, but they are backed by
+an actor-signed step proof and cumulative committed state:</t>
+
+<ul spacing="compact">
+<li>Committed Chain with Subset Disclosure;</li>
+<li>Committed Chain with Full Disclosure; and</li>
+<li>Committed Chain with No Chain Disclosure.</li>
+</ul>
+<t>The profile sections that follow define only the profile-specific meaning of the
+actor-visible chain for the hop, the readable-token disclosure policy, and the
+corresponding validation and authorization rules.</t>
+
+<section anchor="common-parameters"><name>Common Parameters</name>
+<t>Each committed profile supplies the following profile-specific parameters to the
+common processing below.</t>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th><tt>achp</tt> value</th>
+<th><tt>init_label(profile)</tt></th>
+<th>Step-proof domain-separation string</th>
+<th>Proof-bound actor-visible chain for hop</th>
+<th>Readable <tt>ach</tt> in ordinary tokens</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Committed Chain with Subset Disclosure</td>
+<td><tt>committed-chain-subset</tt></td>
+<td><tt>actor-chain-selectively-disclosed-committed-init</tt></td>
+<td><tt>actor-chain-selectively-disclosed-committed-step-sig-v1</tt></td>
+<td>Exact inbound disclosed <tt>ach</tt> verified by the current actor, with that actor appended</td>
+<td>Ordered subsequence of the proof-bound actor-visible chain, ending in the current actor</td>
+</tr>
+
+<tr>
+<td>Committed Chain with Full Disclosure</td>
+<td><tt>committed-chain-full</tt></td>
+<td><tt>actor-chain-readable-committed-init</tt></td>
+<td><tt>actor-chain-readable-committed-step-sig-v1</tt></td>
+<td>Full readable chain for the hop after appending the current actor</td>
+<td>Exact proof-bound actor-visible chain</td>
+</tr>
+
+<tr>
+<td>Committed Chain with No Chain Disclosure</td>
+<td><tt>committed-chain-no-chain</tt></td>
+<td><tt>actor-chain-private-committed-init</tt></td>
+<td><tt>actor-chain-private-committed-step-sig-v1</tt></td>
+<td>At bootstrap, singleton <tt>[A]</tt>; thereafter exact pair <tt>[PresentingActor, CurrentActor]</tt></td>
+<td>Not present</td>
+</tr>
+</tbody>
+</table><t>The step-proof domain-separation strings above are intentionally distinct.
+Although the committed-branch step-proof payload members are structurally
+aligned, the signed payload does not carry <tt>achp</tt> or another explicit
+proof-mode identifier, and the profile-specific interpretation of <tt>ach</tt>
+therefore remains bound by <tt>ds</tt>. The bootstrap-init labels and domain-separation strings are stable protocol constants and are not required to track
+later editorial changes to the human-readable profile names.</t>
+</section>
+
+<section anchor="common-bootstrap-context-request"><name>Common Bootstrap Context Request</name>
+<t>Authorization Servers supporting committed profiles SHOULD publish an
+<tt>actor_chain_bootstrap_endpoint</tt> metadata value naming the endpoint used to mint
+bootstrap context for initial actors. Authorization Servers supporting this
+bootstrap flow SHOULD also advertise
+<tt>urn:ietf:params:oauth:grant-type:actor-chain-bootstrap</tt> in the standard OAuth
+<tt>grant_types_supported</tt> metadata.</t>
+<t>At workflow start, actor <tt>A</tt> MUST send an authenticated HTTPS POST to that
+endpoint using <tt>application/x-www-form-urlencoded</tt> with:</t>
+
+<ul spacing="compact">
+<li><tt>actor_chain_profile</tt> set to one of the committed profile identifiers above;</li>
+<li><tt>audience=B</tt>; and</li>
+<li>any other local inputs needed to derive the intended <tt>target_context</tt>, such
+as a resource identifier, tool name, or operation class when local policy
+distinguishes among them.</li>
+</ul>
+<t>From those inputs, the Authorization Server MUST derive the exact canonical
+bootstrap-authorized <tt>target_context</tt> for the first hop. The Authorization
+Server MUST select <tt>halg</tt> for the workflow according to local policy and the
+supported values advertised in Authorization Server metadata.</t>
+<t>The Authorization Server MUST generate:</t>
+
+<ul spacing="compact">
+<li><tt>sid</tt>;</li>
+<li><tt>initial_chain_seed</tt>; and</li>
+<li><tt>actor_chain_bootstrap_context</tt>.</li>
+</ul>
+<t>The <tt>halg</tt> value in the bootstrap context MUST be either <tt>sha-256</tt> or
+<tt>sha-384</tt> and MUST remain fixed for the lifetime of the workflow instance.</t>
+<t>Let <tt>init_label(profile)</tt> denote the profile-specific bootstrap init label
+from the table above.
+The Authorization Server MUST derive raw bootstrap-seed bytes as:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+Hash_halg(CanonicalEncode([init_label(profile), sid]))
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>For this bootstrap-seed derivation, <tt>CanonicalEncode</tt> is JCS {{!RFC8785}}
+applied to the two-element ordered JSON array <tt>[init_label(profile), sid]</tt>.
+The <tt>initial_chain_seed</tt> value carried on the wire is the base64url encoding of
+those raw bootstrap-seed bytes.</t>
+<t>The Authorization Server MUST return a bootstrap response containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>actor_chain_bootstrap_context</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>halg</tt>;</li>
+<li><tt>initial_chain_seed</tt> (the base64url-encoded bootstrap seed string);</li>
+<li><tt>target_context=TC_B</tt>, where <tt>TC_B</tt> is the exact canonical bootstrap-authorized
+target context for the first hop;</li>
+<li><tt>aud</tt> corresponding to that exact canonical bootstrap-authorized
+<tt>target_context=TC_B</tt>; and</li>
+<li>a short expiry.</li>
+</ul>
+<t>The <tt>actor_chain_bootstrap_context</tt> value is an opaque single-use handle. The
+Authorization Server MUST bind that handle to bootstrap state containing at
+least:</t>
+
+<ul spacing="compact">
+<li>the selected committed profile;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>halg</tt>;</li>
+<li>the returned base64url <tt>initial_chain_seed</tt>;</li>
+<li>the exact canonical <tt>target_context=TC_B</tt>;</li>
+<li>the corresponding <tt>aud</tt>;</li>
+<li>the expiry; and</li>
+<li>the requesting actor or authenticated client according to local policy.</li>
+</ul>
+<t>The handle MUST be single use and MUST be rejected after expiry or successful
+use at the token endpoint, except that an exact replay of a previously
+accepted bootstrap token request using the same handle and the same compact
+JWS step proof MUST be honored as an idempotent retry within a short retention
+window sufficient for ordinary transport retries. For such an idempotent
+retry, the Authorization Server MUST return the previously accepted bootstrap
+successor state, or an equivalent token representing that same accepted state,
+and MUST NOT treat the retry as a fresh second use of the handle. The bound
+state MUST be sufficient for the Authorization Server to reconstruct exactly
+the same canonical <tt>target_context</tt> value that the actor is expected to sign
+at bootstrap. During that retry-retention window, the Authorization Server
+SHOULD retain the exact previously issued bootstrap response or otherwise
+ensure that any retried response carries the same accepted chain state.
+Recomputing a retried response with probabilistic signatures can change wire
+bytes even when the decoded accepted state is equivalent.</t>
+</section>
+
+<section anchor="common-initial-actor-step-proof-and-bootstrap-issuance"><name>Common Initial Actor Step Proof and Bootstrap Issuance</name>
+<t>At bootstrap, the initial actor <tt>A</tt> uses the singleton actor-visible chain
+<tt>[A]</tt>. Let <tt>TC_B</tt> denote the exact canonical <tt>target_context</tt> value returned in
+the bootstrap response and bound to the bootstrap context for next recipient
+<tt>B</tt>. Let <tt>ds(profile)</tt> denote the profile-specific domain-separation string
+from the table above for committed step proofs. <tt>A</tt> MUST compute:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+chain_sig_A = Sign_A({
+  &quot;ctx&quot;: ds(profile),
+  &quot;sid&quot;: sid,
+  &quot;prev&quot;: initial_chain_seed,
+  &quot;ach&quot;: [A],
+  &quot;target_context&quot;: TC_B
+})
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>using canonical encoding. If <tt>A</tt> retries the same bootstrap hop after an
+uncertain transport failure, <tt>A</tt> MUST reuse the same compact JWS step proof
+rather than regenerating a different proof for that same attempted successor
+state.</t>
+<t><tt>A</tt> MUST submit an OAuth token request to the token endpoint using
+<tt>grant_type=urn:ietf:params:oauth:grant-type:actor-chain-bootstrap</tt> and
+containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:actor-chain-bootstrap</tt>;</li>
+<li><tt>actor_chain_profile</tt> set to the selected committed profile;</li>
+<li><tt>actor_chain_step_proof=chain_sig_A</tt>; and</li>
+<li><tt>actor_chain_bootstrap_context</tt> set to the bootstrap handle previously returned
+by <tt>actor_chain_bootstrap_endpoint</tt>.</li>
+</ul>
+<t>Because the exact bootstrap-authorized <tt>target_context</tt> is already returned by
+the bootstrap endpoint and bound to the bootstrap context handle, the bootstrap
+token request need not repeat <tt>audience</tt>, <tt>resource</tt>, or other targeting
+parameters. If the client does repeat such targeting parameters, they MUST be
+semantically equivalent to the bound bootstrap-authorized <tt>target_context</tt> and
+MUST NOT broaden it.</t>
+<t>The Authorization Server MUST verify:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:actor-chain-bootstrap</tt>;</li>
+<li>the selected committed profile matches the profile bound to the bootstrap
+state;</li>
+<li>the submitted <tt>actor_chain_bootstrap_context</tt> handle and the bound
+bootstrap state;</li>
+<li>the identity of <tt>A</tt>;</li>
+<li>that the submitted proof's JWS protected header contains
+<tt>typ=ach-step-proof+jwt</tt>;</li>
+<li>the validity of <tt>chain_sig_A</tt>;</li>
+<li>that the submitted proof binds the same <tt>sid</tt> as the bootstrap state;</li>
+<li>that the submitted proof uses <tt>ctx=ds(profile)</tt> for the selected profile;</li>
+<li>that the submitted proof binds <tt>prev=initial_chain_seed</tt> from the bootstrap
+response;</li>
+<li>that the submitted proof binds the exact singleton actor-visible chain <tt>[A]</tt>;</li>
+<li>that the submitted proof binds the exact canonical bootstrap-authorized
+<tt>target_context=TC_B</tt>; and</li>
+<li>if the request repeats targeting parameters, that they are semantically
+equivalent to the bound bootstrap-authorized <tt>target_context</tt>.</li>
+</ul>
+<t>Before issuing <tt>T_A</tt>, the Authorization Server MUST establish the workflow
+subject according to local policy. At bootstrap under these base profiles, the
+Authorization Server MUST set <tt>sub</tt> either to the authenticated client
+identity or to an explicitly requested and authorized delegating user
+identity. The resulting workflow subject is the one later same-workflow
+exchanges preserve.</t>
+<t>If verification succeeds, the Authorization Server MUST compute:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+achc = Commit_AS(as_issuer_id, sid, profile, initial_chain_seed, chain_sig_A, halg)
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The Authorization Server MUST use the same <tt>profile</tt> and <tt>sid</tt> values that it
+just verified.</t>
+<t>and issue <tt>T_A</tt> containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>achp</tt> equal to the selected committed profile identifier;</li>
+<li><tt>sub</tt>;</li>
+<li><tt>act</tt>;</li>
+<li><tt>achc</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>jti</tt>;</li>
+<li><tt>aud</tt> corresponding to that exact canonical bootstrap-authorized
+<tt>target_context=TC_B</tt>;</li>
+<li><tt>exp</tt>; and</li>
+<li>any profile-defined readable <tt>ach</tt>.</li>
+</ul>
+</section>
+
+<section anchor="common-hop-processing"><name>Common Hop Processing</name>
+<t>When an actor presents an inbound token under one of the committed profiles, the
+receiving actor MUST verify:</t>
+
+<ul spacing="compact">
+<li>token signature;</li>
+<li>issuer trust;</li>
+<li>profile identifier (<tt>achp</tt>);</li>
+<li>audience;</li>
+<li>expiry;</li>
+<li>sender constraint; and</li>
+<li>replay and freshness state.</li>
+</ul>
+<t>The receiving actor MUST extract <tt>sid</tt> and <tt>achc</tt>, and MUST then apply the
+profile-specific continuity checks to determine the presenter continuity inputs
+and, where applicable, the exact inbound actor-visible chain that it is allowed
+to extend.</t>
+</section>
+
+<section anchor="common-token-exchange"><name>Common Token Exchange</name>
+<t>To call the next recipient, the current actor <tt>N</tt> MUST set
+<tt>profile</tt> to the immutable <tt>achp</tt> value extracted from the inbound token and
+MUST set <tt>prior_commitment_digest</tt> to the verified <tt>curr</tt> value extracted from
+the inbound token's <tt>achc</tt>. The current actor and the issuing Authorization
+Server MUST preserve that <tt>profile</tt> value for the exchange.</t>
+<t>The current actor <tt>N</tt> MUST construct the exact profile-defined
+<tt>visible_hop_N</tt> and MUST compute:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+chain_sig_N = Sign_N({
+  &quot;ctx&quot;: ds(profile),
+  &quot;sid&quot;: sid,
+  &quot;prev&quot;: prior_commitment_digest,
+  &quot;ach&quot;: visible_hop_N,
+  &quot;target_context&quot;: TC_next
+})
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>using canonical encoding. If <tt>N</tt> retries the same hop after an uncertain
+transport failure, <tt>N</tt> MUST reuse the same compact JWS step proof rather than
+regenerating a different proof for that same attempted successor state.</t>
+<t>The current actor <tt>N</tt> MUST submit to the issuing Authorization Server:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:token-exchange</tt>;</li>
+<li><tt>actor_chain_profile</tt> set to that same immutable committed profile;</li>
+<li>the inbound token as the RFC 8693 <tt>subject_token</tt>;</li>
+<li><tt>subject_token_type=urn:ietf:params:oauth:token-type:access_token</tt>;</li>
+<li><tt>actor_chain_step_proof=chain_sig_N</tt>; and</li>
+<li>the requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both as
+needed by local policy) sufficient to identify <tt>TC_next</tt>.</li>
+</ul>
+<t>The Authorization Server MUST verify:</t>
+
+<ul spacing="compact">
+<li><t><strong>Standard OAuth and token validation:</strong></t>
+
+<ul spacing="compact">
+<li>the inbound token signature, issuer trust, and expiry;</li>
+<li>the identity of <tt>N</tt>;</li>
+<li>replay and freshness constraints;</li>
+<li>sender constraint on the inbound token as applicable;</li>
+<li>that the requested <tt>actor_chain_profile</tt> matches the immutable <tt>achp</tt> of
+the inbound token;</li>
+<li>that <tt>N</tt> was an intended recipient of the inbound <tt>subject_token</tt>, except
+when <tt>actor_chain_refresh=true</tt> or <tt>actor_chain_cross_domain=true</tt>; and</li>
+<li>that <tt>N</tt> is authorized to act for the requested target context.</li>
+</ul></li>
+<li><t><strong>Committed-profile proof and commitment validation:</strong></t>
+
+<ul spacing="compact">
+<li>that the inbound <tt>achc</tt> object is a valid commitment JWS under Appendix A,
+including JWS signature validation and a locally permitted <tt>halg</tt>, before
+the Authorization Server relies on any extracted <tt>curr</tt> or <tt>halg</tt> value;</li>
+<li>that the validated inbound <tt>achc</tt> object's <tt>sid</tt> and <tt>achp</tt> exactly match
+the inbound top-level token's <tt>sid</tt> and <tt>achp</tt>;</li>
+<li>that the Authorization Server extracts the inbound <tt>halg</tt> value from that
+validated <tt>achc</tt> object before computing any new commitment;</li>
+<li>that the submitted proof's JWS protected header contains
+<tt>typ=ach-step-proof+jwt</tt>;</li>
+<li>that the Authorization Server decodes the submitted proof payload to
+extract <tt>target_context</tt>, verifies that the extracted value is
+semantically consistent with the requested OAuth targeting parameters and
+local policy, and uses that extracted canonical value as <tt>TC_next</tt> when
+validating the proof;</li>
+<li>that the submitted proof uses <tt>ctx=ds(profile)</tt> for the selected profile;</li>
+<li>that the submitted proof binds the same <tt>sid</tt>;</li>
+<li>that the submitted proof binds the same prior commitment;</li>
+<li>that the submitted proof binds the reconstructed exact <tt>visible_hop_N</tt>; and</li>
+<li>that the submitted proof binds the requested <tt>target_context=TC_next</tt>.</li>
+</ul></li>
+</ul>
+<t>If verification succeeds, the Authorization Server MUST compute:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+achc = Commit_AS(as_issuer_id, sid, profile, prior_commitment_digest, chain_sig_N, halg)
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The Authorization Server MUST use the same verified <tt>profile</tt>, <tt>sid</tt>, and
+<tt>halg</tt> values when computing the new commitment object.</t>
+<t>and issue <tt>T_N</tt> containing at least:</t>
+
+<ul spacing="compact">
+<li><tt>achp</tt> equal to the selected committed profile identifier;</li>
+<li><tt>sub</tt>;</li>
+<li><tt>act</tt>;</li>
+<li><tt>achc</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>jti</tt>;</li>
+<li><tt>aud</tt> corresponding to the requested and verified <tt>TC_next</tt>;</li>
+<li><tt>exp</tt>; and</li>
+<li>any profile-defined readable <tt>ach</tt>.</li>
+</ul>
+<t>Under the base profiles defined by this document, the Authorization Server MUST preserve the inbound
+token's <tt>sub</tt> claim in <tt>T_N</tt>. A same-workflow subject transition is outside
+these base profiles and MUST start a new workflow instance with a new <tt>sid</tt>.</t>
+</section>
+
+<section anchor="common-returned-token-validation"><name>Common Returned-Token Validation</name>
+<t>Upon receipt of the returned token for hop <tt>N</tt>, the current actor <tt>N</tt> MUST
+verify the token signature, profile fields, workflow identifier continuity, and
+current-actor continuity.</t>
+<t>The current actor <tt>N</tt> MUST validate the returned <tt>achc</tt> according to Appendix A
+and MUST verify that its decoded payload is bound to the exact step proof
+submitted for that hop, including the expected <tt>iss</tt> value of the issuing
+Authorization Server for that commitment object, the expected <tt>sid</tt>, <tt>achp</tt>,
+<tt>halg</tt>, <tt>prev</tt>, and <tt>step_hash</tt> values derived from <tt>prior_commitment_digest</tt>
+and <tt>chain_sig_N</tt>. The returned top-level token <tt>sid</tt> MUST equal the expected
+workflow <tt>sid</tt>, the returned top-level <tt>sub</tt> claim MUST equal the expected
+inbound <tt>sub</tt> value for these base profiles, and the returned top-level <tt>act</tt>
+claim MUST continue to identify actor <tt>N</tt>.</t>
+<t>Any additional profile-specific readable-chain or disclosure checks are defined
+in the profile sections below.</t>
+</section>
+</section>
+
+<section anchor="committed-chain-with-subset-disclosure-profile"><name>Committed Chain with Subset Disclosure Profile</name>
+
+<section anchor="profile-identifier-2"><name>Profile Identifier</name>
+<t>The profile identifier string for this profile is
+<tt>committed-chain-subset</tt>. It is used as the
+<tt>actor_chain_profile</tt> token request parameter value and as the <tt>achp</tt> token
+claim value.</t>
+</section>
+
+<section anchor="objective-2"><name>Objective</name>
+<t>This profile is the readable subset-disclosure committed case. The issuing
+Authorization Server MAY disclose only a recipient-specific ordered subset of
+the proof-bound actor-visible chain, while the current actor signs the exact
+actor-visible chain that it was allowed to verify and extend for the hop.</t>
+</section>
+
+<section anchor="security-model-1"><name>Security Model</name>
+<t>This profile inherits all requirements of the common committed-processing
+section.</t>
+<t>The disclosed <tt>ach</tt> seen by a recipient MUST be an ordered subsequence of the
+proof-bound actor-visible chain for that hop and MUST include the current actor
+as its last element.</t>
+<t>Step proofs and <tt>achc</tt> values MUST be computed over the exact
+actor-visible chain for the hop, not over a hidden canonical full chain that
+the current actor was not permitted to see.</t>
+<t>A recipient MUST treat undisclosed prior actors as unavailable and MUST NOT
+infer adjacency, absence, exact chain length, or hidden prefixes from the
+disclosed subset alone.</t>
+<t>This profile preserves current-actor continuity and cumulative committed state
+for the chain state that the current actor was allowed to verify and extend. It
+does not require a current actor to learn hidden prior actors in order to
+continue the workflow.</t>
+</section>
+
+<section anchor="profile-specific-hop-construction-and-validation"><name>Profile-Specific Hop Construction and Validation</name>
+<t>For a current actor <tt>N</tt>, let <tt>ach_in</tt> be the exact disclosed inbound
+<tt>ach</tt> that <tt>N</tt> verified from the inbound token. <tt>N</tt> MUST verify that the last
+actor in <tt>ach_in</tt> is the verified presenting actor of the inbound token.</t>
+<t>The exact proof-bound actor-visible chain for the hop is:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+visible_hop_N = ach_in + [N]
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The current actor <tt>N</tt> MUST append only itself and MUST NOT insert, delete, or
+reorder prior actors within <tt>ach_in</tt>.</t>
+<t>The Authorization Server MUST verify that the submitted visible chain equals
+the exact inbound disclosed chain previously verified by <tt>N</tt>, with <tt>N</tt>
+appended.</t>
+<t>Any readable <tt>ach</tt> disclosed to the next recipient MUST be derived from the
+exact proof-bound actor-visible chain for that hop, MUST be an ordered
+subsequence of it, and MUST end in <tt>N</tt>.</t>
+<t>When validating a returned token, the current actor <tt>N</tt> MUST additionally
+verify:</t>
+
+<ul spacing="compact">
+<li>that the returned readable <tt>ach</tt>, or an equivalent presentation-derived
+<tt>ach</tt> when an agreed optional encoding is in use, has <tt>N</tt> as its last
+actor; and</li>
+<li>that the disclosed chain is an ordered subsequence of the exact
+proof-bound actor-visible chain that <tt>N</tt> signed for that hop.</li>
+</ul>
+<t>A recipient MAY use the verified disclosed <tt>ach</tt> for authorization decisions,
+but MUST use only the disclosed subset and MUST treat undisclosed prior actors
+as unavailable.</t>
+</section>
+
+<section anchor="attack-handling"><name>Attack Handling</name>
+<t>Different recipients MAY receive different valid disclosed subsets derived from
+the same proof-bound actor-visible chain according to local disclosure policy.
+That alone does not constitute an integrity failure.</t>
+<t>A malicious or compromised Authorization Server could still attempt to issue a
+disclosed subset inconsistent with the proof-bound actor-visible chain. Such an
+inconsistency MUST fail if the retained step proof for that hop or an immutable
+Authorization Server exchange record is later checked.</t>
+<t>An actor omitted from a disclosed chain MAY still prove prior participation by
+presenting the corresponding step proof or immutable Authorization Server
+exchange record for the proof-bound actor-visible chain for the relevant hop.</t>
+</section>
+
+<section anchor="security-result-2"><name>Security Result</name>
+<t>This profile preserves current-actor continuity, cumulative committed state, and
+recipient-specific limited readable authorization while avoiding disclosure of
+hidden prior actors to an acting intermediary that was not permitted to see
+them.</t>
+</section>
+</section>
+
+<section anchor="committed-chain-with-full-disclosure-profile"><name>Committed Chain with Full Disclosure Profile</name>
+
+<section anchor="profile-identifier-3"><name>Profile Identifier</name>
+<t>The profile identifier string for this profile is
+<tt>committed-chain-full</tt>. It is used as the <tt>actor_chain_profile</tt> token
+request parameter value and as the <tt>achp</tt> token claim value.</t>
+</section>
+
+<section anchor="objective-3"><name>Objective</name>
+<t>The Committed Chain with Full Disclosure profile is the full-disclosure readable committed
+case. It preserves a readable <tt>ach</tt> for every actor and downstream
+recipient while adding per-hop actor-signed step proofs and cumulative
+committed state.</t>
+</section>
+
+<section anchor="security-model-2"><name>Security Model</name>
+<t>This profile inherits all requirements of the common committed-processing
+section and specializes that common processing to the full-disclosure readable
+case.</t>
+<t>This profile preserves readable chain-based authorization and provides stronger
+accountability and non-repudiation than the Asserted Chain with Full Disclosure profile.</t>
+<t>This profile does not guarantee inline prevention of every invalid token that
+could be issued by a colluding actor and its home Authorization Server.</t>
+<t>The evidentiary value of this profile depends on retention or discoverability of
+step proofs, exchange records, and associated verification material.</t>
+</section>
+
+<section anchor="profile-specific-hop-construction-and-validation-1"><name>Profile-Specific Hop Construction and Validation</name>
+<t>For a current actor <tt>N</tt>, let <tt>ach_in</tt> be the full readable <tt>ach</tt>
+verified from the inbound token. <tt>N</tt> MUST verify that the last actor in
+<tt>ach_in</tt> is the verified presenting actor of the inbound token.</t>
+<t>The exact proof-bound actor-visible chain for the hop is the full readable
+append-only chain:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+visible_hop_N = ach_in + [N]
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>The Authorization Server MUST issue the full <tt>visible_hop_N</tt> as the readable
+<tt>ach</tt> in the returned token.</t>
+<t>When validating a returned token, the current actor <tt>N</tt> MUST additionally
+verify that the returned readable <tt>ach</tt> is exactly the full proof-bound
+actor-visible chain that <tt>N</tt> signed for that hop.</t>
+<t>A recipient MUST use the full readable <tt>ach</tt> for authorization decisions.</t>
+</section>
+
+<section anchor="attack-handling-1"><name>Attack Handling</name>
+<t>A claim that actor <tt>V</tt> participated in the chain MUST fail unless a valid step
+proof for <tt>V</tt> can be produced and verified against the corresponding prior
+committed state and <tt>sid</tt>.</t>
+<t>If an actor is omitted from a later readable chain, that omitted actor MAY prove
+prior participation by presenting:</t>
+
+<ul spacing="compact">
+<li>an earlier token showing the prior chain state; and</li>
+<li>the corresponding committed state and verifiable step proof, or an immutable
+Authorization Server exchange record.</li>
+</ul>
+<t>A denial of participation by actor <tt>X</tt> MUST fail if a valid step proof for <tt>X</tt>
+is available and verifies.</t>
+</section>
+
+<section anchor="security-result-3"><name>Security Result</name>
+<t>This profile preserves readable chain-based authorization while making tampering
+materially easier to detect, prove, and audit.</t>
+</section>
+</section>
+
+<section anchor="committed-chain-with-no-chain-disclosure-profile"><name>Committed Chain with No Chain Disclosure Profile</name>
+
+<section anchor="profile-identifier-4"><name>Profile Identifier</name>
+<t>The profile identifier string for this profile is
+<tt>committed-chain-no-chain</tt>. It is used as the <tt>actor_chain_profile</tt>
+token request parameter value and as the <tt>achp</tt> token claim value.</t>
+</section>
+
+<section anchor="objective-4"><name>Objective</name>
+<t>This profile is the no-chain-disclosure committed case. It removes the <tt>ach</tt>
+claim from ordinary tokens, leaving only cumulative committed state and the
+verified presenting actor visible at the next hop.</t>
+</section>
+
+<section anchor="security-model-3"><name>Security Model</name>
+<t>This profile inherits all requirements of the common committed-processing
+section and specializes that common processing to the no-chain-disclosure
+case.</t>
+<t>This profile preserves sender-constrained current-actor continuity and
+cumulative committed state, but recipients of ordinary tokens see only an
+opaque commitment object and not a readable prior-actor path.</t>
+<t>This profile does not preserve readable prior-actor authorization at downstream
+hops. Prior-actor integrity is ordinarily verifiable only by the issuing
+Authorization Server or an auditor with access to retained step proofs or
+exchange records.</t>
+</section>
+
+<section anchor="profile-specific-hop-construction-and-validation-2"><name>Profile-Specific Hop Construction and Validation</name>
+<t>For a current actor <tt>N</tt>, let <tt>P</tt> be the verified presenting actor of
+the inbound token. Because ordinary tokens omit the <tt>ach</tt> claim, the current
+actor MUST determine <tt>P</tt> from either a validated <tt>act</tt> claim or a validated
+sender-constrained presenter identity bound by local trust policy to the same
+ActorID representation used for proof construction. For non-bootstrap hops,
+the exact proof-bound actor-visible chain for the hop is:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+visible_hop_N = [P, N]
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>At bootstrap, this profile instead uses the common committed-bootstrap rule,
+under which the initial actor signs the singleton actor-visible chain <tt>[A]</tt>.
+For non-bootstrap hops, the Authorization Server MUST verify that the
+submitted visible chain equals exactly <tt>[PresentingActor, CurrentActor]</tt> for
+that hop.</t>
+<t>Tokens issued under this profile MUST contain <tt>achp</tt>, <tt>sub</tt>, <tt>act</tt>, <tt>achc</tt>,
+<tt>sid</tt>, <tt>jti</tt>, <tt>aud</tt>, and <tt>exp</tt>, and MUST NOT contain an <tt>ach</tt> claim.</t>
+<t>When validating a returned token, the current actor <tt>N</tt> MUST additionally
+verify that the returned token does not contain an <tt>ach</tt> claim.</t>
+<t>A downstream recipient MUST use the verified presenting actor, not prior actors,
+for authorization decisions.</t>
+<t>A downstream recipient MUST NOT infer the identities or number of prior actors
+from <tt>achc</tt> alone.</t>
+</section>
+
+<section anchor="attack-handling-2"><name>Attack Handling</name>
+<t>The committed-profile attack-handling properties still apply, but omission,
+insertion, or reordering of prior actors will ordinarily be detected only by
+the issuing Authorization Server or by later audit, not inline by downstream
+recipients receiving ordinary tokens.</t>
+</section>
+
+<section anchor="security-result-4"><name>Security Result</name>
+<t>This profile reduces ordinary-token disclosure and token size while preserving
+per-hop continuation proofs at the acting hop and cumulative committed state
+across hops.</t>
+</section>
+</section>
+
+<section anchor="special-preserve-state-exchanges"><name>Special Preserve-State Exchanges</name>
+<t>These sections define the two token-exchange cases that preserve previously
+accepted chain state rather than appending a new actor. They are easiest
+to read after the ordinary profile flows.</t>
+
+<section anchor="cross-domain-re-issuance"><name>Cross-Domain Re-Issuance</name>
+<t>If the next hop does not trust the current Authorization Server directly, the
+current actor MUST perform a second token exchange at the next domain's
+Authorization Server.</t>
+<t>A cross-domain re-issuance request MUST include:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:token-exchange</tt>;</li>
+<li><tt>actor_chain_cross_domain=true</tt>;</li>
+<li><tt>actor_chain_profile</tt> set to the active profile identifier carried by the
+inbound token;</li>
+<li>the current inbound actor-chain token as the RFC 8693 <tt>subject_token</tt>;</li>
+<li><tt>subject_token_type=urn:ietf:params:oauth:token-type:access_token</tt>; and</li>
+<li>any requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both)
+for the local target context to be minted by the re-issuing Authorization
+Server.</li>
+</ul>
+<t>The re-issuing Authorization Server MUST ensure that any locally minted target
+context is semantically equivalent to, or narrower than, the target context
+authorized by the inbound token according to local trust policy and audience
+mapping rules. It MUST NOT issue a local token whose target context is broader
+than, or semantically unrelated to, the audience authorized by the inbound
+token.</t>
+<t>A cross-domain re-issuance request MUST NOT append the chain and MUST NOT
+submit <tt>actor_chain_step_proof</tt>, because this exchange preserves rather than
+extends the accepted chain state. The <tt>actor_chain_cross_domain</tt> parameter is
+the explicit wire signal that the request is for preservation and local
+re-issuance rather than ordinary same-domain chain extension.</t>
+<t>The cross-domain Authorization Server MUST:</t>
+
+<ul spacing="compact">
+<li>validate the inbound token signature and issuer trust according to local
+policy;</li>
+<li>validate the selected actor-chain profile;</li>
+<li>validate the preserved chain-state structure;</li>
+<li>preserve <tt>achp</tt>;</li>
+<li>preserve <tt>sid</tt>;</li>
+<li>preserve <tt>sub</tt>;</li>
+<li>preserve <tt>ach</tt>, if present, exactly as verified for the current actor,
+without broadening, narrowing, or otherwise rewriting the verified disclosed
+or readable chain state;</li>
+<li>preserve <tt>achc</tt>, if present, exactly as verified;</li>
+<li>continue to represent the same current actor; and</li>
+<li>NOT append the next recipient.</li>
+</ul>
+<t>The cross-domain Authorization Server MUST validate any preserved <tt>achc</tt> JWS
+before carrying it forward. That validation includes using the preserved
+commitment object's own signer identity to resolve the original Authorization
+Server's verification key material. If the inbound <tt>act</tt> claim omitted <tt>iss</tt>,
+the re-issuing Authorization Server MUST preserve the same ActorID semantics by
+emitting an explicit <tt>act.iss</tt> equal to the inbound token's issuer together
+with the same <tt>act.sub</tt> value, rather than relying on the new local token
+issuer as an implicit namespace. Because the token subject is interpreted for
+ActorID purposes as <tt>{ &quot;iss&quot;: token.iss, &quot;sub&quot;: token.sub }</tt>, the
+re-issuing Authorization Server MUST ensure that preserving the inbound <tt>sub</tt>
+value under the new enclosing token issuer would still denote the same
+subject under local federation or identifier-mapping policy. If preserving
+the same <tt>sub</tt> bytes under the new issuer would change subject semantics, the
+re-issuing Authorization Server MUST reject cross-domain re-issuance rather
+than silently reinterpret that subject under the new local issuer namespace.
+The cross-domain Authorization Server MAY mint a new local <tt>jti</tt>, apply a new
+local expiry, change token format or envelope, and add local trust or policy
+claims. It MUST NOT alter the verified preserved
+chain state. If cross-domain re-issuance narrows or locally rewrites the
+target context, retained step proofs and preserved <tt>achc</tt> continue to reflect
+the target context that was bound during the original chain-extending hop, not
+the narrower or rewritten token audience issued by the re-issuing
+Authorization Server.</t>
+<t>A recipient or current actor in the new domain that trusts the re-issuing
+Authorization Server MAY rely on that enclosing token signature as attestation
+that any preserved foreign <tt>achc</tt> was validated and carried forward unchanged.
+Such a recipient need not independently validate a foreign Authorization
+Server's JWS signature on the preserved <tt>achc</tt> unless local policy or audit
+requires it.</t>
+<t>When validating a token returned by cross-domain re-issuance, the current actor
+does not recompute a new commitment object from a new step proof. Instead, it
+MUST verify the token signature and MUST verify that preserved chain-state
+fields, including <tt>achp</tt>, <tt>sid</tt>, <tt>sub</tt>, <tt>ach</tt>, and <tt>achc</tt>, are unchanged from
+the inbound token except where this specification explicitly permits
+cross-domain re-issuance changes such as local <tt>jti</tt>, local <tt>exp</tt>, token
+format or envelope, or approved local trust and policy claims.</t>
+</section>
+
+<section anchor="refresh-exchange"><name>Refresh-Exchange</name>
+<t>A current actor MAY use token exchange to refresh a short-lived transport token
+without appending the actor chain or regenerating a step proof.</t>
+<t>A Refresh-Exchange request MUST include:</t>
+
+<ul spacing="compact">
+<li><tt>grant_type=urn:ietf:params:oauth:grant-type:token-exchange</tt>;</li>
+<li><tt>actor_chain_refresh=true</tt>;</li>
+<li><tt>actor_chain_profile</tt> set to the active profile identifier carried by the inbound token;</li>
+<li>the current inbound actor-chain token as the RFC 8693 <tt>subject_token</tt>;</li>
+<li><tt>subject_token_type=urn:ietf:params:oauth:token-type:access_token</tt>;</li>
+<li>the same authenticated current actor that is represented by that token; and</li>
+<li>any requested OAuth targeting parameters (<tt>audience</tt>, <tt>resource</tt>, or both). If omitted, the requested target context is the same as the inbound token's target context.</li>
+</ul>
+<t>A Refresh-Exchange request MUST NOT include <tt>actor_chain_step_proof</tt>, because
+Refresh-Exchange preserves rather than extends the accepted chain state.</t>
+<t>A Refresh-Exchange request MUST NOT broaden the active profile, represented
+actor identity, readable or disclosed chain state visible to the current actor,
+committed chain state, or target context. The requested target context MUST be
+identical to, or narrower than, the target context already represented by the
+inbound token according to local policy.</t>
+<t>When processing Refresh-Exchange, the Authorization Server MUST:</t>
+
+<ul spacing="compact">
+<li>validate the inbound token and the identity of the current actor;</li>
+<li>verify that the requested profile identifier exactly matches the inbound
+token's <tt>achp</tt>;</li>
+<li>verify sender constraint and intended-recipient semantics as applicable;</li>
+<li>verify that the request does not append the chain, alter preserved chain
+state, or broaden target context; and</li>
+<li>issue a replacement token with a new <tt>jti</tt> and refreshed <tt>exp</tt>.</li>
+</ul>
+<t>For Refresh-Exchange, the Authorization Server MUST preserve <tt>sid</tt>,
+<tt>achp</tt>, <tt>sub</tt>, <tt>ach</tt>, and <tt>achc</tt>, if present,
+exactly as verified for the current actor. A new step proof MUST NOT be
+required, and a new commitment object MUST NOT be created. If Refresh-Exchange
+narrows the target context, retained step proofs and preserved <tt>achc</tt> continue
+to reflect the target context that was bound during the original chain-extending hop, not the narrower refreshed token audience.</t>
+<t>A Refresh-Exchange MAY rotate the sender-constrained presentation key only if
+the actor provides a key-transition proof that binds the new presentation key
+to the same <tt>sid</tt> and ActorID under local policy, and the Authorization Server
+verifies and records that proof. Such proof MAY be satisfied by continuity
+mechanisms provided by the sender-constrained binding in use or by another
+locally trusted proof-of-possession transition method. Otherwise, the sender-constrained key binding MUST be preserved. Historical step proofs remain bound
+to the keys used when those proofs were created and MUST be verified against
+those historical bindings, not against a later rotated key.</t>
+<t>A recipient or coordinating component MUST treat a token obtained by
+Refresh-Exchange as representing the same accepted chain state as the inbound
+token from which it was refreshed. If a sender-constrained key transition
+occurred, recipients still validate historical step proofs against the keys
+bound when those proofs were produced and rely on Authorization Server records
+or other retained evidence for the key-transition event itself.</t>
+<t>When validating a token returned by Refresh-Exchange, the current actor does
+not recompute a new commitment object from a new step proof. Instead, it MUST
+verify the token signature and MUST verify that preserved chain-state fields,
+including <tt>achp</tt>, <tt>sid</tt>, <tt>sub</tt>, <tt>ach</tt>, and <tt>achc</tt>, are unchanged from the
+inbound token except where this specification explicitly permits refresh-specific changes such as <tt>jti</tt>, <tt>exp</tt>, or approved sender-constrained key-transition metadata.</t>
+</section>
+</section>
+
+<section anchor="optional-receiver-acknowledgment-extension"><name>Optional Receiver Acknowledgment Extension</name>
+<t>A recipient MAY produce a receiver acknowledgment artifact, called <tt>hop_ack</tt>,
+for an inbound actor-chain token. This OPTIONAL extension does not alter chain
+progression semantics.</t>
+<t>A valid <tt>hop_ack</tt> proves that the recipient accepted responsibility for the
+identified hop, bound to the workflow identifier, the identified inbound hop
+state, presenting actor, recipient, target context, and the acknowledged
+inbound token instance via <tt>inbound_jti</tt>. For asserted-chain profiles, that
+inbound hop state is the verified readable <tt>ach</tt> from the inbound token. For
+committed-chain profiles, that inbound hop state is the verified prior
+commitment digest extracted from the inbound token's <tt>achc</tt>.</t>
+<t>A recipient can issue a valid <tt>hop_ack</tt> only if it can either deterministically
+derive or receive the exact canonical <tt>target_context</tt> value for the
+acknowledged hop. When <tt>target_context</tt> extends beyond plain <tt>aud</tt>, the caller
+or a coordinating component MUST communicate that exact canonical JSON value to
+the recipient by an integrity-protected application mechanism before expecting
+a matching <tt>hop_ack</tt>.</t>
+<t><tt>hop_ack</tt> MUST NOT by itself append the recipient to the actor chain.</t>
+<t>A recipient MUST NOT emit <tt>hop_ack</tt> with status <tt>accepted</tt> until it has either:</t>
+
+<ul spacing="compact">
+<li>completed the requested operation; or</li>
+<li>durably recorded sufficient state to recover, retry, or otherwise honor the
+accepted request according to local reliability policy.</li>
+</ul>
+<t>A deployment MAY require <tt>hop_ack</tt> for selected hops, including terminal hops.
+When <tt>hop_ack</tt> is required by policy, the calling actor and any coordinating
+component MUST treat that hop as not accepted unless a valid <tt>hop_ack</tt> is
+received and verified.</t>
+<t><tt>hop_ack</tt> does not by itself prove successful completion or correctness of the
+requested operation.</t>
+<t>Recipients are not required to issue <tt>hop_ack</tt> for rejected, malformed,
+abusive, unauthorized, or rate-limited requests. Absence of <tt>hop_ack</tt> is
+sufficient to prevent proof of acceptance.</t>
+<t>When a deployment needs <tt>hop_ack</tt> to acknowledge multiple distinct operations
+performed under the same inbound token and the same <tt>target_context</tt>, it MUST
+include an operation-unique request identifier inside <tt>target_context</tt> or by a
+profile-defined extension that is covered by the recipient's <tt>hop_ack</tt> JWT
+signature.</t>
+<t>The acknowledgment payload MUST include at least:</t>
+
+<ul spacing="compact">
+<li><tt>ctx</tt> = <tt>actor-chain-hop-ack-v1</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>achp</tt>;</li>
+<li><tt>jti</tt>, a unique identifier for the <tt>hop_ack</tt> JWT itself;</li>
+<li><tt>inbound_jti</tt>, copied from the acknowledged inbound token;</li>
+<li>presenting actor ActorID;</li>
+<li>recipient ActorID;</li>
+<li><tt>target_context</tt>;</li>
+<li><tt>exp</tt>, a short-lived JWT NumericDate;</li>
+<li>for asserted-chain profiles, inbound readable <tt>ach</tt>;</li>
+<li>for committed-chain profiles, <tt>prev</tt>, the verified prior commitment digest
+copied directly from the inbound token's <tt>achc.curr</tt>; and</li>
+<li><tt>ack</tt>, whose value MUST be <tt>accepted</tt>.</li>
+</ul>
+<t>A <tt>hop_ack</tt> MUST be signed by the recipient using JWS.</t>
+
+<section anchor="receiver-acknowledgment-validation"><name>Receiver Acknowledgment Validation</name>
+<t>A caller or coordinating component that receives <tt>hop_ack</tt> and relies on it for
+acceptance processing MUST verify at least:</t>
+
+<ul spacing="compact">
+<li>the JWS signature using the recipient identity and keying material expected by
+local trust policy;</li>
+<li>the JWS protected header contains <tt>typ=ach-hop-ack+jwt</tt>;</li>
+<li><tt>ctx=actor-chain-hop-ack-v1</tt>;</li>
+<li><tt>sid</tt> equals the workflow identifier of the inbound token for which
+acknowledgment is being evaluated;</li>
+<li><tt>achp</tt> equals the active profile of that inbound token;</li>
+<li><tt>jti</tt> is unique for the acknowledgment artifact under local replay policy;</li>
+<li><tt>inbound_jti</tt> equals the <tt>jti</tt> of the inbound token that was actually sent to
+the recipient;</li>
+<li><tt>presenter</tt> equals the presenting actor (that is, the actor who
+performed token exchange for the acknowledged hop) represented by that
+inbound token;</li>
+<li><tt>recipient</tt> equals the recipient from which acknowledgment is expected;</li>
+<li><tt>target_context</tt> equals the exact canonical target context that was
+requested, communicated, or deterministically derived for the acknowledged
+hop;</li>
+<li><tt>exp</tt> has not expired;</li>
+<li>for asserted-chain profiles, the carried <tt>ach</tt> equals the inbound readable
+<tt>ach</tt> for the acknowledged hop; and</li>
+<li>for committed-chain profiles, <tt>prev</tt> equals the verified prior commitment
+digest copied from the inbound token's <tt>achc.curr</tt>; and</li>
+<li>the <tt>ack</tt> member is present and its value equals <tt>accepted</tt>.</li>
+</ul>
+<t>When the inbound token being acknowledged was obtained by cross-domain
+re-issuance or Refresh-Exchange, the <tt>target_context</tt> compared here is the
+exact canonical value for that acknowledged presentation. Any preserved step
+proofs and <tt>achc</tt> from an earlier chain-extending hop continue to reflect the
+target context of that earlier hop, not a later locally rewritten audience,
+unless those values are identical.</t>
+</section>
+</section>
+
+<section anchor="common-security-and-enforcement-requirements"><name>Common Security and Enforcement Requirements</name>
+<t>This section collects enforcement requirements that all profiles rely on but
+that need not be read before the main profile flows. Implementations still
+MUST satisfy these requirements even when they are consulted later in a first
+reading pass.</t>
+
+<section anchor="sender-constraint"><name>Sender Constraint</name>
+<t>A token issued under any profile in this document MUST be sender-constrained to
+the actor represented by that token.</t>
+<t>A recipient or Authorization Server validating such a token MUST verify the
+applicable sender-constrained proof before accepting the token.</t>
+<t>Failure of sender-constrained validation MUST cause rejection.</t>
+</section>
+
+<section anchor="actor-and-recipient-proof-keys"><name>Actor and Recipient Proof Keys</name>
+<t>For committed-chain profiles and for <tt>hop_ack</tt>, any signature used as a
+profile-defined proof MUST be generated with an asymmetric key bound to the
+authenticated actor or recipient identity by local trust policy.</t>
+<t>For a committed-profile step proof, the ActorID represented in the proof, the
+key used to sign the proof, and the sender-constrained key used to present the
+corresponding token MUST all be bound to the same actor identity. When the same
+key is not reused for both functions, the Authorization Server MUST validate an
+explicit local binding between the proof-signing key and the sender-constrained
+presentation key before accepting the proof.</t>
+<t>For <tt>hop_ack</tt>, the recipient ActorID, the key used to sign the acknowledgment,
+and any sender-constrained key used by that recipient for the protected
+interaction MUST likewise be bound to the same recipient identity.</t>
+<t>Shared client secrets MUST NOT be the sole basis for independently verifiable
+step proofs or receiver acknowledgments.</t>
+<t>A deployment SHOULD reuse the same asymmetric key material used for sender-constrained token presentation, or another asymmetric key that is
+cryptographically bound to the same actor identity.</t>
+</section>
+
+<section anchor="intended-recipient-validation"><name>Intended Recipient Validation</name>
+<t>When a current actor submits an inbound token as a <tt>subject_token</tt> in token
+exchange, the accepting Authorization Server MUST normally verify that the
+authenticated current actor was an intended recipient of that inbound token
+according to local audience, resource, or equivalent validation rules. For
+<tt>actor_chain_refresh=true</tt> and <tt>actor_chain_cross_domain=true</tt>, this intended-recipient check does not apply, because the current actor is legitimately
+redeeming a token it holds as the presenter in order to refresh or preserve
+previously established chain state.</t>
+<t>Possession of an inbound token alone is insufficient.</t>
+</section>
+
+<section anchor="replay-and-freshness"><name>Replay and Freshness</name>
+<t>Recipients and Authorization Servers MUST enforce replay and freshness checks on
+inbound tokens according to local policy.</t>
+<t>For profiles that use actor-signed step proofs, the accepting Authorization
+Server:</t>
+
+<ul spacing="compact">
+<li>MUST detect replay of a previously accepted step proof within its
+replay-retention window;</li>
+<li>MUST treat an exact replay of a previously accepted compact-JWS step proof
+for the same authenticated actor and same prior state as an idempotent retry,
+not as a distinct successor;</li>
+<li>MUST, for such an idempotent retry, return the previously accepted
+successor state, or an equivalent token representing that same accepted
+successor state, while any required retry record is retained; and</li>
+<li>SHOULD, during that retry-retention window, retain the exact previously
+issued response or otherwise ensure that a retried response carries the same
+accepted chain state, because recomputing with probabilistic signatures can
+change wire bytes even when the decoded accepted state is equivalent; and</li>
+<li>MUST reject a different attempted successor for the same
+<tt>(sid, prior_state, target_context)</tt> tuple unless local policy explicitly
+authorizes replacement or supersession; this base specification does not
+standardize how multiple accepted successors that share earlier history are
+correlated or later merged.</li>
+</ul>
+</section>
+</section>
+
+<section anchor="authorization-server-metadata"><name>Authorization Server Metadata</name>
+<t>An Authorization Server supporting this specification SHOULD publish metadata
+describing supported actor-chain capabilities.</t>
+<t>This specification defines the following Authorization Server metadata values:</t>
+
+<ul spacing="compact">
+<li><tt>actor_chain_bootstrap_endpoint</tt>:
+URL of the Authorization Server endpoint used to mint committed-profile
+bootstrap context for initial actors;</li>
+<li><tt>actor_chain_profiles_supported</tt>:
+array of supported actor-chain profile identifiers. Each value MUST be the
+exact identifier string used both as the <tt>actor_chain_profile</tt> token request
+parameter value and as the <tt>achp</tt> token claim value;</li>
+<li><tt>actor_chain_commitment_hashes_supported</tt>:
+array of supported commitment hash algorithm identifiers;</li>
+<li><tt>actor_chain_receiver_ack_supported</tt>:
+boolean indicating whether the Authorization Server supports processing and
+policy for <tt>hop_ack</tt>; and</li>
+<li><tt>actor_chain_refresh_supported</tt>:
+boolean indicating whether the Authorization Server supports Refresh-Exchange
+processing under this specification; and</li>
+<li><tt>actor_chain_cross_domain_supported</tt>:
+boolean indicating whether the Authorization Server supports cross-domain
+re-issuance processing under this specification.</li>
+</ul>
+<t>If omitted, clients MUST NOT assume support for any actor-chain profile beyond
+out-of-band agreement.</t>
+</section>
+
+<section anchor="error-handling"><name>Error Handling</name>
+<t>Token exchange errors in this specification build on OAuth 2.0 and OAuth 2.0
+Token Exchange.</t>
+<t>An Authorization Server processing a token exchange request applies the
+following mapping:</t>
+<table>
+<thead>
+<tr>
+<th>OAuth error code</th>
+<th>Triggering condition</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>invalid_request</tt></td>
+<td>Malformed or missing profile-defined parameters, malformed bootstrap context, malformed ActorID values, malformed commitment objects, or unsupported profile bindings</td>
+</tr>
+
+<tr>
+<td><tt>invalid_target</tt></td>
+<td>The requested audience, target context, or recipient is not permitted or not supported</td>
+</tr>
+
+<tr>
+<td><tt>invalid_grant</tt></td>
+<td>The <tt>subject_token</tt> fails validation, sender-constrained verification fails, the intended-recipient check fails, continuity fails at token exchange, replay or freshness checks fail, <tt>actor_chain_step_proof</tt> verification fails, or the submitted prior state is inconsistent with the claimed profile state</td>
+</tr>
+</tbody>
+</table><t>Recipients and Authorization Servers MUST return protocol-appropriate error
+signals for authentication, authorization, profile-validation, and continuity
+failures.</t>
+<t>In HTTP deployments, this typically maps to 400-series status codes and OAuth-appropriate error values. In non-HTTP deployments, functionally equivalent
+protocol-native error signaling MUST be used.</t>
+<t>Error responses and logs MUST NOT disclose undisclosed prior actors, full step
+proofs, canonical proof inputs, or other sensitive proof material unless the
+deployment explicitly requires such disclosure for diagnostics.</t>
+</section>
+
+<section anchor="security-considerations"><name>Security Considerations</name>
+<t>A fuller threat discussion appears in Appendix I. This section keeps only the
+security considerations that directly affect interoperable processing or likely
+implementation choices.</t>
+
+<section anchor="sender-constrained-enforcement-is-foundational"><name>Sender-Constrained Enforcement is Foundational</name>
+<t>The security of these profiles depends strongly on sender-constrained token
+enforcement. If a token can be replayed by an attacker that is not the bound
+actor, continuity checks become materially weaker.</t>
+</section>
+
+<section anchor="canonicalization-errors-break-interoperability-and-proof-validity"><name>Canonicalization Errors Break Interoperability and Proof Validity</name>
+<t>Any ambiguity in canonical serialization, actor identity representation, target
+representation, or proof payload encoding can cause false verification failures
+or inconsistent commitment values across implementations.</t>
+</section>
+
+<section anchor="readable-chain-does-not-prevent-payload-abuse"><name>Readable Chain Does Not Prevent Payload Abuse</name>
+<t>A valid readable <tt>ach</tt> does not imply that the application-layer request
+content is safe, correct, or policy-conformant. Recipients MUST apply local
+payload validation and authorization.</t>
+</section>
+
+<section anchor="committed-profiles-depend-on-proof-retention"><name>Committed Profiles Depend on Proof Retention</name>
+<t>The evidentiary benefits of the committed profiles depend on retention or
+discoverability of step proofs, exchange records, and relevant verification
+material. Without such retention, the profiles still provide structured
+committed state, but post hoc provability and non-repudiation are materially
+weakened.</t>
+<t>Authorization Servers supporting committed profiles SHOULD retain proof state,
+exchange records, and the historical verification material needed for later
+verification for at least the maximum validity period of the longest-lived
+relevant token plus a deployment-configured audit window. Retention policies
+SHOULD also account for later verification during or after key rotation.</t>
+</section>
+
+<section anchor="committed-chain-with-no-chain-disclosure-removes-inline-prior-actor-visibility"><name>Committed Chain with No Chain Disclosure Removes Inline Prior-Actor Visibility</name>
+<t>Recipients using the Committed Chain with No Chain Disclosure profile can validate the
+presenting actor and preserved commitment continuity, but cannot authorize based
+on readable prior-actor membership or order from the ordinary token alone.</t>
+</section>
+
+<section anchor="subset-disclosure-profiles-reveal-only-a-verified-subset"><name>Subset-Disclosure Profiles Reveal Only a Verified Subset</name>
+<t>Recipients using the Asserted Chain with Subset Disclosure profile or
+the Committed Chain with Subset Disclosure profile can authorize based
+only on the disclosed <tt>ach</tt> subset that they verify. They MUST treat
+undisclosed prior actors as unavailable and MUST NOT infer adjacency, absence,
+or exact chain length from the disclosed subset alone.</t>
+<t>For the Committed Chain with Subset Disclosure profile, the disclosed
+subset to a recipient MUST be derived from the actor-signed actor-visible chain
+for that hop. A malicious or compromised issuing Authorization Server can still
+attempt to issue a subset inconsistent with that proof-bound chain, so retained
+step proofs and exchange records remain important for later verification and
+audit.</t>
+<t>This specification intentionally avoids requiring an acting intermediary to learn a
+hidden full-chain prefix merely to continue the workflow. Deployments that need
+later reconstruction of a hidden prefix beyond what each actor signed MUST rely
+on retained Authorization Server state and audit records.</t>
+</section>
+
+<section anchor="cross-domain-re-issuance-must-preserve-chain-state"><name>Cross-Domain Re-Issuance Must Preserve Chain State</name>
+<t>A cross-domain Authorization Server that re-issues a local token for the next
+recipient MUST preserve the relevant chain state unchanged. For committed
+subset-disclosure operation, this includes the chain state visible to the
+current actor and any disclosed subset carried forward for the next hop. Any
+such re-issuance MUST continue to represent the current actor and MUST NOT
+append the recipient.</t>
+</section>
+
+<section anchor="residual-risks-and-out-of-scope-behavior"><name>Residual Risks and Out-of-Scope Behavior</name>
+<t>These profiles do not by themselves make application payloads safe or policy-conformant, and they do not by themselves prevent confused-deputy behavior.</t>
+<t>The asserted profiles rely on the issuing Authorization Server for the asserted
+chain state that they carry forward. In the subset-disclosure asserted profile,
+a current actor or downstream recipient validates only the disclosed subset it
+receives and does not independently validate undisclosed prior actors.</t>
+<t>The committed subset-disclosure and no-chain-disclosure profiles reduce what
+downstream recipients can authorize inline from ordinary tokens alone. Hidden-prefix reconstruction or later proof of what an actor saw can depend on
+retained Authorization Server state, exchange records, and proofs.</t>
+<t>The committed full-disclosure profile does not by itself provide privacy
+minimization, and the committed profiles do not standardize merge or
+branch-selection semantics across parallel work that shares earlier workflow
+history. Deployments that need interoperable shared-root branching behavior
+MUST use an extension or companion protocol that defines it explicitly.
+Deployments MAY still correlate related linear flows out of band by local
+policy.</t>
+</section>
+
+<section anchor="intended-recipient-checks-reduce-confused-deputy-risk"><name>Intended Recipient Checks Reduce Confused-Deputy Risk</name>
+<t>Accepting Authorization Servers MUST ensure that the authenticated current actor
+was an intended recipient of the inbound <tt>subject_token</tt>. This reduces a class
+of deputy and repurposing attacks, though it does not eliminate all
+confused-deputy scenarios.</t>
+</section>
+
+<section anchor="chain-depth"><name>Chain Depth</name>
+<t>Authorization Servers SHOULD enforce a configurable maximum chain depth. A
+RECOMMENDED default is 10 entries. Relying Parties MAY enforce stricter limits.</t>
+</section>
+
+<section anchor="key-management"><name>Key Management</name>
+<t>Actors SHOULD use short-lived keys and/or hardware-protected keys. Deployments
+that require long-term auditability MUST retain, or make durably discoverable,
+the historical verification material needed to validate archived step proofs and
+receiver acknowledgments after key rotation.</t>
+</section>
+</section>
+
+<section anchor="privacy-considerations"><name>Privacy Considerations</name>
+<t>This section keeps the privacy requirements that affect protocol behavior.
+Additional trust-boundary and operational notes appear in Appendix J.</t>
+<t>Readable-chain profiles disclose prior actors to downstream recipients.
+Deployments that do not require full readable prior-actor authorization SHOULD
+consider the Committed Chain with No Chain Disclosure profile or one of the subset-disclosure profiles.</t>
+<t>The stable workflow identifier <tt>sid</tt> correlates all accepted hops within one
+workflow instance. Accordingly, <tt>sid</tt> MUST be opaque and MUST NOT encode actor
+identity, profile selection, business semantics, or target meaning.</t>
+<t>Even in the privacy-preserving profiles, the Authorization Server
+processing token exchange observes the authenticated current actor and any
+retained chain-related state. Accordingly, these profiles reduce ordinary-token
+disclosure but do not hide prior actors from the issuing Authorization Server.</t>
+<t>Deployments concerned with minimization SHOULD consider:</t>
+
+<ul spacing="compact">
+<li>pairwise or pseudonymous actor identifiers;</li>
+<li>omission of auxiliary claims unless receiving policy depends on them; and</li>
+<li>the Asserted Chain with Subset Disclosure profile or the Committed
+Chain with Subset Disclosure profile when partial readable-chain
+disclosure is sufficient.</li>
+</ul>
+
+<section anchor="subset-disclosure-and-optional-encodings"><name>Subset Disclosure and Optional Encodings</name>
+<t>This specification defines subset-disclosure semantics for the Asserted
+Chain with Subset Disclosure profile and the Committed Chain with Subset
+Disclosure profile. In both profiles, the recipient-visible <tt>ach</tt> is a
+profile-defined ordered subsequence of the actor chain for that hop, carried
+as an ordinary readable <tt>ach</tt> claim containing only the disclosed subset.</t>
+<t>This representation is the interoperable base-wire format for the subset
+profiles.</t>
+<t>Deployments MAY additionally use an optional selective-disclosure encoding
+technique by agreement, including Selective Disclosure JWT (SD-JWT)
+{{!RFC9901}} or a future companion binding, but only as an auxiliary overlay. Such an overlay MUST NOT replace
+the required readable subset <tt>ach</tt> claim in the interoperable base-wire
+format; it MAY only add an equivalent presentation form whose disclosed value
+matches the same recipient-visible <tt>ach</tt> and does not change any required
+validation result.</t>
+<t>This specification defines the following actor-chain-specific constraints on
+such use:</t>
+
+<ul spacing="compact">
+<li>for the Asserted Chain with Subset Disclosure profile, the disclosed <tt>ach</tt> MUST
+be an ordered subsequence of the asserted chain state for that hop;</li>
+<li>for the Committed Chain with Subset Disclosure profile, the disclosed <tt>ach</tt> MUST
+be an ordered subsequence of the proof-bound actor-visible chain for that
+hop;</li>
+<li>in both subset profiles, the disclosed <tt>ach</tt> MUST include the current actor
+as its last element;</li>
+<li>if the selected profile uses step proofs or chain commitments, those
+artifacts remain bound to the proof-bound hop progression, not to a later
+disclosed subset;</li>
+<li>a verifier MUST treat undisclosed information as unavailable and MUST require
+disclosure of any information needed for authorization;</li>
+<li>an encoding used with a Full Disclosure profile MUST reveal the full readable
+chain required by that profile to the recipient before authorization; and</li>
+<li>an encoding used with the Committed Chain with No Chain Disclosure profile MUST NOT
+expose hidden actor entries to recipients of ordinary tokens merely in digested or
+hidden or selectively revealable form.</li>
+</ul>
+</section>
+</section>
+
+<section anchor="appendix-a-jwt-binding-normative"><name>Appendix A. JWT Binding (Normative)</name>
+<t>This appendix defines the JWT and JWS wire representation for profile-defined
+ActorID values, step proofs, receiver acknowledgments, and commitment
+objects.</t>
+
+<section anchor="actorid-in-jwt"><name>ActorID in JWT</name>
+<t>An ActorID is a JSON object with exactly two members:</t>
+
+<ul spacing="compact">
+<li><tt>iss</tt>: a string containing the issuer identifier; and</li>
+<li><tt>sub</tt>: a string containing the subject identifier.</li>
+</ul>
+<t>The object MUST be serialized using JCS {{!RFC8785}} whenever it is included in
+profile-defined proof or commitment inputs.</t>
+<t>The <tt>ach</tt> claim, when present in a JWT, is a JSON array of ActorID
+objects.</t>
+</section>
+
+<section anchor="step-proof-in-jwt"><name>Step Proof in JWT</name>
+<t>The <tt>actor_chain_step_proof</tt> token request parameter value MUST be a compact JWS
+string. The JWS protected header MUST contain <tt>typ=ach-step-proof+jwt</tt>. The
+JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.</t>
+<t>For all profiles in the committed branch, the payload MUST contain:</t>
+
+<ul spacing="compact">
+<li><tt>ctx</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>prev</tt>;</li>
+<li><tt>target_context</tt>; and</li>
+<li><tt>ach</tt>.</li>
+</ul>
+<t>When this payload is used as commitment input through <tt>step_hash</tt>, the
+<tt>step_proof_bytes</tt> value is the ASCII byte sequence of the exact compact JWS
+serialization of the proof artifact.</t>
+<t>The <tt>ctx</tt> member value MUST equal the profile-specific step-proof
+domain-separation string <tt>ds(profile)</tt> defined in Common Processing for the
+Committed Branch. The <tt>prev</tt> member MUST be the base64url string value of the
+prior commitment digest or bootstrap seed, copied directly from the verified
+inbound <tt>achc.curr</tt> or bootstrap response, respectively. The <tt>ach</tt> member MUST
+be a JSON array of ActorID objects and denotes the profile-defined proof-bound
+actor-visible chain for the hop. For the Committed Chain with No Chain Disclosure
+profile, that proof-payload <tt>ach</tt> is internal proof input only and MUST NOT be
+copied into a readable token <tt>ach</tt> claim for ordinary tokens issued under that
+profile. The <tt>target_context</tt> member value MUST carry the verified <tt>aud</tt> value
+exactly. If <tt>aud</tt> is a string, <tt>target_context</tt> MAY be that same JSON string
+or a JSON object that includes an <tt>aud</tt> member with that same string. If
+<tt>aud</tt> is an array of strings, <tt>target_context</tt> MUST represent that array
+exactly, either as that same JSON array value or as a JSON object whose <tt>aud</tt>
+member is that exact array. Additional target-selection members used by local
+policy MAY be included only in the JSON-object form. Before any proof input is
+hashed or signed, <tt>target_context</tt> MUST be canonicalized using JCS exactly once
+as part of the enclosing payload object; verifiers MUST reproduce the same JCS
+bytes when validating the proof.</t>
+<t>The JWS algorithm MUST be an asymmetric algorithm. The <tt>none</tt> algorithm MUST
+NOT be used. The JWS verification key MUST be bound to the same ActorID as the
+sender-constrained presentation key for the corresponding actor.</t>
+</section>
+
+<section anchor="receiver-acknowledgment-in-jwt"><name>Receiver Acknowledgment in JWT</name>
+<t>A <tt>hop_ack</tt>, when used in a JWT deployment, MUST be a compact JWS string. The
+JWS protected header MUST contain <tt>typ=ach-hop-ack+jwt</tt>. The JWS payload MUST
+be the UTF-8 encoding of a JCS-serialized JSON object with at least these
+members:</t>
+
+<ul spacing="compact">
+<li><tt>ctx</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>achp</tt>;</li>
+<li><tt>jti</tt>;</li>
+<li><tt>inbound_jti</tt>;</li>
+<li><tt>exp</tt>;</li>
+<li><tt>target_context</tt>;</li>
+<li><tt>presenter</tt>;</li>
+<li><tt>recipient</tt>;</li>
+<li>for asserted-chain profiles, <tt>ach</tt>;</li>
+<li>for committed-chain profiles, <tt>prev</tt>; and</li>
+<li><tt>ack</tt>.</li>
+</ul>
+<t>The <tt>ctx</tt> member value MUST equal <tt>actor-chain-hop-ack-v1</tt>. The
+<tt>presenter</tt> and <tt>recipient</tt> members MUST be ActorID objects. The <tt>ack</tt>
+member MUST have the value <tt>accepted</tt>. The <tt>jti</tt> member MUST uniquely identify
+the <tt>hop_ack</tt> JWT itself. The <tt>inbound_jti</tt> member MUST carry the <tt>jti</tt> value
+from the acknowledged inbound token. The <tt>exp</tt> member MUST be a JWT NumericDate
+and SHOULD be short-lived according to local policy. The <tt>target_context</tt>
+member MUST follow the same representation rules defined for step proofs. For
+asserted-chain profiles, the <tt>ach</tt> member MUST carry the verified readable
+inbound <tt>ach</tt> value. For committed-chain profiles, the <tt>prev</tt> member MUST be
+copied directly from the verified prior commitment digest extracted from the
+inbound token's <tt>achc.curr</tt>. The JWS signer MUST be the recipient, and the
+verification key MUST be bound to the same recipient ActorID as any sender-constrained presentation key used for the protected interaction.</t>
+</section>
+
+<section anchor="commitment-object-in-jwt"><name>Commitment Object in JWT</name>
+<t>The <tt>achc</tt> claim value MUST be a compact JWS string. The JWS
+protected header MUST contain <tt>typ=ach-commitment+jwt</tt>.</t>
+<t>The JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object with
+exactly these members:</t>
+
+<ul spacing="compact">
+<li><tt>ctx</tt>;</li>
+<li><tt>iss</tt>;</li>
+<li><tt>sid</tt>;</li>
+<li><tt>achp</tt>;</li>
+<li><tt>halg</tt>;</li>
+<li><tt>prev</tt>;</li>
+<li><tt>step_hash</tt>; and</li>
+<li><tt>curr</tt>.</li>
+</ul>
+<t>The <tt>ctx</tt> member value MUST equal <tt>actor-chain-commitment-v1</tt>. The <tt>iss</tt>
+member MUST identify the Authorization Server that signed the <tt>achc</tt> object.
+The <tt>halg</tt> member MUST be either <tt>sha-256</tt> or <tt>sha-384</tt>. The members <tt>prev</tt>,
+<tt>step_hash</tt>, and <tt>curr</tt> MUST be the base64url encodings of raw hash bytes. The
+<tt>curr</tt> member is the current commitment digest for that accepted hop. Later
+chain-extending step proofs copy the verified inbound <tt>achc.curr</tt> value into
+their <tt>prev</tt> member, and committed-profile <tt>hop_ack</tt> copies that same inbound
+digest into its <tt>prev</tt> member for the acknowledged token.</t>
+<t>The JWS payload signer MUST be the Authorization Server identified by <tt>iss</tt>.
+An Authorization Server that issues or re-issues a token using a
+preserved <tt>achc</tt> MUST validate that JWS signature, use <tt>iss</tt> to resolve the
+appropriate signer trust context when the commitment originated at another
+domain, and verify that <tt>halg</tt> is locally permitted before relying on the
+object. A current actor or downstream recipient that receives a token from a
+locally trusted issuing Authorization Server MAY rely on that enclosing token
+signature as attestation that any preserved foreign <tt>achc</tt> was validated, and
+need not independently validate a foreign Authorization Server's JWS signature
+on <tt>achc</tt> unless local policy or audit requires it. Where the verifier does
+validate the <tt>achc</tt> object itself, it MUST then validate that <tt>curr</tt> equals:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+b64url(Hash_halg(JCS({ctx, iss, sid, achp, halg, prev, step_hash})))
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+</section>
+</section>
+
+<section anchor="appendix-b-compact-end-to-end-examples-informative"><name>Appendix B. Compact End-to-End Examples (Informative)</name>
+
+<section anchor="example-1-asserted-chain-with-full-disclosure-in-one-domain"><name>Example 1: Asserted Chain with Full Disclosure in One Domain</name>
+<t>Assume <tt>A</tt>, <tt>B</tt>, and <tt>C</tt> are governed by <tt>AS1</tt>.</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> requests a token for <tt>B</tt> under the Asserted Chain with Full Disclosure profile.</li>
+<li><tt>AS1</tt> issues <tt>T_A</tt> with <tt>ach=[A]</tt> and <tt>aud=B</tt>.</li>
+<li><tt>A</tt> calls <tt>B</tt> and presents <tt>T_A</tt>.</li>
+<li><tt>B</tt> validates <tt>T_A</tt>, verifies continuity, and exchanges <tt>T_A</tt> at <tt>AS1</tt> for
+a token to <tt>C</tt>.</li>
+<li><tt>AS1</tt> authenticates <tt>B</tt>, verifies that <tt>B</tt> was an intended recipient of the
+inbound token, appends <tt>B</tt>, and issues <tt>T_B</tt> with <tt>ach=[A,B]</tt> and
+<tt>aud=C</tt>.</li>
+<li><tt>B</tt> validates that the returned chain is exactly the prior chain plus <tt>B</tt>.</li>
+<li><tt>B</tt> presents <tt>T_B</tt> to <tt>C</tt>.</li>
+<li><tt>C</tt> validates the token and authorizes based on the readable chain <tt>[A,B]</tt>.</li>
+</ol>
+</section>
+
+<section anchor="example-2-asserted-chain-with-subset-disclosure"><name>Example 2: Asserted Chain with Subset Disclosure</name>
+<t>Assume <tt>A</tt>, <tt>B</tt>, and <tt>C</tt> use the Asserted Chain with Subset Disclosure profile and accept the issuing AS as the trust anchor for disclosure
+policy.</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> requests a token for <tt>B</tt> under the Asserted Chain with Subset Disclosure profile.</li>
+<li><tt>AS1</tt> issues <tt>T_A</tt> with a recipient-specific disclosed <tt>ach</tt> intended for <tt>B</tt>.</li>
+<li><tt>A</tt> calls <tt>B</tt> and presents <tt>T_A</tt>.</li>
+<li><tt>B</tt> validates the token and uses only the disclosed chain for authorization.</li>
+<li><tt>B</tt> exchanges <tt>T_A</tt> at <tt>AS1</tt> for a token to <tt>C</tt>.</li>
+<li><tt>AS1</tt> appends <tt>B</tt> to the inbound disclosed chain state it verified from
+<tt>T_A</tt>, applies disclosure policy for <tt>C</tt>, and issues <tt>T_B</tt> with a recipient-specific
+disclosed <tt>ach</tt>.</li>
+<li><tt>B</tt> presents <tt>T_B</tt> to <tt>C</tt>.</li>
+<li><tt>C</tt> validates the token, confirms that <tt>B</tt> is the last disclosed actor, and authorizes based only on the
+disclosed chain.</li>
+</ol>
+</section>
+
+<section anchor="example-3-committed-chain-with-full-disclosure-across-two-domains"><name>Example 3: Committed Chain with Full Disclosure Across Two Domains</name>
+<t>Assume <tt>A</tt> and <tt>B</tt> are governed by <tt>AS1</tt>, while <tt>C</tt> is governed by <tt>AS2</tt>.</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> obtains bootstrap context from <tt>AS1</tt>, signs <tt>chain_sig_A</tt>, and receives
+<tt>T_A</tt> with <tt>ach=[A]</tt> and <tt>achc</tt>.</li>
+<li><tt>A</tt> calls <tt>B</tt> with <tt>T_A</tt>.</li>
+<li><tt>B</tt> validates <tt>T_A</tt>, constructs <tt>[A,B]</tt>, signs <tt>chain_sig_B</tt>, and exchanges
+<tt>T_A</tt> at <tt>AS1</tt> for a token to <tt>C</tt>.</li>
+<li><tt>AS1</tt> verifies <tt>chain_sig_B</tt>, updates the commitment, and issues <tt>T_B</tt> with
+<tt>ach=[A,B]</tt> and <tt>aud=C</tt>.</li>
+<li>Because <tt>C</tt> does not trust <tt>AS1</tt> directly, <tt>B</tt> performs a second exchange at
+<tt>AS2</tt>.</li>
+<li><tt>AS2</tt> preserves <tt>achp</tt>, <tt>sid</tt>, <tt>ach=[A,B]</tt>, and
+<tt>achc</tt>, and issues a local token trusted by <tt>C</tt> that still
+represents <tt>B</tt>.</li>
+<li><tt>C</tt> validates the local token, sees the readable chain <tt>[A,B]</tt>, and
+authorizes accordingly.</li>
+</ol>
+</section>
+
+<section anchor="example-4-committed-chain-with-no-chain-disclosure"><name>Example 4: Committed Chain with No Chain Disclosure</name>
+<t>Assume <tt>A</tt>, <tt>B</tt>, and <tt>C</tt> use the Committed Chain with No Chain Disclosure profile.</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> obtains bootstrap context, signs <tt>chain_sig_A</tt> over visible chain <tt>[A]</tt>,
+and receives <tt>T_A</tt> with <tt>achc</tt>, but no <tt>ach</tt> claim.</li>
+<li><tt>A</tt> calls <tt>B</tt> with <tt>T_A</tt>.</li>
+<li><tt>B</tt> validates <tt>T_A</tt>, verifies that <tt>A</tt> is the presenter, constructs the
+profile-defined actor-visible chain <tt>[A,B]</tt>, signs <tt>chain_sig_B</tt>, and
+exchanges <tt>T_A</tt> at its home AS to obtain <tt>T_B</tt> for <tt>C</tt>.</li>
+<li><tt>T_B</tt> contains the updated <tt>achc</tt>, but no readable chain.</li>
+<li><tt>B</tt> presents <tt>T_B</tt> to <tt>C</tt>.</li>
+<li><tt>C</tt> validates the token and authorizes based on the verified presenting actor
+<tt>B</tt> and local policy. <tt>C</tt> MUST NOT infer prior-actor identity or count from
+the commitment alone.</li>
+</ol>
+</section>
+
+<section anchor="example-5-committed-chain-with-subset-disclosure"><name>Example 5: Committed Chain with Subset Disclosure</name>
+<t>Assume <tt>A</tt>, <tt>B</tt>, and <tt>C</tt> use the Committed Chain with Subset Disclosure profile.</t>
+
+<ol spacing="compact">
+<li><tt>A</tt> obtains bootstrap context, signs <tt>chain_sig_A</tt>, and receives <tt>T_A</tt> with
+a recipient-specific disclosed <tt>ach</tt> and <tt>achc</tt> intended for <tt>B</tt>.</li>
+<li><tt>A</tt> calls <tt>B</tt> and presents <tt>T_A</tt>.</li>
+<li><tt>B</tt> validates the token and uses only the disclosed chain for authorization.</li>
+<li><tt>B</tt> signs <tt>chain_sig_B</tt> over the exact actor-visible chain that <tt>B</tt>
+verified on the inbound hop, with <tt>B</tt> appended, and exchanges <tt>T_A</tt> at its
+home AS to obtain <tt>T_B</tt> for <tt>C</tt>.</li>
+<li><tt>AS1</tt> verifies that submitted chain state, applies disclosure policy for <tt>C</tt>,
+and issues <tt>T_B</tt> with a recipient-specific disclosed <tt>ach</tt> and updated <tt>achc</tt>.</li>
+<li><tt>B</tt> presents <tt>T_B</tt> to <tt>C</tt>.</li>
+<li><tt>C</tt> validates the token, confirms that <tt>B</tt> is the last disclosed actor, and authorizes based only on the
+disclosed chain.</li>
+<li>If later audit is needed, the proof-bound actor-visible chain for the hop
+can be reconstructed from retained step proofs and exchange records.</li>
+</ol>
+</section>
+</section>
+
+<section anchor="appendix-c-future-considerations-informative"><name>Appendix C. Future Considerations (Informative)</name>
+
+<section anchor="terminal-recipient-handling"><name>Terminal Recipient Handling</name>
+<t>This specification defines special handling for the first actor in order to
+initialize chain state. It does not define corresponding terminal-hop semantics
+for a final recipient that performs work locally and does not extend the chain
+further.</t>
+<t>Future work MAY define:</t>
+
+<ul spacing="compact">
+<li>a terminal receipt proving that the recipient accepted the request;</li>
+<li>an execution attestation proving that the recipient executed a specific
+operation; and</li>
+<li>a result attestation binding an outcome or result digest to the final
+committed state.</li>
+</ul>
+</section>
+
+<section anchor="receiver-acceptance-and-unsolicited-victim-mitigation"><name>Receiver Acceptance and Unsolicited Victim Mitigation</name>
+<t>This specification deliberately does not append a recipient merely because that
+recipient was contacted. It also defines an OPTIONAL <tt>hop_ack</tt> extension that
+lets a recipient prove accepted responsibility for a hop.</t>
+<t>However, this specification still does not by itself prevent a malicious actor
+from sending a validly issued token to an unsolicited victim service. Future
+work MAY define stronger receiver-driven protections, including:</t>
+
+<ul spacing="compact">
+<li>stronger result attestations for completed terminal work;</li>
+<li>a challenge-response model for high-risk terminal hops; and</li>
+<li>recipient-issued nonces or capabilities that MUST be bound into the final
+accepted hop.</li>
+</ul>
+</section>
+
+<section anchor="subset-disclosure-and-optional-encodings-1"><name>Subset Disclosure and Optional Encodings</name>
+<t>This document now defines baseline Asserted Chain with Subset Disclosure and
+Committed Chain with Subset Disclosure profiles at the actor-chain semantics
+layer. Future work MAY define stronger or more standardized subset-disclosure
+encodings and verification techniques, including Selective Disclosure JWT
+(SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding, recipient-bound
+disclosure artifacts, zero-knowledge proofs over the canonical full chain, or
+richer verifier-assisted consistency checks against retained proof state.</t>
+<t>Any future encoding or presentation profile MUST preserve the disclosure
+semantics of the selected base profile. In particular, a Full Disclosure
+profile still requires full readable-chain disclosure to the recipient, while
+Committed Chain with No Chain Disclosure MUST NOT expose hidden actor entries to
+recipients of ordinary tokens merely as digests or selectively revealable placeholders.</t>
+</section>
+
+<section anchor="branching-and-fan-out"><name>Branching and Fan-Out</name>
+<t>This specification defines linear per-step evidence and does not standardize
+merge or branch-selection semantics across multiple descendants that share
+earlier workflow history.</t>
+<t>A future branching profile could add explicit branch identifiers or parent-child
+workflow correlation, for example by binding a branch <tt>sid</tt> to a parent <tt>sid</tt>,
+and could define tree-structured commitment verification, inclusion proofs,
+partial disclosure, and any later merge behavior. Such future work could also
+help correlate related <strong>WHO</strong>, <strong>WHAT</strong>, and <strong>HOW</strong> evidence across companion
+Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and Inference
+Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.</t>
+<t>Those semantics remain out of scope for this base specification.</t>
+</section>
+
+<section anchor="evidence-discovery-and-governance-interoperability"><name>Evidence Discovery and Governance Interoperability</name>
+<t>Committed profiles derive much of their value from later verification of step
+proofs and exchange records. Future work MAY standardize interoperable evidence
+discovery, retention, and verification-material publication.</t>
+<t>Any such specification should define, at minimum, evidence object typing,
+authorization and privacy controls for cross-domain retrieval, stable lookup
+keys such as <tt>jti</tt> or <tt>sid</tt>, error handling, and retention expectations.</t>
+</section>
+</section>
+
+<section anchor="appendix-d-design-rationale-and-relation-to-other-work-informative"><name>Appendix D. Design Rationale and Relation to Other Work (Informative)</name>
+<t>This document complements {{!RFC8693}} by defining chain-aware token-exchange
+profiles. It also composes with companion SPICE provenance work: Actor Chain
+addresses <strong>WHO</strong> acted, Intent Chain
+{{!I-D.draft-mw-spice-intent-chain}} addresses <strong>WHAT</strong> was produced or
+transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+addresses <strong>HOW</strong> a result was computed.</t>
+<t>This specification defines five profiles instead of one deployment mode
+so that implementations can choose among full readable chain-based
+authorization, trust-first partial disclosure, stronger committed-state
+accountability, recipient-specific committed partial disclosure, and reduced
+ordinary-token disclosure without changing the core progression model.</t>
+<t>The base specification remains linear. Branching, richer disclosure mechanisms,
+and evidence-discovery protocols remain future work because they require
+additional identifiers, validation rules, and interoperability work.</t>
+</section>
+
+<section anchor="appendix-e-implementation-conformance-checklist-informative"><name>Appendix E. Implementation Conformance Checklist (Informative)</name>
+<t>An implementation is conformant only if it correctly implements the profile it
+claims to support and all common requirements on which that profile depends.</t>
+<t>At a minimum, implementers should verify that they have addressed the
+following:</t>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Draft section reference</th>
+<th>Implemented [ ]</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Stable generation and preservation of <tt>sid</tt>, using a CSPRNG with at least 122 bits of entropy (for example, standard UUIDv4 or stronger generation)</td>
+<td>Workflow Identifier (<tt>sid</tt>)</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Sender-constrained validation for every inbound token</td>
+<td>Sender Constraint</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Exact ActorID equality over (<tt>iss</tt>, <tt>sub</tt>)</td>
+<td>Actor Identity Representation</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Canonical serialization for all proof and commitment inputs</td>
+<td>Canonicalization; Target Context Requirements; Appendix F</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Intended-recipient validation during token exchange</td>
+<td>Intended Recipient Validation</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Replay and freshness handling for tokens and step proofs</td>
+<td>Replay and Freshness</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Exact append-only checks for readable-chain profiles</td>
+<td>Asserted Chain with Full Disclosure Profile; Committed Chain with Full Disclosure Profile</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Exact commitment verification for committed profiles</td>
+<td>Commitment Function; Committed Chain with Full Disclosure Profile</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Proof-key binding between ActorID, proof signer, and sender-constrained presentation key</td>
+<td>Actor and Recipient Proof Keys</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Non-broadening Refresh-Exchange processing, if supported</td>
+<td>Refresh-Exchange</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Policy for when <tt>hop_ack</tt> is optional or required</td>
+<td>Optional Receiver Acknowledgment Extension</td>
+<td>[ ]</td>
+</tr>
+
+<tr>
+<td>Privacy-preserving handling of logs and error messages</td>
+<td>Error Handling; Privacy Considerations</td>
+<td>[ ]</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="appendix-f-canonicalization-test-vectors-informative"><name>Appendix F. Canonicalization Test Vectors (Informative)</name>
+<t>The following illustrative vectors are intended to reduce interoperability
+failures caused by divergent canonicalization. They are not exhaustive, but
+they provide concrete byte-for-byte examples for common JWT/JCS ActorID and
+<tt>target_context</tt> inputs.</t>
+
+<section anchor="jwt-jcs-actorid-example"><name>JWT / JCS ActorID Example</name>
+<t>Input object:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+{&quot;iss&quot;:&quot;<eref target="https://as.example&quot;,&quot;sub&quot;:&quot;svc:planner&quot;">https://as.example","sub":"svc:planner"</eref>}
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>JCS serialization (UTF-8 bytes rendered as hex):</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+7b22697373223a2268747470733a2f2f61732e6578616d706c65222c22737562223a227376633a706c616e6e6572227d
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>SHA-256 over those bytes:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+7a14a23707a3a723fd6437a4a0037cc974150e2d1b63f4d64c6022196a57b69f
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+</section>
+
+<section anchor="jwt-jcs-target-context-example"><name>JWT / JCS <tt>target_context</tt> Example</name>
+<t>Input object:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+{&quot;aud&quot;:&quot;<eref target="https://api.example&quot;,&quot;method&quot;:&quot;invoke&quot;,&quot;resource&quot;:&quot;calendar.read&quot;">https://api.example","method":"invoke","resource":"calendar.read"</eref>}
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>JCS serialization (UTF-8 bytes rendered as hex):</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+7b22617564223a2268747470733a2f2f6170692e6578616d706c65222c226d6574686f64223a22696e766f6b65222c227265736f75726365223a2263616c656e6461722e72656164227d
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>SHA-256 over those bytes:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+911427869c76f397e096279057dd1396fe2eda1ac9e313b357d9cecc44aa811e
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+</section>
+</section>
+
+<section anchor="appendix-g-illustrative-wire-format-example-informative"><name>Appendix G. Illustrative Wire-Format Example (Informative)</name>
+<t>This appendix shows one abbreviated decoded JWT payload together with one
+abbreviated decoded <tt>achc</tt> JWS payload. The values are
+illustrative and signatures are omitted for readability.</t>
+
+<section anchor="decoded-access-token-payload-example"><name>Decoded Access Token Payload Example</name>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+{
+  &quot;iss&quot;: &quot;<eref target="https://as.example&quot;">https://as.example"</eref>,
+  &quot;sub&quot;: &quot;svc:planner&quot;,
+  &quot;act&quot;: {&quot;iss&quot;: &quot;<eref target="https://as.example&quot;">https://as.example"</eref>, &quot;sub&quot;: &quot;svc:planner&quot;},
+  &quot;aud&quot;: &quot;<eref target="https://api.example&quot;">https://api.example"</eref>,
+  &quot;exp&quot;: 1760000000,
+  &quot;jti&quot;: &quot;2b2b6f0d3f0f4d7a8c4c3c4f9e9b1a10&quot;,
+  &quot;sid&quot;: &quot;6cb5f0c14ab84718a69d96d31d95f3c4&quot;,
+  &quot;achp&quot;: &quot;committed-chain-full&quot;,
+  &quot;ach&quot;: [
+    {&quot;iss&quot;: &quot;<eref target="https://as.example&quot;">https://as.example"</eref>, &quot;sub&quot;: &quot;svc:orchestrator&quot;},
+    {&quot;iss&quot;: &quot;<eref target="https://as.example&quot;">https://as.example"</eref>, &quot;sub&quot;: &quot;svc:planner&quot;}
+  ],
+  &quot;achc&quot;: &quot;&lt;compact JWS string&gt;&quot;
+}
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+</section>
+
+<section anchor="decoded-achc-jws-example"><name>Decoded <tt>achc</tt> JWS Example</name>
+<t>Protected header:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+{&quot;alg&quot;:&quot;ES256&quot;,&quot;typ&quot;:&quot;ach-commitment+jwt&quot;}
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>Payload:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;json&quot;&gt;
+{
+  &quot;ctx&quot;: &quot;actor-chain-commitment-v1&quot;,
+  &quot;iss&quot;: &quot;<eref target="https://as.example&quot;">https://as.example"</eref>,
+  &quot;sid&quot;: &quot;6cb5f0c14ab84718a69d96d31d95f3c4&quot;,
+  &quot;achp&quot;: &quot;committed-chain-full&quot;,
+  &quot;halg&quot;: &quot;sha-256&quot;,
+  &quot;prev&quot;: &quot;SGlnaGx5SWxsdXN0cmF0aXZlUHJldkRpZ2VzdA&quot;,
+  &quot;step_hash&quot;: &quot;z7mq8c0u9b2C0X5Q2m4Y1q3r7n6s5t4u3v2w1x0y9z8&quot;,
+  &quot;curr&quot;: &quot;Vb8mR6b2vS5h6S8Y6j5X4r3w2q1p0n9m8l7k6j5h4g3&quot;
+}
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+<t>On the wire, the <tt>achc</tt> claim carries the usual compact-JWS
+form:</t>
+<t>{::nomarkdown}
+&lt;sourcecode type=&quot;text&quot;&gt;
+BASE64URL(protected-header) &quot;.&quot; BASE64URL(payload) &quot;.&quot; BASE64URL(signature)
+&lt;/sourcecode&gt;
+{:/nomarkdown}</t>
+</section>
+</section>
+
+<section anchor="appendix-h-problem-statement-and-deployment-context-informative"><name>Appendix H. Problem Statement and Deployment Context (Informative)</name>
+<t>defines the top-level <tt>act</tt> claim for the current actor and allows
+nested prior actors. However, prior nested <tt>act</tt> claims are informational only
+for access-control decisions. In multi-hop systems, especially service-to-service and agentic systems, that is not sufficient.</t>
+<t>Consider:</t>
+<t>{::nomarkdown}
+&lt;artwork type=&quot;ascii-art&quot;&gt;
+User -&gt; Orchestrator -&gt; Planner -&gt; Tool Agent -&gt; Data API
+&lt;/artwork&gt;
+{:/nomarkdown}</t>
+<t>By the time the request reaches the Data API, the immediate caller may be
+visible, but the upstream delegation path is not standardized as a policy input
+and is not bound across successive token exchanges in a way that can be
+independently validated or audited. This creates several concrete gaps:</t>
+
+<ul spacing="compact">
+<li>downstream policy cannot reliably evaluate the full delegation path;</li>
+<li>cross-exchange continuity is not standardized;</li>
+<li>tampering by an actor and its home AS is not uniformly addressed;</li>
+<li>forensic verification of per-hop participation is not standardized; and</li>
+<li>ordinary tokens may disclose more prior-actor information than some
+deployments are willing to reveal.</li>
+</ul>
+</section>
+
+<section anchor="appendix-i-threat-model-informative"><name>Appendix I. Threat Model (Informative)</name>
+<t>This specification defines a multi-hop, multi-actor delegation model across one
+or more trust domains. The security properties provided depend on the selected
+profile, the correctness of sender-constrained token enforcement, the trust
+relationship among participating Authorization Servers, and the availability of
+step proofs or exchange records where relied upon.</t>
+
+<section anchor="assets"><name>Assets</name>
+<t>The protocol seeks to protect the following assets:</t>
+
+<ul spacing="compact">
+<li>continuity of the delegation path;</li>
+<li>integrity of prior-actor ordering and membership;</li>
+<li>continuity of the presenting actor;</li>
+<li>binding of each hop to the intended target;</li>
+<li>resistance to replay of previously accepted hop state;</li>
+<li>audit evidence for later investigation and proof; and</li>
+<li>minimization of prior-actor disclosure where privacy-preserving profiles are
+used.</li>
+</ul>
+</section>
+
+<section anchor="adversaries"><name>Adversaries</name>
+<t>Relevant adversaries include:</t>
+
+<ul spacing="compact">
+<li>an external attacker that steals or replays a token;</li>
+<li>a malicious actor attempting to insert, omit, reorder, or repurpose hop
+state;</li>
+<li>a malicious actor colluding with its home Authorization Server;</li>
+<li>a malicious downstream recipient attempting to over-interpret or misuse an
+inbound token;</li>
+<li>an untrusted or compromised upstream Authorization Server in a multi-domain
+path; and</li>
+<li>an unsolicited victim service reached by a validly issued token without
+having agreed to participate.</li>
+</ul>
+</section>
+
+<section anchor="assumptions"><name>Assumptions</name>
+<t>This specification assumes:</t>
+
+<ul spacing="compact">
+<li>verifiers can validate token signatures and issuer trust;</li>
+<li>sender-constrained enforcement is correctly implemented;</li>
+<li>the authenticated actor identity used in token exchange is bound to the actor
+identity represented in profile-defined proofs; and</li>
+<li>deployments that rely on later proof verification retain, or can discover,
+the verification material needed to validate archived step proofs and exchange
+records.</li>
+</ul>
+</section>
+
+<section anchor="security-goals"><name>Security Goals</name>
+<t>The protocol aims to provide the following properties:</t>
+
+<ul spacing="compact">
+<li>in the Asserted Chain with Full Disclosure profile, silent insertion, removal,
+reordering, or modification of prior actors is prevented under the assumption
+that an actor does not collude with its home Authorization Server;</li>
+<li>in the Asserted Chain with Subset Disclosure profile, ordinary
+tokens reveal only an ordered subset of prior actors selected by the
+Authorization Server, and authorization is limited to that disclosed subset;</li>
+<li>in the Committed Chain with Subset Disclosure profile, each
+accepted hop is bound to an actor-signed proof over the exact actor-visible
+chain for that hop and to cumulative committed state, while ordinary tokens
+reveal only an ordered subset of that actor-visible chain selected by the
+Authorization Server;</li>
+<li>in the Committed Chain with Full Disclosure profile, the actor-visible chain equals the
+full readable chain at each hop, preserving full readable authorization while
+improving detectability, provability, and non-repudiation; and</li>
+<li>in the Committed Chain with No Chain Disclosure profile, ordinary tokens omit
+the <tt>ach</tt> claim while preserving presenting-actor continuity and cumulative
+committed state for later verification.</li>
+</ul>
+</section>
+
+<section anchor="non-goals"><name>Non-Goals</name>
+<t>This specification does not by itself provide:</t>
+
+<ul spacing="compact">
+<li>integrity or safety guarantees for application payload content;</li>
+<li>complete prevention of confused-deputy behavior;</li>
+<li>concealment of prior actors from the Authorization Server that processes
+token exchange;</li>
+<li>standardized merge or branch-selection semantics across branched work; or</li>
+<li>universal inline prevention of every invalid token that could be issued by a
+colluding actor and its home Authorization Server.</li>
+</ul>
+</section>
+
+<section anchor="residual-risks"><name>Residual Risks</name>
+<t>Even when all checks succeed, a valid token chain does not imply that the
+requested downstream action is authorized by local business policy. Recipients
+MUST evaluate authorization using the verified presenting actor, token subject,
+intended target, and local policy.</t>
+<t>Deployments that depend on independently verifiable provenance for high-risk
+operations SHOULD require synchronous validation of committed proof state or
+otherwise treat the issuing Authorization Server as the sole trust anchor.</t>
+</section>
+</section>
+
+<section anchor="appendix-j-trust-boundaries-and-audit-guidance-informative"><name>Appendix J. Trust Boundaries and Audit Guidance (Informative)</name>
+<t>This specification provides different assurances depending on the selected
+profile:</t>
+
+<ul spacing="compact">
+<li><strong>Asserted Chain with Full Disclosure</strong>: the issuing AS signature and chain assertion
+are the primary trust anchor.</li>
+<li><strong>Asserted Chain with Subset Disclosure</strong>: the issuing AS signature,
+chain assertion, and disclosure policy are the primary trust anchors.</li>
+<li><strong>Committed Chain with Subset Disclosure</strong>: the issuing
+Authorization Server reveals only a policy-selected ordered subset of the
+actor-visible chain to each recipient, while committed state and actor-signed
+proofs continue to support later verification of what each actor was
+shown and extended.</li>
+<li><strong>Committed Chain with Full Disclosure</strong>: every actor and downstream recipient sees
+the full readable chain, so the actor-visible chain equals the full chain at
+each hop.</li>
+<li><strong>Committed Chain with No Chain Disclosure</strong>: ordinary tokens omit the <tt>ach</tt> claim,
+while committed state and actor-signed proofs still bind the profile-defined
+actor-visible chain available at the acting hop and permit stronger
+accountability and later verification.</li>
+</ul>
+<t>Authorization Servers supporting these profiles SHOULD retain records keyed by
+<tt>sid</tt> and <tt>jti</tt>.</t>
+<t>For committed profiles, the retention period SHOULD be at least the maximum
+validity period of the longest-lived relevant token plus a deployment-configured audit window, and it SHOULD remain sufficient to validate historical
+proofs across key rotation.</t>
+<t>For committed profiles, such records SHOULD include:</t>
+
+<ul spacing="compact">
+<li>prior token reference;</li>
+<li>authenticated actor identity;</li>
+<li>step proof reference or value;</li>
+<li>issued token reference;</li>
+<li>committed chain state;</li>
+<li>requested audience or target context; and</li>
+<li>timestamps.</li>
+</ul>
+<t>For subset-disclosure profiles, retained records SHOULD also allow
+reconstruction of the proof-bound actor-visible chain for each hop and the
+disclosed subset issued for each recipient. Collecting all such accepted hop
+evidence for one <tt>sid</tt>, including retained tokens, proofs, commitments, and
+exchange records, can reconstruct the accepted hop sequence, including
+repeated-actor revisits, and can often reveal much of the effective call
+graph, but this specification does not by itself yield a complete standardized
+graph across related branches. If a deployment also relies on a hidden
+full-chain prefix not signed by every acting intermediary, the Authorization
+Server SHOULD retain the additional state needed to reconstruct that hidden
+prefix for later audit.</t>
+<t>Actors SHOULD also retain local records sufficient to support replay detection,
+incident investigation, and later proof of participation.</t>
+</section>
+
+<section anchor="iana-considerations"><name>IANA Considerations</name>
+<t>This specification does not create a new hash-algorithm registry.
+<tt>achc</tt> uses hash algorithm names from the IANA Named
+Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the
+algorithm restrictions defined in this document.</t>
+
+<section anchor="json-web-token-claims-registration"><name>JSON Web Token Claims Registration</name>
+<t>This document requests registration of the following claims in the &quot;JSON Web
+Token Claims&quot; registry established by {{!RFC7519}}:</t>
+<table>
+<thead>
+<tr>
+<th>Claim Name</th>
+<th>Claim Description</th>
+<th>Change Controller</th>
+<th>Specification Document(s)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>ach</tt></td>
+<td>Profile-defined ordered array of actor identity entries carried in the artifact.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>achc</tt></td>
+<td>Committed chain state binding accepted hop progression for the active profile.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>achp</tt></td>
+<td>Actor-chain profile identifier for the issued token.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="media-type-registration"><name>Media Type Registration</name>
+<t>This document requests registration of the following media types in the
+&quot;Media Types&quot; registry established by {{!RFC6838}}:</t>
+<table>
+<thead>
+<tr>
+<th>Media Type Name</th>
+<th>Media Subtype Name</th>
+<th>Required Parameters</th>
+<th>Optional Parameters</th>
+<th>Encoding Considerations</th>
+<th>Security Considerations</th>
+<th>Interoperability Considerations</th>
+<th>Published Specification</th>
+<th>Applications that use this media type</th>
+<th>Fragment Identifier Considerations</th>
+<th>Additional Information</th>
+<th>Contact</th>
+<th>Intended Usage</th>
+<th>Restrictions on Usage</th>
+<th>Author</th>
+<th>Change Controller</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>application</tt></td>
+<td><tt>ach-step-proof+jwt</tt></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>binary</td>
+<td>see [this document]</td>
+<td>N/A</td>
+<td>[this document]</td>
+<td>OAuth 2.0 Token Exchange actor-chain step proofs</td>
+<td>N/A</td>
+<td>Magic Number(s): N/A; File Extension(s): N/A; Macintosh File Type Code(s): N/A</td>
+<td>IETF</td>
+<td>COMMON</td>
+<td>N/A</td>
+<td>IETF</td>
+<td>IETF</td>
+</tr>
+
+<tr>
+<td><tt>application</tt></td>
+<td><tt>ach-commitment+jwt</tt></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>binary</td>
+<td>see [this document]</td>
+<td>N/A</td>
+<td>[this document]</td>
+<td>OAuth 2.0 Token Exchange actor-chain commitments</td>
+<td>N/A</td>
+<td>Magic Number(s): N/A; File Extension(s): N/A; Macintosh File Type Code(s): N/A</td>
+<td>IETF</td>
+<td>COMMON</td>
+<td>N/A</td>
+<td>IETF</td>
+<td>IETF</td>
+</tr>
+
+<tr>
+<td><tt>application</tt></td>
+<td><tt>ach-hop-ack+jwt</tt></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>binary</td>
+<td>see [this document]</td>
+<td>N/A</td>
+<td>[this document]</td>
+<td>OAuth 2.0 Token Exchange actor-chain receiver acknowledgments</td>
+<td>N/A</td>
+<td>Magic Number(s): N/A; File Extension(s): N/A; Macintosh File Type Code(s): N/A</td>
+<td>IETF</td>
+<td>COMMON</td>
+<td>N/A</td>
+<td>IETF</td>
+<td>IETF</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="oauth-uri-registration"><name>OAuth URI Registration</name>
+<t>This document requests registration of the following value in the
+&quot;OAuth URI&quot; registry established by {{!RFC6749}}:</t>
+<table>
+<thead>
+<tr>
+<th>URI</th>
+<th>Description</th>
+<th>Change Controller</th>
+<th>Specification Document(s)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>urn:ietf:params:oauth:grant-type:actor-chain-bootstrap</tt></td>
+<td>OAuth grant type for the initial committed-profile bootstrap token request.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="oauth-authorization-server-metadata-registration"><name>OAuth Authorization Server Metadata Registration</name>
+<t>This document requests registration of the following metadata names in the
+&quot;OAuth Authorization Server Metadata&quot; registry established by {{!RFC8414}}:</t>
+<table>
+<thead>
+<tr>
+<th>Metadata Name</th>
+<th>Metadata Description</th>
+<th>Change Controller</th>
+<th>Specification Document(s)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>actor_chain_bootstrap_endpoint</tt></td>
+<td>Endpoint used to mint bootstrap context for committed-profile initial actors.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_profiles_supported</tt></td>
+<td>Supported actor-chain profile identifiers.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_commitment_hashes_supported</tt></td>
+<td>Supported commitment hash algorithm identifiers.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_receiver_ack_supported</tt></td>
+<td>Indicates support for receiver acknowledgments (<tt>hop_ack</tt>) under this specification.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_refresh_supported</tt></td>
+<td>Indicates support for Refresh-Exchange under this specification.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_cross_domain_supported</tt></td>
+<td>Indicates support for cross-domain re-issuance under this specification.</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="oauth-parameter-registration"><name>OAuth Parameter Registration</name>
+<t>This document requests registration of the following parameter names in the
+relevant OAuth parameter registry:</t>
+<table>
+<thead>
+<tr>
+<th>Parameter Name</th>
+<th>Parameter Usage Location</th>
+<th>Change Controller</th>
+<th>Specification Document(s)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>actor_chain_profile</tt></td>
+<td>OAuth token endpoint request</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_bootstrap_context</tt></td>
+<td>OAuth token endpoint request</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_step_proof</tt></td>
+<td>OAuth token endpoint request</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_refresh</tt></td>
+<td>OAuth token endpoint request</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+
+<tr>
+<td><tt>actor_chain_cross_domain</tt></td>
+<td>OAuth token endpoint request</td>
+<td>IETF</td>
+<td>[this document]</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+
+</middle>
+
+<back>
+
+</back>
+
+</rfc>
