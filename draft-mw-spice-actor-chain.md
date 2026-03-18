@@ -7,7 +7,7 @@ ipr = "trust200902"
 area = "Security"
 workgroup = "SPICE"
 keyword = ["actor chain", "spice", "oauth", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents", "MCP", "A2A"]
-date = 2026-03-17
+date = 2026-03-18
 
 [seriesInfo]
 name = "Internet-Draft"
@@ -2476,7 +2476,10 @@ earlier workflow history.
 A future branching profile could add explicit branch identifiers or parent-child
 workflow correlation, for example by binding a branch `sid` to a parent `sid`,
 and could define tree-structured commitment verification, inclusion proofs,
-partial disclosure, and any later merge behavior.
+partial disclosure, and any later merge behavior. Such future work could also
+help correlate related **WHO**, **WHAT**, and **HOW** evidence across companion
+Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and Inference
+Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.
 
 Those semantics remain out of scope for this base specification.
 
@@ -2493,8 +2496,11 @@ keys such as `jti` or `sid`, error handling, and retention expectations.
 # Appendix D. Design Rationale and Relation to Other Work (Informative)
 
 This document complements {{!RFC8693}} by defining chain-aware token-exchange
-profiles. It also aligns with the broader SPICE architecture and companion
-provenance work while remaining useful on its own.
+profiles. It also composes with companion SPICE provenance work: Actor Chain
+addresses **WHO** acted, Intent Chain
+{{!I-D.draft-mw-spice-intent-chain}} addresses **WHAT** was produced or
+transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+addresses **HOW** a result was computed.
 
 This specification defines five profiles instead of one deployment mode
 so that implementations can choose among full readable chain-based

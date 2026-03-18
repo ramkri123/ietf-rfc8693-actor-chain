@@ -12,7 +12,7 @@
 </postal><email>diego.r.lopez@telefonica.com</email>
 </address></author><author initials="S." surname="Addepalli" fullname="Srinivasa Addepalli"><organization>Aryaka</organization><address><postal><street></street>
 </postal><email>srinivasa.addepalli@aryaka.com</email>
-</address></author><date year="2026" month="March" day="17"></date>
+</address></author><date year="2026" month="March" day="18"></date>
 <area>Security</area>
 <workgroup>SPICE</workgroup>
 <keyword>actor chain</keyword>
@@ -2449,7 +2449,10 @@ earlier workflow history.</t>
 <t>A future branching profile could add explicit branch identifiers or parent-child
 workflow correlation, for example by binding a branch <tt>sid</tt> to a parent <tt>sid</tt>,
 and could define tree-structured commitment verification, inclusion proofs,
-partial disclosure, and any later merge behavior.</t>
+partial disclosure, and any later merge behavior. Such future work could also
+help correlate related <strong>WHO</strong>, <strong>WHAT</strong>, and <strong>HOW</strong> evidence across companion
+Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and Inference
+Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.</t>
 <t>Those semantics remain out of scope for this base specification.</t>
 </section>
 
@@ -2465,8 +2468,11 @@ keys such as <tt>jti</tt> or <tt>sid</tt>, error handling, and retention expecta
 
 <section anchor="appendix-d-design-rationale-and-relation-to-other-work-informative"><name>Appendix D. Design Rationale and Relation to Other Work (Informative)</name>
 <t>This document complements {{!RFC8693}} by defining chain-aware token-exchange
-profiles. It also aligns with the broader SPICE architecture and companion
-provenance work while remaining useful on its own.</t>
+profiles. It also composes with companion SPICE provenance work: Actor Chain
+addresses <strong>WHO</strong> acted, Intent Chain
+{{!I-D.draft-mw-spice-intent-chain}} addresses <strong>WHAT</strong> was produced or
+transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+addresses <strong>HOW</strong> a result was computed.</t>
 <t>This specification defines five profiles instead of one deployment mode
 so that implementations can choose among full readable chain-based
 authorization, trust-first partial disclosure, stronger committed-state
