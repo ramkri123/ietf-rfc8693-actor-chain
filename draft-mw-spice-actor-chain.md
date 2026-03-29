@@ -448,6 +448,26 @@ matrix above and discussed further in Appendix J. The special preserve-state
 cases for cross-domain re-issuance and Refresh-Exchange are defined later, after
 the ordinary profile flows.
 
+## Multi-AS Enterprise Reality
+
+Multi-AS deployments are the **primary enterprise pattern**, not an edge case.
+Large organizations routinely operate multiple Authorization Servers due to
+mergers & acquisitions (inherited identity infrastructure), business unit
+autonomy (separate security domains per division), multi-cloud deployments
+(different cloud providers with native identity services), and regulatory
+segmentation (data sovereignty requirements mandating separate authorization
+infrastructure per jurisdiction).
+
+The nested `act` structure and cross-domain re-issuance defined in this
+specification ensure that delegation evidence is **self-contained** across AS
+boundaries. Each AS acts as a local Trusted Third Party: it validates the
+inbound chain, appends the new actor, and signs the result. Downstream ASes
+and Relying Parties can verify the full delegation path without access to
+upstream AS infrastructure. When used with the Intent Chain
+({{!I-D.draft-mw-spice-intent-chain}}), the `act` structure MAY also carry
+OPTIONAL `input_hash` and `output_hash` extension claims that enable cross-AS
+content linkage verification without shared registry access.
+
 # Common Basics
 
 ## Common Token Requirements
