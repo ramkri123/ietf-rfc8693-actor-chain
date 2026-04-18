@@ -3395,6 +3395,141 @@ relevant OAuth parameter registry:
 | `actor_chain_refresh` | OAuth token endpoint request | IETF | [this document] |
 | `actor_chain_cross_domain` | OAuth token endpoint request | IETF | [this document] |
 
+# Appendix X. Use Cases (Informative) {#use-cases}
+
+This appendix is non-normative. It describes the primary use cases the
+mechanisms in this document are intended to support, and how those mechanisms
+compose with neighboring specifications.
+
+## X.1. Separation of Concerns
+
+Three distinct concerns arise when a request traverses a delegation chain and
+reaches a recipient:
+
+| Concern | Addressed by |
+| --- | --- |
+| Who is the principal, and what was authorized? | The access token: {{RFC8693}} `sub` and scope, together with the `act` chain and supporting claims defined in this document. |
+| Did the request physically traverse the claimed chain? | Per-hop request-binding evidence, provided by companion mechanisms such as {{RFC9421}} or {{RFC9449}}. |
+| Should this request be served? | The recipient's local policy, evaluated over verified token claims and, where applicable, verified path evidence. |
+
+These concerns are independent. This document addresses the first and provides
+reliable input on which the third can depend. The second is out of scope;
+deployments that require it are expected to compose the claims defined here
+with a companion mechanism.
+
+## X.2. Path Verification Only
+
+In this use case, a recipient accepts a broadly-scoped token and decides
+locally whether to serve the request based on the delegation path that led to
+it. The recipient does not rely on the authorization server to narrow scope by
+chain. Instead it inspects the `act` chain (and, where present, `actc`) in
+the presented token and applies local policy — for example, "only serve
+requests whose chain includes an approved intermediary."
+
+When the threat model includes a compromised intermediary that could present a
+token issued for a different workflow instance, path verification is
+strengthened by composing the chain representation defined here with per-hop
+request-binding evidence from {{RFC9421}} or {{RFC9449}}. Those mechanisms are
+orthogonal to this document and are not required for the basic case, where
+trust in authorization-server-issued tokens is sufficient.
+
+The `acti` workflow instance identifier is useful in this use case for
+correlating requests across hops in audit records, independently of whether
+scope narrowing is performed.
+
+The mechanism described here — per-hop request-binding evidence evaluated by
+the recipient — does not itself depend on token exchange having occurred. A
+deployment that propagates a single OAuth 2.0 access token unchanged across
+the chain can still benefit from path verification, with the per-hop evidence
+serving as the sole source of chain information in the absence of an `act`
+claim. Such deployments forgo the authorization-server-attested chain
+representation defined in this document, and also forgo chain-aware scope
+narrowing (Section X.3), which requires that exchange take place.
+
+## X.3. Chain-Aware Scope Narrowing
+
+In this use case, the authorization server uses the accepted chain state as
+authoritative input when issuing the token for the next hop. At each exchange,
+the authorization server considers which actors appear in the accepted prior
+chain, applies local policy, and issues a token whose scope, `aud`, and
+related parameters reflect constraints derived from that chain.
+
+{{RFC8693}} alone does not fully support this pattern. In {{RFC8693}}, the
+`act` claim is optional, its nested form is described as a convention rather
+than a normative structure, and no rule prevents an implementation from
+omitting, flattening, or reordering prior actors when issuing a new token. Two
+tokens reaching the same authorization server via different chains may
+therefore be indistinguishable in their `act` representation, and no integrity
+binding exists across exchanges.
+
+The mechanisms defined in this document close these gaps:
+
+* The append-only construction rule ensures prior actors are preserved in the
+  order in which they were accepted.
+* The nested `act` structure is normatively specified so that recipients can
+  parse and compare chains consistently.
+* The `actc` cumulative commitment binds each hop's accepted state, so chain
+  integrity does not rest solely on a single authorization server's signature.
+  This matters when exchanges span authorization-server boundaries.
+* The `acti` workflow instance identifier allows the authorization server to
+  correlate exchanges belonging to the same workflow across hops.
+* The profile identifier `actp` allows a recipient to interpret the presented
+  chain correctly, including recognizing when disclosure has been intentionally
+  limited by local policy.
+
+How an authorization server maps accepted chain state to issued scope is a
+matter of local policy and is out of scope for this document. This document
+provides the reliable input on which such policy can be written; it does not
+prescribe a policy language or a set of narrowing rules.
+
+## X.4. High-Assurance Composition
+
+The two preceding use cases can be combined. The authorization server performs
+chain-aware scope narrowing at each exchange (Section X.3), and each recipient
+additionally verifies per-hop request-binding evidence (Section X.2) before
+serving. This composition addresses a class of misuse in which a valid but
+previously-issued token is presented in a request context that did not actually
+traverse the chain claimed in the token — for example, an intermediary
+servicing an inbound request from one upstream peer while presenting a token
+that was issued in a different workflow instance.
+
+This document does not specify request-binding. Deployments requiring it are
+expected to use {{RFC9421}}, {{RFC9449}}, or an equivalent mechanism in
+addition to the claims defined here. The `acti` workflow instance identifier,
+together with nonce or timestamp material carried by the companion mechanism,
+is sufficient to detect the mismatch above.
+
+# Appendix Y. Relationship to RFC 8693 (Informative) {#relationship-to-rfc8693}
+
+This appendix is non-normative. It describes how this document relates to and
+constrains behavior that {{RFC8693}} leaves optional or underspecified.
+
+{{RFC8693}} defines OAuth 2.0 Token Exchange and introduces the `act` claim to
+express that one party is acting on behalf of another, with nested use of `act`
+described for multi-party delegation. {{RFC8693}} treats `act` as optional and
+does not define normative processing rules for its construction, extension, or
+validation across a sequence of exchanges.
+
+This document does not replace {{RFC8693}}. It defines mechanisms that, when
+applied on top of {{RFC8693}} token exchange, constrain how the `act` chain is
+constructed and extended, add supporting claims, and define interoperable
+profiles for disclosure. A deployment using only {{RFC8693}} and not adopting
+the mechanisms defined here remains conformant to {{RFC8693}}, but cannot rely
+on the integrity, correlation, and disclosure properties described below.
+
+The following table summarizes the specific points at which this document
+constrains or extends {{RFC8693}}:
+
+| {{RFC8693}} behavior | This document |
+| --- | --- |
+| `act` is optional. | Where `act` is used, its processing follows the rules defined here; `actp` makes the governing semantics explicit. |
+| Nested `act` is described as a convention for multi-party delegation. | Nested `act` is the normative structural form; recipients can rely on its shape. |
+| No rule on how `act` is extended across exchanges. | Append-only construction: prior actors are not inserted, reordered, deleted, or modified. |
+| No correlation between exchanges belonging to the same workflow. | `acti` provides a stable workflow instance identifier across hops. |
+| No integrity binding of the chain beyond the issuing authorization server's signature. | `actc` provides a cumulative commitment suitable for verification across authorization-server boundaries. |
+| No mechanism to limit disclosure of prior actors to downstream recipients. | Profiles identified by `actp` scope disclosure to what local policy permits; a disclosure invariant prevents leakage of chain information through other claims. |
+| No indication to the recipient of which disclosure regime governs a token. | `actp` allows recipients to apply the correct interpretation. |
+
 {backmatter}
 
 <reference anchor="I-D.ietf-spice-arch" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch">
@@ -3585,3 +3720,4 @@ relevant OAuth parameter registry:
   </front>
   <seriesInfo name="RFC" value="9901"/>
 </reference>
+
