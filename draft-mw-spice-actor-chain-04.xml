@@ -12,7 +12,7 @@
 </postal><email>diego.r.lopez@telefonica.com</email>
 </address></author><author initials="S." surname="Addepalli" fullname="Srinivasa Addepalli"><organization>Aryaka</organization><address><postal><street></street>
 </postal><email>srinivasa.addepalli@aryaka.com</email>
-</address></author><date year="2026" month="March" day="27"></date>
+</address></author><date year="2026" month="March" day="25"></date>
 <area>Security</area>
 <workgroup>SPICE</workgroup>
 <keyword>actor chain</keyword>
@@ -97,6 +97,12 @@ subsequently act toward another actor.</t>
 <li><t><strong>Current actor</strong>: The authenticated entity presently performing token
 exchange.</t>
 </li>
+<li><t><strong>Disclosed current actor</strong>: The actor identified by the outermost visible
+<tt>act</tt> node of an artifact when such a node is present. Depending on the
+selected profile and disclosure policy, the disclosed current actor MAY be
+the same as the operational current actor or MAY be absent from the returned
+ordinary token.</t>
+</li>
 <li><t><strong>Presenting actor</strong>: The actor that presents an inbound token to a
 recipient.</t>
 </li>
@@ -104,6 +110,9 @@ recipient.</t>
 <t>Example: when <tt>B</tt> exchanges a token at the Authorization Server, <tt>B</tt> is the
   current actor. When <tt>B</tt> later presents the resulting token to <tt>C</tt>, <tt>B</tt> is the
   presenting actor.</t>
+<t>Unless otherwise qualified, references in this specification to the current
+  actor are about the operational current actor performing exchange, not about
+  whether that actor is disclosed inline in <tt>act</tt> for the next hop.</t>
 
 <ul>
 <li><t><strong>Recipient</strong>: The actor or resource server identified as the intended target
@@ -121,18 +130,28 @@ structure of an artifact when <tt>actp</tt> is present. The outermost <tt>act</t
 identifies the current actor. Any nested <tt>act</tt> members identify prior visible
 actors only.</t>
 </li>
-<li><t><strong>Actor-visible chain</strong>: The exact ordered actor sequence that the current
+</ul>
+<t>When this specification discusses a visible chain carried in an issued token
+  or other artifact for the next recipient, it refers to the disclosed token-
+  visible chain.</t>
+
+<ul spacing="compact">
+<li><strong>Actor-visible chain</strong>: The exact ordered actor sequence that the current
 actor is permitted to know and extend for the next hop. In the verified
 profiles, this is the exact visible chain that the current actor verified on
-the inbound hop, with that actor appended when it later acts.</t>
-</li>
-<li><t><strong>Authoritative workflow chain state</strong>: Authorization-Server-retained state
+the inbound hop, with that actor appended when it later acts.</li>
+</ul>
+<t>In the verified profiles, this is the signed actor-visible chain carried in
+  the step proof. It can be broader than the disclosed token-visible chain of
+  the returned ordinary token under subset-disclosure or actor-only operation.</t>
+
+<ul spacing="compact">
+<li><strong>Authoritative workflow chain state</strong>: Authorization-Server-retained state
 for the accepted workflow instance. It MAY be richer than the visible chain
 disclosed in any given issued token. It is used for continuity, branch
 correlation, forensic review, legal audit, and any policy-controlled future
 redisclosure. This specification does not require that such retained state be
-disclosed inline in ordinary tokens.</t>
-</li>
+disclosed inline in ordinary tokens.</li>
 </ul>
 <t>In the full-disclosure profiles, the visible chain, the actor-visible chain,
   and the authoritative workflow chain state collapse to the same chain. They
@@ -394,7 +413,15 @@ next-hop ordinary token.</t>
 <td>Actor-signed visible-chain proofs plus cumulative commitment with actor-only disclosure</td>
 </tr>
 </tbody>
-</table></section>
+</table><t>Profile-applicability constraint: deployments in which recipient authorization
+depends on prior-path membership or order MUST use a profile and disclosure
+policy that disclose the required prior-path evidence at that hop. Actor-only
+or omitted-<tt>act</tt> outcomes are not suitable inputs for such path-sensitive
+authorization decisions.</t>
+<t>Motivating real-world examples for each disclosure mode appear in the
+&quot;Motivating Real-World Examples&quot; section in Part II. Out-of-scope use cases
+are noted in Appendix X.</t>
+</section>
 
 <section anchor="branching-and-non-goals"><name>Branching and Non-Goals</name>
 <t>Application logic may branch, fan out, and run in parallel. This document
@@ -409,6 +436,9 @@ define an interoperable on-the-wire signal for single-successor mode, sibling
 invalidation, or proof that no parallel successor exists. This document does
 not define merge semantics, sibling-discovery semantics, or inline
 branch-selection semantics.</t>
+<t>Accordingly, a valid token under this specification proves only one accepted
+visible path for that token. It does not by itself prove branch uniqueness for
+the workflow instance or prove that no other accepted sibling successor exists.</t>
 <t>Post-facto reconstruction of branching is a forensic or legal-audit concern,
 not a normal online authorization requirement. Retained Authorization Server
 records, timestamps, commitment state, and causal links among presenting
@@ -516,6 +546,11 @@ token-validation interface such as token introspection {{!RFC7662}}.</t>
 presented for validation does not expose enough information to satisfy the
 selected profile's requirements, the implementation MUST treat that as a
 profile-validation failure.</t>
+<t>Accordingly, interoperability requirements in this base specification apply to
+the self-contained ordinary-token claim carriage defined here. Opaque-token
+deployments depend on companion validation interfaces outside this document and
+therefore require either out-of-band agreement or a companion specification for
+interoperable behavior.</t>
 <t>At workflow bootstrap, the issuing Authorization Server MUST establish the
 workflow subject according to local policy and the selected disclosure profile.
 The resulting <tt>sub</tt> value MAY be an ordinary subject identifier, a pairwise
@@ -703,6 +738,15 @@ values.</t>
 type and MUST NOT accept one artifact type in place of another. They MUST verify
 the expected JWT <tt>typ</tt>, exact <tt>ctx</tt> value where applicable, and artifact-specific payload structure defined by the relevant binding section of this
 specification.</t>
+<t><tt>typ</tt> matching for profile-defined artifacts MUST be exact string equality,
+without case folding, prefix matching, or media-type alias mapping. Missing or
+unexpected <tt>typ</tt> values MUST cause rejection of the artifact for that
+processing path.</t>
+<t>If a JOSE protected header contains <tt>crit</tt>, verifiers MUST reject unless every
+listed header parameter is understood and processed according to its
+specification. This document defines no profile-specific use of unencoded JWS
+payloads; profile-defined artifacts in this version therefore use the ordinary
+base64url-encoded JWS payload form.</t>
 </section>
 
 <section anchor="issued-token-type"><name>Issued Token Type</name>
@@ -773,6 +817,10 @@ Let <tt>as_issuer_id</tt> denote the issuer identifier that the Authorization Se
 places into the commitment object's <tt>iss</tt> member, typically its issuer value.
 The commitment hash therefore binds the transmitted step-proof artifact, not
 merely its decoded payload.</t>
+<t>Accordingly, <tt>step_hash</tt> and <tt>curr</tt> are commitments to the exact compact-JWS
+proof bytes accepted for that hop. Two semantically equivalent decoded proofs
+MAY therefore produce different commitment values when their compact-JWS bytes
+differ.</t>
 <t>When a profile-defined proof input refers to a prior
 <tt>actc</tt>, the value incorporated into the proof input MUST be
 that prior commitment's verified <tt>curr</tt> digest string, copied directly from the
@@ -1488,7 +1536,11 @@ verified actor-visible chain for that hop is <tt>[A]</tt>. The returned ordinary
 MUST disclose that chain as <tt>act=EncodeVisibleChain([A])</tt> for the Verified Full
 Disclosure and Verified Actor-Only Disclosure profiles. For Verified Subset
 Disclosure, the Authorization Server MAY either disclose
-<tt>act=EncodeVisibleChain([A])</tt> or omit <tt>act</tt> entirely according to local policy.</t>
+<tt>act=EncodeVisibleChain([A])</tt> or omit <tt>act</tt> entirely according to local policy.
+When Verified Subset operation omits bootstrap <tt>act</tt>, subsequent disclosed
+visible-predecessor continuity begins from the empty disclosed chain, while
+commitment continuity remains anchored by the initial verified step proof and
+<tt>actc</tt>.</t>
 </section>
 
 <section anchor="common-hop-processing"><name>Common Hop Processing</name>
@@ -1560,6 +1612,9 @@ proof bytes and related verification material are also retained or discoverable
 for later audit. Deployments MAY vary on whether every terminal recipient
 performs synchronous <tt>actc</tt> validation at admission time, but chain extension
 MUST NOT proceed without successful validation of the inbound <tt>actc</tt>.</t>
+<t>For non-repudiation, participation, or later semantic interpretation,
+deployments SHOULD retain the exact step-proof artifact and associated
+verification context used when validating commitment linkage.</t>
 </section>
 </section>
 
@@ -1661,6 +1716,11 @@ the current actor was not permitted to see.</t>
 <t>A recipient MUST treat undisclosed prior actors as unavailable and MUST NOT
 infer adjacency, absence, exact chain length, or hidden prefixes from the
 disclosed subset alone.</t>
+<t>Accordingly, this profile preserves continuity over the exact disclosed
+actor-visible chain available at each hop together with cumulative commitment
+state. It does not by itself guarantee visible-predecessor continuity for
+actors hidden by disclosure policy, including the bootstrap case where <tt>act</tt> is
+omitted.</t>
 <t>The Authorization Server MAY retain authoritative workflow chain state richer
 than the disclosed subset for audit, forensics, legal review, and branch
 reconstruction. In this base JWT/JWS binding, however, the returned token is
@@ -1806,6 +1866,14 @@ to read after the ordinary profile flows.</t>
 <t>A token-exchange request under this specification MUST NOT set both
 <tt>actor_chain_cross_domain=true</tt> and <tt>actor_chain_refresh=true</tt>. The
 Authorization Server MUST reject any request that sets both.</t>
+<t>For preserve-state exchanges (<tt>actor_chain_cross_domain=true</tt> or
+<tt>actor_chain_refresh=true</tt>), the Authorization Server MUST apply an explicit
+preserve-state authorization policy. Unless deployment policy explicitly
+selects transport-only renewal semantics, the Authorization Server MUST
+re-evaluate current authorization for the authenticated current actor and the
+requested target context before issuing the preserved-state token. If current
+policy does not permit issuance, the Authorization Server MUST reject the
+request.</t>
 
 <section anchor="cross-domain-re-issuance"><name>Cross-Domain Re-Issuance</name>
 
@@ -1853,6 +1921,8 @@ policy;</li>
 <li>preserve <tt>actp</tt>;</li>
 <li>preserve <tt>acti</tt>;</li>
 <li>preserve <tt>actc</tt>, if present, exactly as verified;</li>
+<li>enforce preserve-state authorization policy for this re-issuance request as
+required above;</li>
 <li>continue to represent the same current actor; and</li>
 <li>NOT append the next recipient.</li>
 </ul>
@@ -1893,9 +1963,12 @@ becomes the preserved workflow-subject representation for later same-domain
 validation within the new issuer domain.</t>
 <t>This specification cryptographically binds same-domain workflow-subject
 continuity through verified step proofs. It does not cryptographically bind
-cross-domain <tt>sub</tt> alias continuity in preserved <tt>actc</tt>; cross-domain subject
-alias continuity therefore remains a matter of Authorization-Server policy and
-retained audit evidence in this version.</t>
+cross-domain <tt>sub</tt> alias continuity in preserved <tt>actc</tt>. Accordingly,
+preserved <tt>actc</tt> continuity across cross-domain re-issuance MUST NOT be
+interpreted as cryptographic proof that the pre-translation and post-
+translation <tt>sub</tt> values are bound by this specification to the same subject
+representation. In this version, cross-domain subject-alias continuity remains
+a matter of Authorization-Server policy and retained audit evidence.</t>
 <t>Future companion specifications MAY define privacy-preserving Authorization
 Server-to-Authorization Server transfer of additional hidden workflow state.
 Such mechanisms are outside this base specification. This document's cross-
@@ -1916,14 +1989,24 @@ local expiry, change token format or envelope, and add local trust or policy
 claims. If cross-domain re-issuance narrows or locally rewrites the target
 context, retained step proofs and preserved <tt>actc</tt> continue to reflect the
 target context that was bound during the original chain-extending hop, not the
-narrower or rewritten token audience issued by the re-issuing Authorization
-Server.</t>
+narrower or rewritten token audience issued by the re-issuing Authorization Server.</t>
+<t>Accordingly, when such narrowing or rewriting occurs, the current re-issued
+token's audience or other local target representation MUST NOT be interpreted
+as if it were itself the target context cryptographically bound by the earlier
+step proof or by preserved <tt>actc</tt>. In this case, the re-issued token carries a
+current presentation context for local use, while the preserved proof-bound
+context remains that of the original chain-extending hop.</t>
 <t>A recipient or current actor in the new domain that trusts the re-issuing
 Authorization Server MAY rely on that enclosing token signature as attestation
 that any preserved foreign <tt>actc</tt> was validated and carried forward unchanged.
 Such a recipient need not independently validate a foreign Authorization
 Server's JWS signature on the preserved <tt>actc</tt> unless local policy or audit
 requires it.</t>
+<t>The base specification does not define a portable cryptographic lineage field
+that identifies the exact inbound token instance from which a returned cross-
+domain re-issued token was derived. Accordingly, exact input-token provenance
+for a re-issued token remains a matter of Authorization-Server records or of a
+future companion specification that defines such a lineage field.</t>
 </section>
 
 <section anchor="returned-token-validation-1"><name>Returned-Token Validation</name>
@@ -1986,6 +2069,8 @@ already present in the inbound token's canonical <tt>target_context</tt>.</t>
 <li>verify that the requested profile identifier exactly matches the inbound
 token's <tt>actp</tt>;</li>
 <li>verify intended-recipient semantics as applicable;</li>
+<li>enforce preserve-state authorization policy for this refresh request as
+required above;</li>
 <li>verify that the request does not append the chain, alter preserved chain
 state, broaden target context, or change recipient identity; and</li>
 <li>issue a replacement token with a new <tt>jti</tt> and refreshed <tt>exp</tt>.</li>
@@ -2057,6 +2142,8 @@ under local policy.</t>
 accepted request according to local reliability policy.</li>
 </ul>
 <t>A deployment MAY require <tt>hop_ack</tt> for selected hops, including terminal hops.
+Deployments that require evidence of terminal acceptance SHOULD require a valid
+<tt>hop_ack</tt> for those terminal hops.
 When <tt>hop_ack</tt> is required by policy, the calling actor and any coordinating
 component MUST treat that hop as not accepted unless a valid <tt>hop_ack</tt> is
 received and verified.</t>
@@ -2142,12 +2229,38 @@ that need not be read before the main profile flows. Implementations still
 MUST satisfy these requirements even when they are consulted later in a first
 reading pass.</t>
 
+<section anchor="jose-and-parser-hardening"><name>JOSE and Parser Hardening</name>
+<t>Implementations validating ordinary tokens, step proofs, <tt>hop_ack</tt>, and
+<tt>actc</tt> MUST apply strict JOSE and JSON parsing behavior to avoid
+implementation-differential acceptance.</t>
+<t>At minimum, validators MUST:</t>
+
+<ul spacing="compact">
+<li>reject duplicate member names in any JSON object that contributes to
+profile-defined validation, signature verification, canonicalization, or
+commitment inputs;</li>
+<li>reject malformed compact JWS syntax, including malformed base64url segments;</li>
+<li>reject unsupported critical JOSE headers as defined in Artifact Typing and
+the JWT binding appendix;</li>
+<li>enforce exact expected claim types for profile-defined claims before
+semantic processing (for example, <tt>actp</tt>, <tt>acti</tt>, <tt>iss</tt>, <tt>sub</tt>, and <tt>jti</tt>
+as strings; <tt>target_context</tt> as an object where required by this
+specification; and <tt>actc</tt> as a compact JWS string when required);</li>
+<li>treat type mismatch as a profile-validation failure; and</li>
+<li>for verified profiles, treat missing <tt>actc</tt> as a profile-validation failure.</li>
+</ul>
+</section>
+
 <section anchor="actor-authentication-and-presenter-binding"><name>Actor Authentication and Presenter Binding</name>
 <t>This specification does not define or require any particular actor-
 authentication, presenter-binding, or token-binding mechanism. Authorization
 Servers and recipients MAY establish current-actor or presenting-actor identity
 using any locally trusted method. Recipient authorization policy based on such
 inputs is outside the scope of this specification.</t>
+<t>When deployment policy depends on a specific presenter-binding or token-binding
+mechanism class (for example mTLS-anchored or DPoP-anchored processing), that
+mechanism class MUST be fixed by local policy or a companion profile and MUST
+NOT be inferred from actor-chain artifacts alone.</t>
 </section>
 
 <section anchor="actor-and-recipient-proof-keys"><name>Actor and Recipient Proof Keys</name>
@@ -2289,10 +2402,17 @@ following mapping:</t>
 
 <tr>
 <td><tt>invalid_grant</tt></td>
-<td>The <tt>subject_token</tt> fails validation, the intended-recipient check fails, continuity fails at token exchange, replay or freshness checks fail, <tt>actor_chain_step_proof</tt> verification fails, bootstrap-context reuse that is neither an idempotent retry nor an authorized distinct initial successor is detected, required inline <tt>act</tt> disclosure is absent, profile-disclosure rules fail, or the submitted prior state is inconsistent with the claimed profile state</td>
+<td>The <tt>subject_token</tt> fails validation, the intended-recipient check fails, continuity fails at token exchange, replay or freshness checks fail, <tt>actor_chain_step_proof</tt> verification fails, bootstrap-context reuse that is neither an idempotent retry nor an authorized distinct initial successor is detected, required inline <tt>act</tt> disclosure is absent, profile-disclosure rules fail, preserve-state authorization policy fails, or the submitted prior state is inconsistent with the claimed profile state</td>
 </tr>
 </tbody>
-</table><t>Recipients and Authorization Servers MUST return protocol-appropriate error
+</table><t>Implementations SHOULD provide additional machine-readable or human-readable
+diagnostics that distinguish actor-chain-specific failure classes that map to
+the same base OAuth error code. Such diagnostics are for troubleshooting and
+interoperability support only and MUST NOT alter the base OAuth error value
+required by this specification. Examples include diagnostics indicating replay
+detection, intended-recipient failure, step-proof verification failure,
+profile-disclosure failure, or preserved-state inconsistency.</t>
+<t>Recipients and Authorization Servers MUST return protocol-appropriate error
 signals for authentication, authorization, profile-validation, and continuity
 failures. When the selected profile requires inline <tt>act</tt> disclosure for an
 artifact, omission of <tt>act</tt>, or presence of an <tt>act</tt> value that fails that
@@ -2303,6 +2423,10 @@ equivalent protocol-native error signaling MUST be used.</t>
 <t>Error responses and logs MUST NOT disclose undisclosed prior actors, full step
 proofs, canonical proof inputs, or other sensitive proof material unless the
 deployment explicitly requires such disclosure for diagnostics.</t>
+<t>When deployments provide <tt>error_description</tt>, <tt>error_uri</tt>, logs, or similar
+diagnostics for actor-chain failures, they SHOULD distinguish among underlying
+failure causes where doing so does not disclose hidden actors, full proofs, or
+other sensitive material.</t>
 </section>
 
 <section anchor="part-ii-security-privacy-deployment-and-rationale"><name>Part II. Security, Privacy, Deployment, and Rationale</name>
@@ -2390,6 +2514,16 @@ representation, or proof payload encoding can cause false verification failures
 or inconsistent commitment values across implementations.</t>
 </section>
 
+<section anchor="commitment-state-is-byte-oriented"><name>Commitment State Is Byte-Oriented</name>
+<t>For JWT bindings in this specification, commitment linkage uses the exact
+compact-JWS proof artifact bytes. This means commitment state is intentionally
+artifact-byte-oriented rather than normalized to semantic proof meaning.
+Implementations MUST NOT assume semantically equivalent decoded proofs will
+yield identical <tt>step_hash</tt> or <tt>curr</tt> values unless the underlying compact-JWS
+bytes are also identical. Parties that need semantic or evidentiary replay
+SHOULD log and retain those exact proof artifacts and verification context.</t>
+</section>
+
 <section anchor="readable-chain-does-not-prevent-payload-abuse"><name>Readable Chain Does Not Prevent Payload Abuse</name>
 <t>A valid visible <tt>act</tt> does not imply that the application-layer request
 content is safe, correct, or policy-conformant. Recipients MUST apply local
@@ -2424,6 +2558,10 @@ that limitation, but it is outside this base specification.</t>
 subset-disclosure outcome. In that case, downstream authorization is current-
 actor-only even though the underlying profile remains one of the subset
 profiles unless <tt>actp</tt> explicitly selects an actor-only profile.</t>
+<t>Deployments whose recipient authorization requires prior-path membership or
+ordering evidence MUST ensure that the selected profile and disclosure policy
+expose that required evidence. They MUST NOT treat actor-only or omitted-<tt>act</tt>
+outcomes as sufficient for such path-sensitive authorization.</t>
 </section>
 
 <section anchor="cross-domain-re-issuance-must-preserve-chain-state"><name>Cross-Domain Re-Issuance Must Preserve Chain State</name>
@@ -2556,6 +2694,11 @@ issuer context.</t>
 <t>The <tt>actor_chain_step_proof</tt> token request parameter value MUST be a compact JWS
 string {{!RFC7515}}. The JWS protected header MUST contain <tt>typ=act-step-proof+jwt</tt>. The
 JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.</t>
+<t>Verifiers MUST require exact <tt>typ=act-step-proof+jwt</tt> matching for this
+artifact class. The <tt>alg</tt> header parameter MUST be present and MUST identify
+an asymmetric signature algorithm accepted by local policy; <tt>alg=none</tt> MUST
+NOT be accepted. If <tt>crit</tt> is present, verifiers MUST reject unless every
+listed parameter is understood and processed.</t>
 <t>For all profiles in the verified branch, the payload MUST contain:</t>
 
 <ul spacing="compact">
@@ -2594,6 +2737,11 @@ the ActorID represented in the proof.</t>
 JWS protected header MUST contain <tt>typ=act-hop-ack+jwt</tt>. The JWS payload MUST
 be the UTF-8 encoding of a JCS-serialized JSON object with at least these
 members:</t>
+<t>Verifiers MUST require exact <tt>typ=act-hop-ack+jwt</tt> matching for this artifact
+class. The <tt>alg</tt> header parameter MUST be present and MUST identify an
+asymmetric signature algorithm accepted by local policy; <tt>alg=none</tt> MUST NOT
+be accepted. If <tt>crit</tt> is present, verifiers MUST reject unless every listed
+parameter is understood and processed.</t>
 
 <ul spacing="compact">
 <li><tt>ctx</tt>;</li>
@@ -2632,6 +2780,11 @@ ActorID.</t>
 <section anchor="commitment-object-in-jwt"><name>Commitment Object in JWT</name>
 <t>The <tt>actc</tt> claim value MUST be a compact JWS string {{!RFC7515}}. The JWS
 protected header MUST contain <tt>typ=act-commitment+jwt</tt>.</t>
+<t>Verifiers MUST require exact <tt>typ=act-commitment+jwt</tt> matching for this
+artifact class. The <tt>alg</tt> header parameter MUST be present and MUST identify
+an asymmetric signature algorithm accepted by local policy; <tt>alg=none</tt> MUST
+NOT be accepted. If <tt>crit</tt> is present, verifiers MUST reject unless every
+listed parameter is understood and processed.</t>
 <t>The JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object with
 exactly these members:</t>
 
@@ -2787,6 +2940,13 @@ workflow records needed to supply hidden continuity context.</li>
 initialize chain state. It does not define corresponding terminal-hop semantics
 for a final recipient that performs work locally and does not extend the chain
 further.</t>
+<t>Deployments that need richer terminal execution or result evidence MAY compose
+this specification with companion SPICE provenance work, such as Intent Chain
+{{!I-D.draft-mw-spice-intent-chain}} and Inference Chain
+{{!I-D.draft-mw-spice-inference-chain}}, to provide complementary WHAT and HOW
+evidence. However, this specification itself does not define the terminal
+receipt/execution/result artifact or the precise composition rules by which
+such companion artifacts satisfy terminal-hop evidence requirements.</t>
 <t>Future work MAY define:</t>
 
 <ul spacing="compact">
@@ -2837,6 +2997,13 @@ semantics of the selected base profile. In particular, a Full Disclosure
 profile still requires full visible-chain disclosure to the recipient, while
 subset-disclosure outcomes that reveal only the current actor MUST NOT expose hidden actor entries to
 recipients of ordinary tokens merely as digests or selectively revealable placeholders.</t>
+</section>
+
+<section anchor="semantic-equivalent-commitment-inputs"><name>Semantic-Equivalent Commitment Inputs</name>
+<t>This version binds commitment linkage to exact compact-JWS proof bytes.
+Future work MAY define an optional semantic-equivalence commitment input,
+for example by hashing a canonical semantic proof object while still
+retaining artifact-byte evidence for provenance and non-repudiation.</t>
 </section>
 
 <section anchor="branching-and-fan-out"><name>Branching and Fan-Out</name>
@@ -3628,6 +3795,67 @@ relevant OAuth parameter registry:</t>
 </tbody>
 </table></section>
 </section>
+
+<section anchor="use-cases"><name>Appendix X. Out-of-Scope Use Cases (Informative)</name>
+<t>This appendix is non-normative. Per-hop request binding — cryptographic
+evidence that a request physically traversed each claimed hop — is out of
+scope for this document. End-to-end path proof in the data plane, such as
+nested message signatures applied by each actor in turn, requires a companion
+mechanism such as {{RFC9421}} or {{RFC9449}} and is not addressed here.</t>
+</section>
+
+<section anchor="relationship-to-rfc8693"><name>Appendix Y. Relationship to RFC 8693 (Informative)</name>
+<t>This appendix is non-normative. {{RFC8693}} defines token exchange and
+introduces <tt>act</tt> for delegation, with nested <tt>act</tt> described as a convention.
+It treats <tt>act</tt> as optional and defines no normative processing rules for
+construction, extension, or validation across a sequence of exchanges. This
+document does not replace {{RFC8693}}; with <tt>actp</tt> absent, it adds no new
+requirements. With <tt>actp</tt> present, the following constraints apply:</t>
+<table>
+<thead>
+<tr>
+<th>{{RFC8693}} behavior</th>
+<th>This document</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><tt>act</tt> is optional.</td>
+<td>Processing follows the rules here when used; <tt>actp</tt> makes the governing semantics explicit.</td>
+</tr>
+
+<tr>
+<td>Nested <tt>act</tt> is a convention.</td>
+<td>Nested <tt>act</tt> is normative structural form; recipients can rely on its shape.</td>
+</tr>
+
+<tr>
+<td>No append-only rule.</td>
+<td>Prior actors MUST NOT be inserted, reordered, deleted, or modified.</td>
+</tr>
+
+<tr>
+<td>No cross-exchange correlation.</td>
+<td><tt>acti</tt> provides a stable workflow instance identifier across hops.</td>
+</tr>
+
+<tr>
+<td>No integrity binding beyond the issuing AS's signature.</td>
+<td><tt>actc</tt> provides cumulative commitment verifiable across AS boundaries.</td>
+</tr>
+
+<tr>
+<td>No prior-actor disclosure control.</td>
+<td><tt>actp</tt> profiles scope disclosure; the disclosure invariant prevents leakage through other claims.</td>
+</tr>
+
+<tr>
+<td>No disclosure-regime signal to the recipient.</td>
+<td><tt>actp</tt> allows recipients to apply the correct interpretation.</td>
+</tr>
+</tbody>
+</table></section>
 
 </middle>
 

@@ -5,12 +5,12 @@
 SPICE                                                          A. Prasad
 Internet-Draft                                                    Oracle
 Intended status: Standards Track                             R. Krishnan
-Expires: 28 September 2026                           JPMorgan Chase & Co
+Expires: 26 September 2026                           JPMorgan Chase & Co
                                                                 D. Lopez
                                                               Telefonica
                                                             S. Addepalli
                                                                   Aryaka
-                                                           27 March 2026
+                                                           25 March 2026
 
 
  Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange
@@ -53,7 +53,7 @@ Status of This Memo
 
 
 
-Prasad, et al.          Expires 28 September 2026               [Page 1]
+Prasad, et al.          Expires 26 September 2026               [Page 1]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -63,7 +63,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 28 September 2026.
+   This Internet-Draft will expire on 26 September 2026.
 
 Copyright Notice
 
@@ -84,231 +84,235 @@ Table of Contents
    1.  Part I.  Core Specification . . . . . . . . . . . . . . . . .   6
    2.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   6
    3.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   7
-   4.  Relationship to RFC 8693 Claims . . . . . . . . . . . . . . .   9
-     4.1.  Disclosure Invariant  . . . . . . . . . . . . . . . . . .  10
+   4.  Relationship to RFC 8693 Claims . . . . . . . . . . . . . . .  10
+     4.1.  Disclosure Invariant  . . . . . . . . . . . . . . . . . .  11
    5.  Scope and Model . . . . . . . . . . . . . . . . . . . . . . .  11
-     5.1.  Workflow Model  . . . . . . . . . . . . . . . . . . . . .  11
-     5.2.  Profile Summary . . . . . . . . . . . . . . . . . . . . .  11
-     5.3.  Branching and Non-Goals . . . . . . . . . . . . . . . . .  14
-   6.  Protocol Overview . . . . . . . . . . . . . . . . . . . . . .  14
-     6.1.  Workflow Progression  . . . . . . . . . . . . . . . . . .  14
-     6.2.  Same-Domain and Cross-Domain Hops . . . . . . . . . . . .  15
-   7.  Common Basics . . . . . . . . . . . . . . . . . . . . . . . .  15
-     7.1.  Common Token Requirements . . . . . . . . . . . . . . . .  15
-     7.2.  Actor-Chain Identifier  . . . . . . . . . . . . . . . . .  17
-     7.3.  Target Context Requirements . . . . . . . . . . . . . . .  17
-     7.4.  Canonicalization  . . . . . . . . . . . . . . . . . . . .  19
-     7.5.  Actor Identity Representation . . . . . . . . . . . . . .  19
-     7.6.  Artifact Typing . . . . . . . . . . . . . . . . . . . . .  21
-     7.7.  Issued Token Type . . . . . . . . . . . . . . . . . . . .  21
-     7.8.  Commitment Hash Algorithms  . . . . . . . . . . . . . . .  21
-     7.9.  Commitment Function . . . . . . . . . . . . . . . . . . .  22
-     7.10. Common Cryptographic Operations . . . . . . . . . . . . .  23
-   8.  Profile Selection and Workflow Immutability . . . . . . . . .  25
-   9.  Common Validation Procedures  . . . . . . . . . . . . . . . .  25
+     5.1.  Workflow Model  . . . . . . . . . . . . . . . . . . . . .  12
+     5.2.  Profile Summary . . . . . . . . . . . . . . . . . . . . .  12
+     5.3.  Branching and Non-Goals . . . . . . . . . . . . . . . . .  15
+   6.  Protocol Overview . . . . . . . . . . . . . . . . . . . . . .  15
+     6.1.  Workflow Progression  . . . . . . . . . . . . . . . . . .  15
+     6.2.  Same-Domain and Cross-Domain Hops . . . . . . . . . . . .  16
+   7.  Common Basics . . . . . . . . . . . . . . . . . . . . . . . .  16
+     7.1.  Common Token Requirements . . . . . . . . . . . . . . . .  16
+     7.2.  Actor-Chain Identifier  . . . . . . . . . . . . . . . . .  18
+     7.3.  Target Context Requirements . . . . . . . . . . . . . . .  19
+     7.4.  Canonicalization  . . . . . . . . . . . . . . . . . . . .  20
+     7.5.  Actor Identity Representation . . . . . . . . . . . . . .  20
+     7.6.  Artifact Typing . . . . . . . . . . . . . . . . . . . . .  22
+     7.7.  Issued Token Type . . . . . . . . . . . . . . . . . . . .  22
+     7.8.  Commitment Hash Algorithms  . . . . . . . . . . . . . . .  23
+     7.9.  Commitment Function . . . . . . . . . . . . . . . . . . .  23
+     7.10. Common Cryptographic Operations . . . . . . . . . . . . .  25
+   8.  Profile Selection and Workflow Immutability . . . . . . . . .  26
+   9.  Common Validation Procedures  . . . . . . . . . . . . . . . .  27
 
 
 
-Prasad, et al.          Expires 28 September 2026               [Page 2]
+Prasad, et al.          Expires 26 September 2026               [Page 2]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
-     9.1.  Recipient Validation of an Inbound Token  . . . . . . . .  26
-     9.2.  Authorization Server Validation of Token Exchange . . . .  26
-     9.3.  Current-Actor Validation of a Returned Token  . . . . . .  27
-   10. Profiles  . . . . . . . . . . . . . . . . . . . . . . . . . .  28
-   11. Declared Full Disclosure Profile  . . . . . . . . . . . . . .  28
-     11.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  28
-     11.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  29
-     11.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  29
-     11.4.  Bootstrap  . . . . . . . . . . . . . . . . . . . . . . .  29
-     11.5.  Hop Processing . . . . . . . . . . . . . . . . . . . . .  29
-     11.6.  Token Exchange . . . . . . . . . . . . . . . . . . . . .  30
-     11.7.  Returned Token Validation  . . . . . . . . . . . . . . .  30
-     11.8.  Next-Hop Validation  . . . . . . . . . . . . . . . . . .  31
-     11.9.  Security Result  . . . . . . . . . . . . . . . . . . . .  31
-   12. Declared Subset Disclosure Profile  . . . . . . . . . . . . .  31
-     12.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  31
-     12.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  31
-     12.3.  Inheritance and Security Model . . . . . . . . . . . . .  31
-     12.4.  Modified Bootstrap and Issuance  . . . . . . . . . . . .  32
-     12.5.  Modified Hop Processing and Validation . . . . . . . . .  32
-     12.6.  Modified Token Exchange  . . . . . . . . . . . . . . . .  33
-     12.7.  Next-Hop Authorization . . . . . . . . . . . . . . . . .  33
-     12.8.  Security Result  . . . . . . . . . . . . . . . . . . . .  34
-   13. Declared Actor-Only Disclosure Profile  . . . . . . . . . . .  34
-     13.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  34
-     13.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  34
-     13.3.  Inheritance and Security Model . . . . . . . . . . . . .  34
-     13.4.  Modified Bootstrap and Issuance  . . . . . . . . . . . .  35
-     13.5.  Modified Hop Processing and Validation . . . . . . . . .  35
-     13.6.  Modified Token Exchange  . . . . . . . . . . . . . . . .  35
-     13.7.  Next-Hop Authorization . . . . . . . . . . . . . . . . .  35
-     13.8.  Security Result  . . . . . . . . . . . . . . . . . . . .  36
-   14. Common Processing for the Verified Branch . . . . . . . . . .  36
-     14.1.  Common Parameters  . . . . . . . . . . . . . . . . . . .  36
-     14.2.  Common Bootstrap Context Request . . . . . . . . . . . .  38
+     9.1.  Recipient Validation of an Inbound Token  . . . . . . . .  27
+     9.2.  Authorization Server Validation of Token Exchange . . . .  28
+     9.3.  Current-Actor Validation of a Returned Token  . . . . . .  29
+   10. Profiles  . . . . . . . . . . . . . . . . . . . . . . . . . .  30
+   11. Declared Full Disclosure Profile  . . . . . . . . . . . . . .  30
+     11.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  30
+     11.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  30
+     11.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  30
+     11.4.  Bootstrap  . . . . . . . . . . . . . . . . . . . . . . .  30
+     11.5.  Hop Processing . . . . . . . . . . . . . . . . . . . . .  31
+     11.6.  Token Exchange . . . . . . . . . . . . . . . . . . . . .  31
+     11.7.  Returned Token Validation  . . . . . . . . . . . . . . .  32
+     11.8.  Next-Hop Validation  . . . . . . . . . . . . . . . . . .  32
+     11.9.  Security Result  . . . . . . . . . . . . . . . . . . . .  32
+   12. Declared Subset Disclosure Profile  . . . . . . . . . . . . .  32
+     12.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  32
+     12.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  33
+     12.3.  Inheritance and Security Model . . . . . . . . . . . . .  33
+     12.4.  Modified Bootstrap and Issuance  . . . . . . . . . . . .  33
+     12.5.  Modified Hop Processing and Validation . . . . . . . . .  34
+     12.6.  Modified Token Exchange  . . . . . . . . . . . . . . . .  34
+     12.7.  Next-Hop Authorization . . . . . . . . . . . . . . . . .  35
+     12.8.  Security Result  . . . . . . . . . . . . . . . . . . . .  35
+   13. Declared Actor-Only Disclosure Profile  . . . . . . . . . . .  35
+     13.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  35
+     13.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  36
+     13.3.  Inheritance and Security Model . . . . . . . . . . . . .  36
+     13.4.  Modified Bootstrap and Issuance  . . . . . . . . . . . .  36
+     13.5.  Modified Hop Processing and Validation . . . . . . . . .  36
+     13.6.  Modified Token Exchange  . . . . . . . . . . . . . . . .  36
+     13.7.  Next-Hop Authorization . . . . . . . . . . . . . . . . .  37
+     13.8.  Security Result  . . . . . . . . . . . . . . . . . . . .  37
+   14. Common Processing for the Verified Branch . . . . . . . . . .  37
+     14.1.  Common Parameters  . . . . . . . . . . . . . . . . . . .  38
+     14.2.  Common Bootstrap Context Request . . . . . . . . . . . .  39
      14.3.  Common Initial Actor Step Proof and Bootstrap
-            Issuance . . . . . . . . . . . . . . . . . . . . . . . .  39
-     14.4.  Common Hop Processing  . . . . . . . . . . . . . . . . .  40
-     14.5.  Common Token Exchange  . . . . . . . . . . . . . . . . .  40
-     14.6.  Common Returned-Token Validation . . . . . . . . . . . .  41
-   15. Verified Full Disclosure Profile  . . . . . . . . . . . . . .  41
-     15.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  42
-     15.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  42
-     15.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  42
-     15.4.  Profile-Specific Hop Construction and Validation . . . .  42
-     15.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  43
-     15.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  43
-   16. Verified Subset Disclosure Profile  . . . . . . . . . . . . .  43
+            Issuance . . . . . . . . . . . . . . . . . . . . . . . .  40
+     14.4.  Common Hop Processing  . . . . . . . . . . . . . . . . .  41
+     14.5.  Common Token Exchange  . . . . . . . . . . . . . . . . .  41
+     14.6.  Common Returned-Token Validation . . . . . . . . . . . .  42
+   15. Verified Full Disclosure Profile  . . . . . . . . . . . . . .  43
+     15.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  43
+     15.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  43
+     15.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  43
+     15.4.  Profile-Specific Hop Construction and Validation . . . .  44
+     15.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  44
+     15.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  44
+   16. Verified Subset Disclosure Profile  . . . . . . . . . . . . .  44
 
 
 
-Prasad, et al.          Expires 28 September 2026               [Page 3]
+Prasad, et al.          Expires 26 September 2026               [Page 3]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
-     16.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  43
-     16.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  43
-     16.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  43
-     16.4.  Profile-Specific Hop Construction and Validation . . . .  44
-     16.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  45
-     16.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  46
-   17. Verified Actor-Only Disclosure Profile  . . . . . . . . . . .  46
-     17.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  46
-     17.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  46
-     17.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  46
-     17.4.  Profile-Specific Hop Construction and Validation . . . .  46
-     17.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  47
-     17.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  47
-   18. Special Preserve-State Exchanges  . . . . . . . . . . . . . .  47
-     18.1.  Cross-Domain Re-Issuance . . . . . . . . . . . . . . . .  47
-       18.1.1.  Request Format . . . . . . . . . . . . . . . . . . .  47
-       18.1.2.  Preservation Rules . . . . . . . . . . . . . . . . .  48
-       18.1.3.  Subject Handling . . . . . . . . . . . . . . . . . .  49
-       18.1.4.  ActorID Namespace Handling . . . . . . . . . . . . .  50
-       18.1.5.  Returned-Token Validation  . . . . . . . . . . . . .  50
-     18.2.  Refresh-Exchange . . . . . . . . . . . . . . . . . . . .  51
-       18.2.1.  Request Format . . . . . . . . . . . . . . . . . . .  51
-       18.2.2.  Processing Rules . . . . . . . . . . . . . . . . . .  52
-       18.2.3.  Returned-Token Validation  . . . . . . . . . . . . .  52
-   19. Optional Receiver Acknowledgment Extension  . . . . . . . . .  53
-     19.1.  Receiver Acknowledgment Validation . . . . . . . . . . .  54
-   20. Common Security and Enforcement Requirements  . . . . . . . .  55
-     20.1.  Actor Authentication and Presenter Binding . . . . . . .  56
-     20.2.  Actor and Recipient Proof Keys . . . . . . . . . . . . .  56
-     20.3.  Intended Recipient Validation  . . . . . . . . . . . . .  57
-     20.4.  Replay and Freshness . . . . . . . . . . . . . . . . . .  57
-   21. Authorization Server Metadata . . . . . . . . . . . . . . . .  58
-   22. Error Handling  . . . . . . . . . . . . . . . . . . . . . . .  59
-   23. Part II.  Security, Privacy, Deployment, and Rationale  . . .  60
-   24. Motivating Real-World Examples  . . . . . . . . . . . . . . .  60
+     16.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  45
+     16.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  45
+     16.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  45
+     16.4.  Profile-Specific Hop Construction and Validation . . . .  46
+     16.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  47
+     16.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  47
+   17. Verified Actor-Only Disclosure Profile  . . . . . . . . . . .  47
+     17.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  47
+     17.2.  Objective  . . . . . . . . . . . . . . . . . . . . . . .  48
+     17.3.  Security Model . . . . . . . . . . . . . . . . . . . . .  48
+     17.4.  Profile-Specific Hop Construction and Validation . . . .  48
+     17.5.  Attack Handling  . . . . . . . . . . . . . . . . . . . .  49
+     17.6.  Security Result  . . . . . . . . . . . . . . . . . . . .  49
+   18. Special Preserve-State Exchanges  . . . . . . . . . . . . . .  49
+     18.1.  Cross-Domain Re-Issuance . . . . . . . . . . . . . . . .  49
+       18.1.1.  Request Format . . . . . . . . . . . . . . . . . . .  49
+       18.1.2.  Preservation Rules . . . . . . . . . . . . . . . . .  50
+       18.1.3.  Subject Handling . . . . . . . . . . . . . . . . . .  51
+       18.1.4.  ActorID Namespace Handling . . . . . . . . . . . . .  52
+       18.1.5.  Returned-Token Validation  . . . . . . . . . . . . .  53
+     18.2.  Refresh-Exchange . . . . . . . . . . . . . . . . . . . .  53
+       18.2.1.  Request Format . . . . . . . . . . . . . . . . . . .  53
+       18.2.2.  Processing Rules . . . . . . . . . . . . . . . . . .  54
+       18.2.3.  Returned-Token Validation  . . . . . . . . . . . . .  55
+   19. Optional Receiver Acknowledgment Extension  . . . . . . . . .  55
+     19.1.  Receiver Acknowledgment Validation . . . . . . . . . . .  57
+   20. Common Security and Enforcement Requirements  . . . . . . . .  58
+     20.1.  JOSE and Parser Hardening  . . . . . . . . . . . . . . .  58
+     20.2.  Actor Authentication and Presenter Binding . . . . . . .  58
+     20.3.  Actor and Recipient Proof Keys . . . . . . . . . . . . .  59
+     20.4.  Intended Recipient Validation  . . . . . . . . . . . . .  59
+     20.5.  Replay and Freshness . . . . . . . . . . . . . . . . . .  60
+   21. Authorization Server Metadata . . . . . . . . . . . . . . . .  60
+   22. Error Handling  . . . . . . . . . . . . . . . . . . . . . . .  61
+   23. Part II.  Security, Privacy, Deployment, and Rationale  . . .  63
+   24. Motivating Real-World Examples  . . . . . . . . . . . . . . .  63
      24.1.  Full Disclosure: Emergency Production Change in Critical
-            Infrastructure . . . . . . . . . . . . . . . . . . . . .  60
-     24.2.  Subset Disclosure: Regulated M&A Review  . . . . . . . .  60
+            Infrastructure . . . . . . . . . . . . . . . . . . . . .  63
+     24.2.  Subset Disclosure: Regulated M&A Review  . . . . . . . .  64
      24.3.  Actor-Only Disclosure: Bank Wire-Payment Processing
-            Pipeline . . . . . . . . . . . . . . . . . . . . . . . .  61
-   25. Security Considerations . . . . . . . . . . . . . . . . . . .  61
+            Pipeline . . . . . . . . . . . . . . . . . . . . . . . .  64
+   25. Security Considerations . . . . . . . . . . . . . . . . . . .  64
      25.1.  Actor Authentication and Presenter Binding Are
-             Deployment-Specific . . . . . . . . . . . . . . . . . .  61
+             Deployment-Specific . . . . . . . . . . . . . . . . . .  65
      25.2.  Canonicalization Errors Break Interoperability and Proof
-             Validity  . . . . . . . . . . . . . . . . . . . . . . .  61
-     25.3.  Readable Chain Does Not Prevent Payload Abuse  . . . . .  62
-     25.4.  Verified Profiles Depend on Proof Retention  . . . . . .  62
+             Validity  . . . . . . . . . . . . . . . . . . . . . . .  65
+     25.3.  Commitment State Is Byte-Oriented  . . . . . . . . . . .  65
+     25.4.  Readable Chain Does Not Prevent Payload Abuse  . . . . .  65
 
 
 
-
-Prasad, et al.          Expires 28 September 2026               [Page 4]
+Prasad, et al.          Expires 26 September 2026               [Page 4]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
-     25.5.  Subset-Disclosure Profiles Reveal Only a Verified
-             Subset  . . . . . . . . . . . . . . . . . . . . . . . .  62
-     25.6.  Cross-Domain Re-Issuance Must Preserve Chain State . . .  63
-     25.7.  Branch Reconstruction Is an Audit Concern  . . . . . . .  63
-     25.8.  Intended Recipient Checks Reduce Confused-Deputy Risk  .  63
-     25.9.  Chain Depth  . . . . . . . . . . . . . . . . . . . . . .  63
-     25.10. Key Management . . . . . . . . . . . . . . . . . . . . .  64
-   26. Privacy Considerations  . . . . . . . . . . . . . . . . . . .  64
-     26.1.  Subset Disclosure Extensions . . . . . . . . . . . . . .  64
-   27. Appendix A.  JWT Binding (Normative)  . . . . . . . . . . . .  65
-     27.1.  ActorID in JWT . . . . . . . . . . . . . . . . . . . . .  65
-     27.2.  Step Proof in JWT  . . . . . . . . . . . . . . . . . . .  66
-     27.3.  Receiver Acknowledgment in JWT . . . . . . . . . . . . .  67
-     27.4.  Commitment Object in JWT . . . . . . . . . . . . . . . .  67
-   28. Appendix B.  Compact End-to-End Examples (Informative)  . . .  68
-     28.1.  Example 1: Declared Full Disclosure in One Domain  . . .  68
-     28.2.  Example 2: Declared Subset Disclosure  . . . . . . . . .  68
-     28.3.  Example 2b: Declared Actor-Only Disclosure . . . . . . .  69
+     25.5.  Verified Profiles Depend on Proof Retention  . . . . . .  65
+     25.6.  Subset-Disclosure Profiles Reveal Only a Verified
+             Subset  . . . . . . . . . . . . . . . . . . . . . . . .  66
+     25.7.  Cross-Domain Re-Issuance Must Preserve Chain State . . .  66
+     25.8.  Branch Reconstruction Is an Audit Concern  . . . . . . .  66
+     25.9.  Intended Recipient Checks Reduce Confused-Deputy Risk  .  67
+     25.10. Chain Depth  . . . . . . . . . . . . . . . . . . . . . .  67
+     25.11. Key Management . . . . . . . . . . . . . . . . . . . . .  67
+   26. Privacy Considerations  . . . . . . . . . . . . . . . . . . .  67
+     26.1.  Subset Disclosure Extensions . . . . . . . . . . . . . .  68
+   27. Appendix A.  JWT Binding (Normative)  . . . . . . . . . . . .  69
+     27.1.  ActorID in JWT . . . . . . . . . . . . . . . . . . . . .  69
+     27.2.  Step Proof in JWT  . . . . . . . . . . . . . . . . . . .  69
+     27.3.  Receiver Acknowledgment in JWT . . . . . . . . . . . . .  70
+     27.4.  Commitment Object in JWT . . . . . . . . . . . . . . . .  71
+   28. Appendix B.  Compact End-to-End Examples (Informative)  . . .  72
+     28.1.  Example 1: Declared Full Disclosure in One Domain  . . .  72
+     28.2.  Example 2: Declared Subset Disclosure  . . . . . . . . .  72
+     28.3.  Example 2b: Declared Actor-Only Disclosure . . . . . . .  73
      28.4.  Example 3: Verified Full Disclosure Across Two
-            Domains  . . . . . . . . . . . . . . . . . . . . . . . .  69
-     28.5.  Example 4: Verified Actor-Only Disclosure  . . . . . . .  70
-     28.6.  Example 5: Verified Subset Disclosure  . . . . . . . . .  70
-   29. Appendix C.  Future Considerations (Informative)  . . . . . .  71
-     29.1.  Terminal Receipts and Result Attestations  . . . . . . .  71
+            Domains  . . . . . . . . . . . . . . . . . . . . . . . .  73
+     28.5.  Example 4: Verified Actor-Only Disclosure  . . . . . . .  74
+     28.6.  Example 5: Verified Subset Disclosure  . . . . . . . . .  74
+   29. Appendix C.  Future Considerations (Informative)  . . . . . .  75
+     29.1.  Terminal Receipts and Result Attestations  . . . . . . .  75
      29.2.  Bootstrap Receipts and Portable Initial-State
-            Evidence . . . . . . . . . . . . . . . . . . . . . . . .  71
-     29.3.  Receiver Acceptance and Unsolicited Victim Mitigation  .  71
-     29.4.  Subset Disclosure Extensions . . . . . . . . . . . . . .  72
-     29.5.  Branching and Fan-Out  . . . . . . . . . . . . . . . . .  72
-     29.6.  Evidence Discovery and Governance Interoperability . . .  73
+            Evidence . . . . . . . . . . . . . . . . . . . . . . . .  75
+     29.3.  Receiver Acceptance and Unsolicited Victim Mitigation  .  75
+     29.4.  Subset Disclosure Extensions . . . . . . . . . . . . . .  76
+     29.5.  Semantic-Equivalent Commitment Inputs  . . . . . . . . .  76
+     29.6.  Branching and Fan-Out  . . . . . . . . . . . . . . . . .  76
+     29.7.  Evidence Discovery and Governance Interoperability . . .  77
    30. Appendix D.  Design Rationale and Relation to Other Work
-           (Informative) . . . . . . . . . . . . . . . . . . . . . .  73
-   31. Appendix E.  Implementation Conformance Checklist
-           (Informative) . . . . . . . . . . . . . . . . . . . . . .  73
-   32. Appendix F.  Canonicalization Test Vectors (Informative)  . .  75
-     32.1.  JWT / JCS ActorID Example  . . . . . . . . . . . . . . .  75
-     32.2.  JWT / JCS target_context Example . . . . . . . . . . . .  76
-   33. Appendix G.  Illustrative Wire-Format Example
-           (Informative) . . . . . . . . . . . . . . . . . . . . . .  76
-     33.1.  Decoded Access Token Payload Example . . . . . . . . . .  77
-     33.2.  Decoded actc JWS Example . . . . . . . . . . . . . . . .  77
-   34. Appendix H.  Problem Statement and Deployment Context
            (Informative) . . . . . . . . . . . . . . . . . . . . . .  77
-   35. Appendix I.  Threat Model (Informative) . . . . . . . . . . .  78
-     35.1.  Assets . . . . . . . . . . . . . . . . . . . . . . . . .  78
-     35.2.  Adversaries  . . . . . . . . . . . . . . . . . . . . . .  78
-     35.3.  Assumptions  . . . . . . . . . . . . . . . . . . . . . .  79
-     35.4.  Security Goals . . . . . . . . . . . . . . . . . . . . .  79
+   31. Appendix E.  Implementation Conformance Checklist
+           (Informative) . . . . . . . . . . . . . . . . . . . . . .  78
+   32. Appendix F.  Canonicalization Test Vectors (Informative)  . .  80
+     32.1.  JWT / JCS ActorID Example  . . . . . . . . . . . . . . .  80
+     32.2.  JWT / JCS target_context Example . . . . . . . . . . . .  80
+   33. Appendix G.  Illustrative Wire-Format Example
+           (Informative) . . . . . . . . . . . . . . . . . . . . . .  81
+     33.1.  Decoded Access Token Payload Example . . . . . . . . . .  81
+     33.2.  Decoded actc JWS Example . . . . . . . . . . . . . . . .  81
+   34. Appendix H.  Problem Statement and Deployment Context
+           (Informative) . . . . . . . . . . . . . . . . . . . . . .  82
+   35. Appendix I.  Threat Model (Informative) . . . . . . . . . . .  82
+     35.1.  Assets . . . . . . . . . . . . . . . . . . . . . . . . .  82
+     35.2.  Adversaries  . . . . . . . . . . . . . . . . . . . . . .  83
 
 
 
-Prasad, et al.          Expires 28 September 2026               [Page 5]
+Prasad, et al.          Expires 26 September 2026               [Page 5]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
-     35.5.  Non-Goals  . . . . . . . . . . . . . . . . . . . . . . .  79
-     35.6.  Residual Risks . . . . . . . . . . . . . . . . . . . . .  80
+     35.3.  Assumptions  . . . . . . . . . . . . . . . . . . . . . .  83
+     35.4.  Security Goals . . . . . . . . . . . . . . . . . . . . .  83
+     35.5.  Non-Goals  . . . . . . . . . . . . . . . . . . . . . . .  84
+     35.6.  Residual Risks . . . . . . . . . . . . . . . . . . . . .  84
    36. Appendix J.  Trust Boundaries and Audit Guidance
-           (Informative) . . . . . . . . . . . . . . . . . . . . . .  80
-   37. Appendix K.  Design Decisions (Informative) . . . . . . . . .  81
-     37.1.  Why visible chain state is carried in nested act . . . .  81
-     37.2.  Why top-level sub remains the workflow subject . . . . .  81
+           (Informative) . . . . . . . . . . . . . . . . . . . . . .  85
+   37. Appendix K.  Design Decisions (Informative) . . . . . . . . .  85
+     37.1.  Why visible chain state is carried in nested act . . . .  86
+     37.2.  Why top-level sub remains the workflow subject . . . . .  86
      37.3.  Why privacy-sensitive profiles use stable subject
-             aliases . . . . . . . . . . . . . . . . . . . . . . . .  82
+             aliases . . . . . . . . . . . . . . . . . . . . . . . .  86
      37.4.  Why subset disclosure is recipient-specific and
-             AS-driven . . . . . . . . . . . . . . . . . . . . . . .  82
+             AS-driven . . . . . . . . . . . . . . . . . . . . . . .  86
      37.5.  Why actor-only is a separate profile even though subset
-             can express it  . . . . . . . . . . . . . . . . . . . .  82
+             can express it  . . . . . . . . . . . . . . . . . . . .  86
      37.6.  Why branching is represented across tokens, not inside one
-             token . . . . . . . . . . . . . . . . . . . . . . . . .  82
+             token . . . . . . . . . . . . . . . . . . . . . . . . .  87
      37.7.  Why actc uses parent-pointer commitments instead of Merkle
-             trees . . . . . . . . . . . . . . . . . . . . . . . . .  82
-     37.8.  Why actp and actc use short claim names  . . . . . . . .  83
-     37.9.  Why RFC 8414 metadata discovery is reused  . . . . . . .  83
-     37.10. Privacy goals and limits . . . . . . . . . . . . . . . .  83
-   38. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  83
-     38.1.  JSON Web Token Claims Registration . . . . . . . . . . .  83
-     38.2.  Media Type Registration  . . . . . . . . . . . . . . . .  84
-     38.3.  OAuth URI Registration . . . . . . . . . . . . . . . . .  85
-     38.4.  OAuth Authorization Server Metadata Registration . . . .  86
-     38.5.  OAuth Parameter Registration . . . . . . . . . . . . . .  88
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  88
+             trees . . . . . . . . . . . . . . . . . . . . . . . . .  87
+     37.8.  Why actp and actc use short claim names  . . . . . . . .  87
+     37.9.  Why RFC 8414 metadata discovery is reused  . . . . . . .  87
+     37.10. Privacy goals and limits . . . . . . . . . . . . . . . .  87
+   38. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  87
+     38.1.  JSON Web Token Claims Registration . . . . . . . . . . .  88
+     38.2.  Media Type Registration  . . . . . . . . . . . . . . . .  88
+     38.3.  OAuth URI Registration . . . . . . . . . . . . . . . . .  89
+     38.4.  OAuth Authorization Server Metadata Registration . . . .  90
+     38.5.  OAuth Parameter Registration . . . . . . . . . . . . . .  92
+   39. Appendix X.  Out-of-Scope Use Cases (Informative) . . . . . .  93
+   40. Appendix Y.  Relationship to RFC 8693 (Informative) . . . . .  93
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  94
 
 1.  Part I.  Core Specification
 
@@ -326,17 +330,18 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    This document defines six interoperable actor-chain profiles for
    OAuth 2.0 Token Exchange.  They preserve the existing meanings of
    sub, act, and may_act, and they define when nested act becomes
+
+
+
+Prasad, et al.          Expires 26 September 2026               [Page 6]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    authoritative visible actor-chain state for profile-controlled
    processing.  Depending on the selected profile, the next hop can see
    the full visible chain, an Authorization-Server- selected subset of
    that chain, only the current actor, or no inline act at all.
-
-
-
-Prasad, et al.          Expires 28 September 2026               [Page 6]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    The profiles are organized in two branches.  The declared branch
    relies on the Authorization Server to assert visible chain
@@ -370,12 +375,33 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  *Current actor*: The authenticated entity presently performing
       token exchange.
 
+   *  *Disclosed current actor*: The actor identified by the outermost
+      visible act node of an artifact when such a node is present.
+      Depending on the selected profile and disclosure policy, the
+      disclosed current actor MAY be the same as the operational current
+      actor or MAY be absent from the returned ordinary token.
+
    *  *Presenting actor*: The actor that presents an inbound token to a
       recipient.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026               [Page 7]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Example: when B exchanges a token at the Authorization Server, B is
    the current actor.  When B later presents the resulting token to C, B
    is the presenting actor.
+
+   Unless otherwise qualified, references in this specification to the
+   current actor are about the operational current actor performing
+   exchange, not about whether that actor is disclosed inline in act for
+   the next hop.
 
    *  *Recipient*: The actor or resource server identified as the
       intended target of an issued token.
@@ -387,23 +413,25 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       next hop.  It is distinct from step proofs, bootstrap context
       handles, commitment objects, and receiver acknowledgments.
 
-
-
-Prasad, et al.          Expires 28 September 2026               [Page 7]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  *Visible chain*: The ordered actor sequence represented by the act
       structure of an artifact when actp is present.  The outermost act
       identifies the current actor.  Any nested act members identify
       prior visible actors only.
+
+   When this specification discusses a visible chain carried in an
+   issued token or other artifact for the next recipient, it refers to
+   the disclosed token- visible chain.
 
    *  *Actor-visible chain*: The exact ordered actor sequence that the
       current actor is permitted to know and extend for the next hop.
       In the verified profiles, this is the exact visible chain that the
       current actor verified on the inbound hop, with that actor
       appended when it later acts.
+
+   In the verified profiles, this is the signed actor-visible chain
+   carried in the step proof.  It can be broader than the disclosed
+   token-visible chain of the returned ordinary token under subset-
+   disclosure or actor-only operation.
 
    *  *Authoritative workflow chain state*: Authorization-Server-
       retained state for the accepted workflow instance.  It MAY be
@@ -412,6 +440,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       legal audit, and any policy-controlled future redisclosure.  This
       specification does not require that such retained state be
       disclosed inline in ordinary tokens.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026               [Page 8]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    In the full-disclosure profiles, the visible chain, the actor-visible
    chain, and the authoritative workflow chain state collapse to the
@@ -440,16 +477,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       initial actor redeem bound bootstrap state at the token endpoint
       without carrying that state inline.
 
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026               [Page 8]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  *Actor-chain identifier (acti)*: A stable identifier minted once
       at workflow start and retained for the lifetime of the workflow
       instance.
@@ -468,6 +495,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       artifact is the same actor that the workflow state and any
       required disclosed current-actor information identify as the
       expected presenter.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026               [Page 9]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    *  *Append-only processing*: The rule that a new actor is appended to
       the prior accepted workflow chain state, and to any disclosed
@@ -496,16 +533,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    profiles delegation-chain workflow continuity and profile-controlled
    disclosure across token exchange hops.
 
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026               [Page 9]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    When actp is absent, act has ordinary RFC 8693 semantics.  Nested
    prior act claims, if present, remain informational only for access-
    control purposes, consistent with {{!RFC8693}}.
@@ -525,6 +552,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       of act entirely, does not turn a profiled token into an ordinary
       impersonation output.  When actp is present, the token remains a
       delegation-chain token under this specification.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 10]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  Plain RFC 8693 outputs that do not carry this specification's
       profile signals remain outside this profile family whether or not
       they contain act.
@@ -555,13 +592,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    which the visible act structure becomes authoritative for actor-chain
    processing under that profile.
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 10]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 5.  Scope and Model
 
    This document specifies a family of profiles for representing and
@@ -577,6 +607,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    background, rationale, threat discussion, and operational guidance
    that may be useful for review and deployment planning but are not
    required for a first implementation pass.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 11]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 5.1.  Workflow Model
 
@@ -608,16 +648,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  *Verified Full Disclosure*, which is the verified full-disclosure
       case in which every actor and downstream recipient sees the full
       visible nested act chain;
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 11]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  *Verified Subset Disclosure*, which preserves cumulative
       commitment state and lets the Authorization Server disclose a
       recipient-specific visible nested act chain while the current
@@ -635,6 +665,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  the *verified branch*, consisting of one common verified
       processing section plus three disclosure modes: full disclosure,
       subset disclosure, and actor-only disclosure.
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 12]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Each derived profile inherits all requirements of its branch root or
    common verified processing section except as modified in that
@@ -666,14 +704,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    +----------+---------+----+----------+----------------+-------------+
    |Declared  |Disclosed|No  |Yes       | Disclosed      | AS-         |
    |Subset    |nested   |    |          | visible subset | asserted    |
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 12]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    |Disclosure|subset or|    |          | only;          | continuity  |
    |          |omitted  |    |          | undisclosed    | plus AS     |
    |          |act      |    |          | actors         | disclosure  |
@@ -692,6 +722,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    |Verified  |Full     |Yes |No        | Full visible   | Actor-      |
    |Full      |nested   |    |          | chain plus     | signed      |
    |Disclosure|chain    |    |          | commitment     | visible-    |
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 13]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    |          |         |    |          | continuity     | chain       |
    |          |         |    |          |                | proofs      |
    |          |         |    |          |                | plus        |
@@ -722,15 +760,31 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    |          |         |    |          |                | disclosure  |
    +----------+---------+----+----------+----------------+-------------+
 
+                                  Table 1
+
+   Profile-applicability constraint: deployments in which recipient
+   authorization depends on prior-path membership or order MUST use a
+   profile and disclosure policy that disclose the required prior-path
+   evidence at that hop.  Actor-only or omitted-act outcomes are not
+   suitable inputs for such path-sensitive authorization decisions.
+
+   Motivating real-world examples for each disclosure mode appear in the
+   "Motivating Real-World Examples" section in Part II.  Out-of-scope
+   use cases are noted in Appendix X.
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 13]
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 14]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
-
-                                  Table 1
 
 5.3.  Branching and Non-Goals
 
@@ -748,6 +802,11 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    parallel successor exists.  This document does not define merge
    semantics, sibling-discovery semantics, or inline branch-selection
    semantics.
+
+   Accordingly, a valid token under this specification proves only one
+   accepted visible path for that token.  It does not by itself prove
+   branch uniqueness for the workflow instance or prove that no other
+   accepted sibling successor exists.
 
    Post-facto reconstruction of branching is a forensic or legal-audit
    concern, not a normal online authorization requirement.  Retained
@@ -776,15 +835,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The actor chain advances only when an actor acts.  Mere receipt of a
    token does not append the recipient.
 
-   If A calls B, and B later calls C, then:
 
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 14]
+Prasad, et al.          Expires 26 September 2026              [Page 15]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
+
+   If A calls B, and B later calls C, then:
 
    1.  A begins the workflow and becomes the initial actor.
    2.  When A calls B, B validates a token representing A.
@@ -832,15 +890,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       -  an actor-chain identifier claim acti;
       -  a subject claim sub;
       -  a unique token identifier claim jti;
-      -  an audience value aud; and
-      -  an expiry value exp.
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 15]
+Prasad, et al.          Expires 26 September 2026              [Page 16]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
+
+      -  an audience value aud; and
+      -  an expiry value exp.
 
    A profile-governed ordinary token MAY additionally contain act
    according to the selected profile and Authorization Server policy.
@@ -878,6 +937,23 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    to satisfy the selected profile's requirements, the implementation
    MUST treat that as a profile-validation failure.
 
+   Accordingly, interoperability requirements in this base specification
+   apply to the self-contained ordinary-token claim carriage defined
+   here.  Opaque-token deployments depend on companion validation
+   interfaces outside this document and therefore require either out-of-
+   band agreement or a companion specification for interoperable
+   behavior.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 17]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    At workflow bootstrap, the issuing Authorization Server MUST
    establish the workflow subject according to local policy and the
    selected disclosure profile.  The resulting sub value MAY be an
@@ -890,14 +966,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    For same-domain token exchange and Refresh-Exchange, this
    specification preserves that exact chosen sub representation within
    the same domain for the lifetime of the workflow unless a later
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 16]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    permitted cross-domain alias transition occurs.  Cross-domain re-
    issuance MAY translate sub only under the semantic- equivalence rule
    defined later.  This document does not define a same-workflow
@@ -935,6 +1003,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Deployments MAY use stronger generation (for example, full 128-bit
    random values) by local policy.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 18]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    Profile selection MUST be signaled explicitly using the token request
    parameter actor_chain_profile and the corresponding token claim actp.
 
@@ -946,14 +1021,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    In this base specification, aud identifies the intended recipient
    service or audience of the issued token.  An optional resource value
    can further identify a narrower protected resource, API surface, or
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 17]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    object within that audience.  When no finer-grained targeting inputs
    are used, the canonical target context is still a JSON object that
    contains only aud.
@@ -990,6 +1057,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    specification defines additional target-context members and their
    semantics.
 
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 19]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    When a deployment expects multiple distinct successors under the same
    prior state and the same nominal target, it MUST include a request-
    unique discriminator such as request_id inside target_context.
@@ -1002,13 +1078,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    continuity using target_context MUST retain the exact canonical
    target_context value for the accepted hop, or enough original request
    material to reconstruct that exact canonical value later.
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 18]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    Whenever target_context is incorporated into a profile-defined
    signature or commitment input in this JWT-based version, it MUST be
@@ -1044,6 +1113,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    This specification requires a canonical representation for actor
    identity in profile-defined visible-chain entries and step proofs.
 
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 20]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    Each canonical actor identifier used by this specification MUST be
    represented as an ActorID structure containing exactly two members:
 
@@ -1057,14 +1135,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    or hashed inputs.
 
    An ActorID:
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 19]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    *  MUST be stable for equality comparison within a workflow instance;
    *  MUST be bound to the actor identity accepted under local policy
@@ -1101,6 +1171,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    The helper functions used throughout this document are therefore:
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 21]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    {::nomarkdown} <sourcecode type="text"> VisibleChain(act) = ordered
    list of ActorID values obtained by recursively reading nested act
    from the innermost prior actor to the outermost current actor.
@@ -1114,13 +1191,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    In examples and formulas, [A,B] denotes the ordered visible chain of
    ActorID values for actors A and B, while EncodeVisibleChain([A,B])
    denotes the nested JSON representation carried in act.
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 20]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 7.6.  Artifact Typing
 
@@ -1139,10 +1209,30 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    where applicable, and artifact-specific payload structure defined by
    the relevant binding section of this specification.
 
+   typ matching for profile-defined artifacts MUST be exact string
+   equality, without case folding, prefix matching, or media-type alias
+   mapping.  Missing or unexpected typ values MUST cause rejection of
+   the artifact for that processing path.
+
+   If a JOSE protected header contains crit, verifiers MUST reject
+   unless every listed header parameter is understood and processed
+   according to its specification.  This document defines no profile-
+   specific use of unencoded JWS payloads; profile-defined artifacts in
+   this version therefore use the ordinary base64url-encoded JWS payload
+   form.
+
 7.7.  Issued Token Type
 
    Unless another application profile explicitly states otherwise,
    tokens issued under this specification are access tokens.
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 22]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Token exchange responses MUST use the RFC 8693 token type fields
    consistently with the underlying representation and deployment.
@@ -1169,15 +1259,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       algorithm substitution based solely on attacker-controlled inputs.
    *  Hash algorithms with truncated outputs, including truncated
       sha-256 variants, MUST NOT be used with this specification.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 21]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  Additional registry values MAY be used only if they are permitted
       by this specification or a future Standards Track update to it,
       and verifiers MUST reject locally deprecated or disallowed
@@ -1201,6 +1282,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       this commitment object;
    *  acti: the actor-chain identifier;
    *  actp: the active profile identifier;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 23]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  halg: the hash algorithm identifier;
    *  prev: the prior commitment digest, or the bootstrap
       initial_chain_seed at workflow start;
@@ -1223,16 +1312,10 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    commitment hash therefore binds the transmitted step-proof artifact,
    not merely its decoded payload.
 
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 22]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
+   Accordingly, step_hash and curr are commitments to the exact compact-
+   JWS proof bytes accepted for that hop.  Two semantically equivalent
+   decoded proofs MAY therefore produce different commitment values when
+   their compact-JWS bytes differ.
 
    When a profile-defined proof input refers to a prior actc, the value
    incorporated into the proof input MUST be that prior commitment's
@@ -1255,6 +1338,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Authorization Server signing the new commitment object, and acti and
    actp are the workflow and profile values being preserved for that
    workflow state.
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 24]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 7.10.  Common Cryptographic Operations
 
@@ -1282,14 +1372,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Symbols such as TC_B, TC_C, and TC_next denote the canonical
    target_context for the corresponding next hop.
 
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 23]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    Proof-bound profiles instantiate the following generic step-proof
    payload template:
 
@@ -1306,6 +1388,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       Disclosure; and
    *  actor-chain-verified-actor-only-step-sig-v1 for Verified Actor-
       Only Disclosure.
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 25]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    These strings remain distinct even though the verified branch step-
    proof payload members are structurally aligned.  The signed step-
@@ -1338,14 +1433,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    the verified visible_actor_chain_for_hop and MUST be an ordered
    subsequence of it.  A singleton current-actor-only form [N] is
    syntactically representable under subset disclosure, but this
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 24]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    document also defines explicit actor-only profiles so that such
    policy remains machine-readable.  Omission of act is also permitted
    under the subset profiles.  A future recipient-protected disclosure
@@ -1363,6 +1450,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    exactly one actor_chain_profile value for that request.  The
    Authorization Server MUST either issue a token whose actp equals that
    requested profile identifier or reject the request.
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 26]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    For a given workflow instance identified by acti, actp is immutable.
    Accordingly, every accepted chain state within that workflow instance
@@ -1393,15 +1487,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       nested act according to actp and application of local
       authorization policy using only the visible chain that the profile
       exposes.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 25]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  *Layer 3: Continuity and audit evidence* -- validation of actc,
       step proofs, acknowledgments, and retained Authorization Server
       records.
@@ -1420,6 +1505,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  token signature;
    *  issuer trust;
    *  profile identifier (actp);
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 27]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  presence and correct format of profile-required structural claims
       (actc and any profile-required disclosed act according to actp);
    *  expiry and replay requirements;
@@ -1450,14 +1544,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  the inbound token signature and issuer trust;
    *  the authenticated identity of the current actor;
    *  intended-recipient semantics for the inbound token;
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 26]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  the selected profile identifier and any profile-specific step-
       proof requirements;
    *  the preserved acti and sub continuity expected for the workflow;
@@ -1475,6 +1561,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    If the selected profile requires inline act disclosure, omission of
    act, or presence of an act that violates the profile's required
    disclosure rules, MUST be treated as a profile-validation failure.
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 28]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    This specification does not define validation or handling rules for
    may_act.  Any effect of may_act is determined by RFC 8693, by the
@@ -1506,14 +1600,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  token signature and issuer trust;
    *  that the returned actp equals the requested profile identifier and
       any preserved active profile state;
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 27]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  that the returned acti equals the actor-chain identifier already
       represented by the inbound token or bootstrap state;
    *  that the returned sub equals the expected preserved workflow-
@@ -1532,6 +1618,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    that the returned visible chain equals the full verified chain for
    that hop.  For subset-disclosure profiles, if the returned token
    discloses act, the current actor MUST verify that the returned
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 29]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    visible chain is an ordered subsequence of the exact verified actor-
    visible chain that the actor signed or otherwise caused to be
    asserted for that hop.  For actor-only profiles, the current actor
@@ -1557,19 +1651,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    is used as the actor_chain_profile token request parameter value and
    as the actp token claim value.
 
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 28]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 11.2.  Objective
 
    The Declared Full Disclosure profile extends token exchange by
@@ -1594,6 +1675,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  the requested OAuth targeting parameters (audience, resource, or
       both) sufficient to identify B as the initial target context.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 30]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    If AS1 accepts the request, AS1 MUST establish the workflow subject
    according to local policy before issuing T_A.  At bootstrap under
    these base profiles, AS1 MUST choose a stable workflow-subject
@@ -1617,14 +1705,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    B MUST decode VisibleChain(T_A.act) and verify that its last actor is
    A.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 29]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    If that continuity check fails, B MUST reject the request.
 
@@ -1651,6 +1731,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    AS1 MUST read the prior visible chain from T_A.act, append B, and
    issue T_B containing at least:
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 31]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  actp=declared-full
    *  sub
    *  act=EncodeVisibleChain([A,B])
@@ -1669,18 +1756,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    verified chain from T_A with B appended.
 
    If that append-only check fails, B MUST reject T_B.
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 30]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 11.8.  Next-Hop Validation
 
@@ -1704,6 +1779,21 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    It is used as the actor_chain_profile token request parameter value
    and as the actp token claim value.
 
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 32]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 12.2.  Objective
 
    This profile inherits the Declared Full Disclosure profile and
@@ -1723,20 +1813,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    When this profile discloses act, the visible chain seen by a
    recipient, obtained from VisibleChain(act), MUST be an ordered
    subsequence of the asserted chain state for that hop.
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 31]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    A recipient MUST treat undisclosed prior actors as unavailable and
    MUST NOT infer adjacency, absence, or exact chain length from the
@@ -1766,6 +1842,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    At bootstrap, the initial actor MUST request a token with at least:
 
    *  grant_type=client_credentials;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 33]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  actor_chain_profile=declared-subset; and
    *  the requested OAuth targeting parameters (audience, resource, or
       both) sufficient to identify the initial target context.
@@ -1783,16 +1867,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    validation of a full visible chain, this profile instead requires
    presentation and validation of any disclosed subset carried in act,
    if present.
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 32]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 12.6.  Modified Token Exchange
 
@@ -1824,6 +1898,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    returned token any actor identity that the current actor is not
    permitted to learn.
 
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 34]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    If an inbound token under this profile discloses act, the current
    recipient MUST validate the disclosed subset according to this
    profile.  If a returned token under this profile discloses act, the
@@ -1839,16 +1921,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    A recipient MAY use any disclosed visible chain for authorization
    decisions.
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 33]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    A recipient MUST use only the disclosed visible chain, if any, for
    actor-chain authorization and MUST treat undisclosed actors as
@@ -1875,6 +1947,21 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    only.  It is used as the actor_chain_profile token request parameter
    value and as the actp token claim value.
 
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 35]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 13.2.  Objective
 
    This profile inherits the Declared Subset Disclosure profile and
@@ -1895,16 +1982,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    tokens, but every ordinary token issued under this profile MUST
    expose only the current actor for that hop.  Recipients MUST
    authorize only on that visible current actor and local policy.
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 34]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 13.4.  Modified Bootstrap and Issuance
 
@@ -1933,6 +2010,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    For this profile, the current actor MUST submit at least:
 
    *  grant_type=urn:ietf:params:oauth:grant-type:token-exchange;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 36]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  actor_chain_profile=declared-actor-only;
    *  the inbound token as the RFC 8693 subject_token;
    *  subject_token_type=urn:ietf:params:oauth:token-type:access_token;
@@ -1954,13 +2039,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    A recipient MUST authorize only on the visible outermost current
    actor and local policy.
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 35]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 13.8.  Security Result
 
@@ -1987,36 +2065,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    disclosure policy, and the corresponding validation and authorization
    rules.
 
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 37]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 14.1.  Common Parameters
 
    Each verified profile supplies the following profile-specific
    parameters to the common processing below.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 36]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    +============+===========+============+===============+=============+
    | Profile    | actp      | Step-proof | Proof-bound   | Visible act |
@@ -2059,20 +2120,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
                                   Table 2
 
-   The profile identifier, step-proof domain-separation string, and the
-   profile-specific interpretation of act therefore remain aligned
-   across the verified branch.
 
 
 
 
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 37]
+Prasad, et al.          Expires 26 September 2026              [Page 38]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
+
+   The profile identifier, step-proof domain-separation string, and the
+   profile-specific interpretation of act therefore remain aligned
+   across the verified branch.
 
 14.2.  Common Bootstrap Context Request
 
@@ -2112,6 +2172,20 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    of initial verified ordinary tokens for that workflow instance while
    it remains valid.
 
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 39]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    For a given canonical chosen initial target_context, the
    Authorization Server MUST treat repeated redemption of the same
    bootstrap handle as an idempotent retry and MUST return the
@@ -2119,16 +2193,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    representing that same accepted initial state.  It MUST NOT issue a
    second distinct accepted initial state for that same canonical chosen
    initial target_context.
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 38]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    The Authorization Server MAY accept additional redemptions of the
    same bootstrap handle for distinct canonical chosen initial
@@ -2159,6 +2223,25 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  the requested OAuth targeting parameters (audience, resource, or
       both) sufficient to identify that chosen initial target context.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 40]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    The Authorization Server MUST verify the bootstrap context and verify
    that the authenticated actor redeeming it is the same actor to which
    the bootstrap context was issued.  It MUST also verify that the
@@ -2172,20 +2255,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    at least iss, actp, acti, sub, jti, aud, exp, and actc, and any
    profile-governed disclosed act.
 
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 39]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    Because the initial verified hop has no prior visible actors, the
    exact verified actor-visible chain for that hop is [A].  The returned
    ordinary token MUST disclose that chain as
@@ -2193,7 +2262,10 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Verified Actor-Only Disclosure profiles.  For Verified Subset
    Disclosure, the Authorization Server MAY either disclose
    act=EncodeVisibleChain([A]) or omit act entirely according to local
-   policy.
+   policy.  When Verified Subset operation omits bootstrap act,
+   subsequent disclosed visible-predecessor continuity begins from the
+   empty disclosed chain, while commitment continuity remains anchored
+   by the initial verified step proof and actc.
 
 14.4.  Common Hop Processing
 
@@ -2218,6 +2290,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  the selected verified profile actor_chain_profile;
    *  the inbound token as the RFC 8693 subject_token;
    *  subject_token_type=urn:ietf:params:oauth:token-type:access_token;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 41]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  actor_chain_step_proof; and
    *  the requested OAuth targeting parameters sufficient to identify
       the next target context.
@@ -2225,22 +2305,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The current actor MAY additionally submit RFC 8693 actor_token and
    actor_token_type parameters subject to the common validation rules in
    "Authorization Server Validation of Token Exchange".
-
-
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 40]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    The Authorization Server MUST validate the inbound token, validate
    the step proof for the active profile, MUST verify that the step
@@ -2271,6 +2335,25 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  any profile-specific disclosed-chain checks for the active
       disclosure mode.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 42]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    Because actc is cumulative commitment state carried inline in
    verified profile ordinary tokens, every later actor and every
    Authorization Server that extends the verified workflow relies on
@@ -2284,19 +2367,12 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    at admission time, but chain extension MUST NOT proceed without
    successful validation of the inbound actc.
 
+   For non-repudiation, participation, or later semantic interpretation,
+   deployments SHOULD retain the exact step-proof artifact and
+   associated verification context used when validating commitment
+   linkage.
+
 15.  Verified Full Disclosure Profile
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 41]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 15.1.  Profile Identifier
 
@@ -2327,6 +2403,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    token that could be issued by a colluding actor and its home
    Authorization Server.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 43]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    The evidentiary value of this profile depends on retention or
    discoverability of step proofs, exchange records, and associated
    verification material.
@@ -2346,13 +2429,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    The Authorization Server MUST issue EncodeVisibleChain(visible_hop_N)
    as the visible act in the returned token.
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 42]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    A recipient MUST use the full visible chain for authorization
    decisions.
@@ -2380,6 +2456,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 16.  Verified Subset Disclosure Profile
 
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 44]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 16.1.  Profile Identifier
 
    The profile identifier string for this profile is verified-subset.
@@ -2403,13 +2489,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    section.  This profile inherits all requirements of that common
    verified processing.
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 43]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    When this profile discloses act, the visible chain seen by a
    recipient, obtained from VisibleChain(act), MUST be an ordered
    subsequence of the verified actor-visible chain for that hop.
@@ -2422,6 +2501,12 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    MUST NOT infer adjacency, absence, exact chain length, or hidden
    prefixes from the disclosed subset alone.
 
+   Accordingly, this profile preserves continuity over the exact
+   disclosed actor-visible chain available at each hop together with
+   cumulative commitment state.  It does not by itself guarantee
+   visible-predecessor continuity for actors hidden by disclosure
+   policy, including the bootstrap case where act is omitted.
+
    The Authorization Server MAY retain authoritative workflow chain
    state richer than the disclosed subset for audit, forensics, legal
    review, and branch reconstruction.  In this base JWT/JWS binding,
@@ -2429,6 +2514,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    the next recipient, so the returned visible act MUST be acceptable
    for both.  Accordingly, a later privileged recipient can learn more
    than an earlier intermediary only at a hop where every holder of the
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 45]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    returned token is permitted to learn that broader disclosure, or by
    using a future recipient-protected disclosure mechanism outside this
    base specification.
@@ -2455,17 +2548,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    with N appended.  An omitted inbound act corresponds to the empty
    chain_in value.
 
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 44]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    Any visible act disclosed to the next recipient in this base binding
    MUST be derived from the exact verified actor-visible chain for that
    hop and MUST be an ordered subsequence of it.  The singleton [N] is
@@ -2485,6 +2567,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    specification provides no inline current-actor disclosure for that
    hop.  Any additional authorization inputs are determined by local
    policy and are outside the scope of this specification.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 46]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 16.5.  Attack Handling
 
@@ -2513,15 +2605,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    and the linked prior commitment digest, not over hidden prefix
    semantics that the actor was not permitted to verify.
 
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 45]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 16.6.  Security Result
 
    This profile preserves Authorization-Server-validated continuity,
@@ -2536,6 +2619,20 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The profile identifier string for this profile is verified-actor-
    only.  It is used as the actor_chain_profile token request parameter
    value and as the actp token claim value.
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 47]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 17.2.  Objective
 
@@ -2570,14 +2667,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Where Verified Subset Disclosure permits any ordered subsequence of
    the verified actor-visible chain to appear in the returned ordinary
    token, this profile instead requires the issuing Authorization Server
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 46]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    to return a visible act containing exactly one ActorChainNode
    identifying the actor represented by the returned token.  The
    returned token MUST still carry the updated cumulative actc state.
@@ -2592,6 +2681,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    policy.  If the recipient establishes a presenting actor for the
    inbound token under local policy, it MUST also confirm that the
    visible current actor matches that same presenting actor.
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 48]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 17.5.  Attack Handling
 
@@ -2619,6 +2716,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    actor_chain_cross_domain=true and actor_chain_refresh=true.  The
    Authorization Server MUST reject any request that sets both.
 
+   For preserve-state exchanges (actor_chain_cross_domain=true or
+   actor_chain_refresh=true), the Authorization Server MUST apply an
+   explicit preserve-state authorization policy.  Unless deployment
+   policy explicitly selects transport-only renewal semantics, the
+   Authorization Server MUST re-evaluate current authorization for the
+   authenticated current actor and the requested target context before
+   issuing the preserved-state token.  If current policy does not permit
+   issuance, the Authorization Server MUST reject the request.
+
 18.1.  Cross-Domain Re-Issuance
 
 18.1.1.  Request Format
@@ -2627,17 +2733,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    directly, the current actor MUST perform a second token exchange at
    the next domain's Authorization Server.
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 47]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    A cross-domain re-issuance request MUST include:
 
    *  grant_type=urn:ietf:params:oauth:grant-type:token-exchange;
    *  actor_chain_cross_domain=true;
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 49]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  actor_chain_profile set to the active profile identifier carried
       by the inbound token;
    *  the current inbound actor-chain token as the RFC 8693
@@ -2677,6 +2785,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  preserve actp;
    *  preserve acti;
    *  preserve actc, if present, exactly as verified;
+   *  enforce preserve-state authorization policy for this re-issuance
+      request as required above;
    *  continue to represent the same current actor; and
    *  NOT append the next recipient.
 
@@ -2685,7 +2795,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 48]
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 50]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -2729,19 +2841,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    This specification cryptographically binds same-domain workflow-
    subject continuity through verified step proofs.  It does not
    cryptographically bind cross-domain sub alias continuity in preserved
-   actc; cross-domain subject alias continuity therefore remains a
-   matter of Authorization-Server policy and retained audit evidence in
-   this version.
+   actc.  Accordingly, preserved actc continuity across cross-domain re-
+   issuance MUST NOT be interpreted as cryptographic proof that the pre-
+   translation and post- translation sub values are bound by this
+   specification to the same subject representation.  In this version,
+   cross-domain subject-alias continuity remains a matter of
+   Authorization-Server policy and retained audit evidence.
 
 
 
 
 
 
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 49]
+Prasad, et al.          Expires 26 September 2026              [Page 51]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -2773,12 +2885,34 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    rewritten token audience issued by the re-issuing Authorization
    Server.
 
+   Accordingly, when such narrowing or rewriting occurs, the current re-
+   issued token's audience or other local target representation MUST NOT
+   be interpreted as if it were itself the target context
+   cryptographically bound by the earlier step proof or by preserved
+   actc.  In this case, the re-issued token carries a current
+   presentation context for local use, while the preserved proof-bound
+   context remains that of the original chain-extending hop.
+
    A recipient or current actor in the new domain that trusts the re-
    issuing Authorization Server MAY rely on that enclosing token
    signature as attestation that any preserved foreign actc was
    validated and carried forward unchanged.  Such a recipient need not
    independently validate a foreign Authorization Server's JWS signature
    on the preserved actc unless local policy or audit requires it.
+
+   The base specification does not define a portable cryptographic
+   lineage field that identifies the exact inbound token instance from
+   which a returned cross- domain re-issued token was derived.
+   Accordingly, exact input-token provenance for a re-issued token
+   remains a matter of Authorization-Server records or of a future
+   companion specification that defines such a lineage field.
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 52]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 18.1.5.  Returned-Token Validation
 
@@ -2794,14 +2928,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    materialization in act solely to preserve the same ActorID semantics
    when an inbound node had omitted iss.  For Full Disclosure and Actor-
    Only profiles, any returned visible act MUST preserve the inbound
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 50]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    visible act exactly except for such permitted iss materialization.
    For Subset Disclosure profiles, any returned visible act, if present,
    MUST be an ordered subsequence of the inbound visible chain and MUST
@@ -2836,6 +2962,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    because Refresh-Exchange preserves rather than extends the accepted
    chain state.
 
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 53]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    A Refresh-Exchange request MUST NOT broaden the active profile,
    represented actor identity, visible chain state visible to the
    current actor, commitment state, or target context.  The requested
@@ -2847,17 +2981,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    server not already present in the inbound token's canonical
    target_context.
 
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 51]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 18.2.2.  Processing Rules
 
    When processing Refresh-Exchange, the Authorization Server MUST:
@@ -2866,6 +2989,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  verify that the requested profile identifier exactly matches the
       inbound token's actp;
    *  verify intended-recipient semantics as applicable;
+   *  enforce preserve-state authorization policy for this refresh
+      request as required above;
    *  verify that the request does not append the chain, alter preserved
       chain state, broaden target context, or change recipient identity;
       and
@@ -2889,6 +3014,18 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    proofs were created and MUST be verified against those historical
    bindings, not against later local authentication material.
 
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 54]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    A recipient or coordinating component MUST treat a token obtained by
    Refresh-Exchange as representing the same accepted chain state as the
    inbound token from which it was refreshed.  If local policy records a
@@ -2904,15 +3041,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    and actc, are unchanged from the inbound token except where this
    specification explicitly permits refresh- specific changes such as
    jti, exp, or locally managed transport metadata.
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 52]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 19.  Optional Receiver Acknowledgment Extension
 
@@ -2943,6 +3071,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    integrity-protected application mechanism before expecting a matching
    hop_ack.
 
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 55]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    A hop_ack is ordinarily returned to the presenting actor or to a
    coordinating component acting for that hop.  It MAY later be
    archived, forwarded, or made available to an audit service or other
@@ -2958,17 +3097,11 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       honor the accepted request according to local reliability policy.
 
    A deployment MAY require hop_ack for selected hops, including
-   terminal hops.  When hop_ack is required by policy, the calling actor
-   and any coordinating component MUST treat that hop as not accepted
-   unless a valid hop_ack is received and verified.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 53]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
+   terminal hops.  Deployments that require evidence of terminal
+   acceptance SHOULD require a valid hop_ack for those terminal hops.
+   When hop_ack is required by policy, the calling actor and any
+   coordinating component MUST treat that hop as not accepted unless a
+   valid hop_ack is received and verified.
 
    Deployments that rely on hop_ack for later audit or dispute
    resolution SHOULD ensure that the caller side and the recipient side
@@ -2997,6 +3130,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  acti;
    *  actp;
    *  jti, a unique identifier for the hop_ack JWT itself;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 56]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  inbound_jti, copied from the acknowledged inbound token;
    *  OPTIONAL presenter, the presenting actor's ActorID when
       established under local policy for that hop;
@@ -3018,13 +3159,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    A caller or coordinating component that receives hop_ack and relies
    on it for acceptance processing MUST verify at least:
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 54]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    *  the JWS signature using the recipient identity and keying material
       expected by local trust policy;
@@ -3052,6 +3186,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  for verified profiles, inbound_commitment equals the verified
       inbound commitment digest copied from the inbound token's
       actc.curr; and
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 57]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  the ack member is present and its value equals accepted.
 
    When the inbound token being acknowledged was obtained by cross-
@@ -3068,21 +3210,30 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Implementations still MUST satisfy these requirements even when they
    are consulted later in a first reading pass.
 
+20.1.  JOSE and Parser Hardening
 
+   Implementations validating ordinary tokens, step proofs, hop_ack, and
+   actc MUST apply strict JOSE and JSON parsing behavior to avoid
+   implementation-differential acceptance.
 
+   At minimum, validators MUST:
 
+   *  reject duplicate member names in any JSON object that contributes
+      to profile-defined validation, signature verification,
+      canonicalization, or commitment inputs;
+   *  reject malformed compact JWS syntax, including malformed base64url
+      segments;
+   *  reject unsupported critical JOSE headers as defined in Artifact
+      Typing and the JWT binding appendix;
+   *  enforce exact expected claim types for profile-defined claims
+      before semantic processing (for example, actp, acti, iss, sub, and
+      jti as strings; target_context as an object where required by this
+      specification; and actc as a compact JWS string when required);
+   *  treat type mismatch as a profile-validation failure; and
+   *  for verified profiles, treat missing actc as a profile-validation
+      failure.
 
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 55]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-20.1.  Actor Authentication and Presenter Binding
+20.2.  Actor Authentication and Presenter Binding
 
    This specification does not define or require any particular actor-
    authentication, presenter-binding, or token-binding mechanism.
@@ -3091,7 +3242,21 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Recipient authorization policy based on such inputs is outside the
    scope of this specification.
 
-20.2.  Actor and Recipient Proof Keys
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 58]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+   When deployment policy depends on a specific presenter-binding or
+   token-binding mechanism class (for example mTLS-anchored or DPoP-
+   anchored processing), that mechanism class MUST be fixed by local
+   policy or a companion profile and MUST NOT be inferred from actor-
+   chain artifacts alone.
+
+20.3.  Actor and Recipient Proof Keys
 
    For verified profiles and for hop_ack, any signature used as a
    profile-defined proof MUST be generated with an asymmetric key whose
@@ -3123,22 +3288,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    context for the applicable audit period, because commitment digests
    alone do not prove which actor signed which hop.
 
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 56]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-20.3.  Intended Recipient Validation
+20.4.  Intended Recipient Validation
 
    When a current actor submits an inbound token as a subject_token in
    token exchange, the accepting Authorization Server MUST normally
@@ -3148,11 +3298,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    actor_chain_cross_domain=true, this intended- recipient check does
    not apply, because the current actor is legitimately redeeming a
    token it holds as the presenter in order to refresh or preserve
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 59]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    previously established chain state.
 
    Possession of an inbound token alone is insufficient.
 
-20.4.  Replay and Freshness
+20.5.  Replay and Freshness
 
    Recipients and Authorization Servers MUST enforce replay and
    freshness checks on inbound tokens according to local policy.
@@ -3182,18 +3340,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       expect multiple distinct same-target successors SHOULD distinguish
       them by including a unique request_id in target_context.
 
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 57]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 21.  Authorization Server Metadata
 
    Actor-chain capability discovery uses OAuth 2.0 Authorization Server
@@ -3206,6 +3352,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    An Authorization Server supporting this specification SHOULD publish
    metadata describing its supported actor-chain capabilities.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 60]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    This specification defines the following Authorization Server
    metadata values:
@@ -3243,13 +3398,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    If omitted, clients MUST NOT assume support for any actor-chain
    profile beyond out-of-band agreement.
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 58]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 22.  Error Handling
 
    Token exchange errors in this specification build on OAuth 2.0 and
@@ -3257,6 +3405,18 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    An Authorization Server processing a token exchange request applies
    the following mapping:
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 61]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
     +=================+==============================================+
     | OAuth error     | Triggering condition                         |
@@ -3284,12 +3444,35 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
     |                 | that is neither an idempotent retry nor an   |
     |                 | authorized distinct initial successor is     |
     |                 | detected, required inline act disclosure is  |
-    |                 | absent, profile-disclosure rules fail, or    |
-    |                 | the submitted prior state is inconsistent    |
+    |                 | absent, profile-disclosure rules fail,       |
+    |                 | preserve-state authorization policy fails,   |
+    |                 | or the submitted prior state is inconsistent |
     |                 | with the claimed profile state               |
     +-----------------+----------------------------------------------+
 
                                  Table 3
+
+   Implementations SHOULD provide additional machine-readable or human-
+   readable diagnostics that distinguish actor-chain-specific failure
+   classes that map to the same base OAuth error code.  Such diagnostics
+   are for troubleshooting and interoperability support only and MUST
+   NOT alter the base OAuth error value required by this specification.
+   Examples include diagnostics indicating replay detection, intended-
+   recipient failure, step-proof verification failure, profile-
+   disclosure failure, or preserved-state inconsistency.
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 62]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Recipients and Authorization Servers MUST return protocol-appropriate
    error signals for authentication, authorization, profile-validation,
@@ -3297,14 +3480,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    act disclosure for an artifact, omission of act, or presence of an
    act value that fails that profile's disclosure rules, MUST be treated
    as a profile-validation failure.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 59]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    In HTTP deployments, this typically maps to 400-series status codes
    and OAuth-appropriate error values.  In non-HTTP deployments,
@@ -3314,6 +3489,11 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    full step proofs, canonical proof inputs, or other sensitive proof
    material unless the deployment explicitly requires such disclosure
    for diagnostics.
+
+   When deployments provide error_description, error_uri, logs, or
+   similar diagnostics for actor-chain failures, they SHOULD distinguish
+   among underlying failure causes where doing so does not disclose
+   hidden actors, full proofs, or other sensitive material.
 
 23.  Part II.  Security, Privacy, Deployment, and Rationale
 
@@ -3339,6 +3519,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    for the Full Disclosure profiles: every hop needs the same full
    visible lineage for normal online authorization.
 
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 63]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 24.2.  Subset Disclosure: Regulated M&A Review
 
    A large acquisition review passes through multiple highly sensitive
@@ -3354,14 +3545,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    forbidden from learning who else contributed to the decision.  The
    CEO, however, may need a richer disclosed chain before approving the
    transaction.  This is the motivating case for the Subset Disclosure
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 60]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    profiles: the Authorization Server retains authoritative workflow
    state and discloses to each recipient only the portion of the chain
    that recipient is allowed to learn.
@@ -3395,6 +3578,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    only the security considerations that directly affect interoperable
    processing or likely implementation choices.
 
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 64]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 25.1.  Actor Authentication and Presenter Binding Are Deployment-
        Specific
 
@@ -3411,20 +3602,24 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    cause false verification failures or inconsistent commitment values
    across implementations.
 
+25.3.  Commitment State Is Byte-Oriented
 
+   For JWT bindings in this specification, commitment linkage uses the
+   exact compact-JWS proof artifact bytes.  This means commitment state
+   is intentionally artifact-byte-oriented rather than normalized to
+   semantic proof meaning.  Implementations MUST NOT assume semantically
+   equivalent decoded proofs will yield identical step_hash or curr
+   values unless the underlying compact-JWS bytes are also identical.
+   Parties that need semantic or evidentiary replay SHOULD log and
+   retain those exact proof artifacts and verification context.
 
-Prasad, et al.          Expires 28 September 2026              [Page 61]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-25.3.  Readable Chain Does Not Prevent Payload Abuse
+25.4.  Readable Chain Does Not Prevent Payload Abuse
 
    A valid visible act does not imply that the application-layer request
    content is safe, correct, or policy-conformant.  Recipients MUST
    apply local payload validation and authorization.
 
-25.4.  Verified Profiles Depend on Proof Retention
+25.5.  Verified Profiles Depend on Proof Retention
 
    The evidentiary benefits of the verified profiles depend on retention
    or recoverability of step proofs, exchange records, and relevant
@@ -3440,7 +3635,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Retention policies SHOULD also account for later verification during
    or after key rotation.
 
-25.5.  Subset-Disclosure Profiles Reveal Only a Verified Subset
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 65]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+25.6.  Subset-Disclosure Profiles Reveal Only a Verified Subset
 
    Recipients using the subset-disclosure profiles can authorize based
    only on the disclosed visible chain subset that they verify.  They
@@ -3461,20 +3663,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    profile remains one of the subset profiles unless actp explicitly
    selects an actor-only profile.
 
+   Deployments whose recipient authorization requires prior-path
+   membership or ordering evidence MUST ensure that the selected profile
+   and disclosure policy expose that required evidence.  They MUST NOT
+   treat actor-only or omitted-act outcomes as sufficient for such path-
+   sensitive authorization.
 
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 62]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-25.6.  Cross-Domain Re-Issuance Must Preserve Chain State
+25.7.  Cross-Domain Re-Issuance Must Preserve Chain State
 
    A cross-domain Authorization Server that re-issues a local token for
    the next recipient MUST preserve the relevant visible chain state
@@ -3482,7 +3677,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    preserves the same underlying subject semantics and does not broaden
    disclosure.
 
-25.7.  Branch Reconstruction Is an Audit Concern
+25.8.  Branch Reconstruction Is an Audit Concern
 
    This specification allows an Authorization Server to issue multiple
    successor tokens from one prior accepted state, but it does not
@@ -3490,6 +3685,18 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Reconstructing a branched call graph is therefore a forensic or
    legal-audit concern rather than a normal online authorization
    requirement.
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 66]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Retained Authorization Server records, timestamps, commitment state,
    and causal links among presenting actors, current actors, and
@@ -3504,33 +3711,20 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    child causal linkage across accepted successor tokens rather than
    embedding chronology fields in visible act entries.
 
-25.8.  Intended Recipient Checks Reduce Confused-Deputy Risk
+25.9.  Intended Recipient Checks Reduce Confused-Deputy Risk
 
    Accepting Authorization Servers MUST ensure that the authenticated
    current actor was an intended recipient of the inbound subject_token.
    This reduces a class of deputy and repurposing attacks, though it
    does not eliminate all confused-deputy scenarios.
 
-25.9.  Chain Depth
+25.10.  Chain Depth
 
    Authorization Servers SHOULD enforce a configurable maximum chain
    depth.  A RECOMMENDED default is 10 entries.  Relying Parties MAY
    enforce stricter limits.
 
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 63]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-25.10.  Key Management
+25.11.  Key Management
 
    Actors SHOULD use short-lived keys and/or hardware-protected keys.
    Deployments that require long-term auditability MUST retain, or make
@@ -3552,6 +3746,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    within one workflow instance.  Accordingly, acti MUST be opaque and
    MUST NOT encode actor identity, profile selection, business
    semantics, or target meaning.
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 67]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    Even in the privacy-preserving profiles, the Authorization Server
    processing token exchange observes the authenticated current actor
@@ -3578,14 +3779,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    containing only the disclosed subset.  A subset profile MAY also omit
    act entirely.
 
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 64]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    When a subset profile discloses act, that representation is the
    interoperable base-wire format for the disclosed subset.
 
@@ -3608,6 +3801,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  for the Verified Subset Disclosure profile, any disclosed visible
       chain MUST be an ordered subsequence of the verified actor-visible
       chain for that hop;
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 68]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  if the selected profile uses step proofs or chain commitments,
       those artifacts remain bound to the verified hop progression, not
       to a later disclosed subset;
@@ -3634,14 +3836,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The object MUST be serialized using JCS {{!RFC8785}} whenever it is
    included in profile-defined proof or commitment inputs.
 
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 65]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    When actp is present, the visible act structure in a JWT is an
    ActorChainNode.  Newly issued profile-defined nodes MUST contain
    explicit iss and sub, and MAY contain a nested act member whose value
@@ -3656,7 +3850,21 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    contain typ=act-step-proof+jwt.  The JWS payload MUST be the UTF-8
    encoding of a JCS-serialized JSON object.
 
+   Verifiers MUST require exact typ=act-step-proof+jwt matching for this
+   artifact class.  The alg header parameter MUST be present and MUST
+   identify an asymmetric signature algorithm accepted by local policy;
+   alg=none MUST NOT be accepted.  If crit is present, verifiers MUST
+   reject unless every listed parameter is understood and processed.
+
    For all profiles in the verified branch, the payload MUST contain:
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 69]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
    *  ctx;
    *  acti;
@@ -3690,14 +3898,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    algorithm MUST NOT be used.  The JWS verification key MUST be trusted
    under local policy for the ActorID represented in the proof.
 
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 66]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
 27.3.  Receiver Acknowledgment in JWT
 
    A hop_ack, when used in a JWT deployment, MUST be a compact JWS
@@ -3705,9 +3905,23 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    hop-ack+jwt.  The JWS payload MUST be the UTF-8 encoding of a JCS-
    serialized JSON object with at least these members:
 
+   Verifiers MUST require exact typ=act-hop-ack+jwt matching for this
+   artifact class.  The alg header parameter MUST be present and MUST
+   identify an asymmetric signature algorithm accepted by local policy;
+   alg=none MUST NOT be accepted.  If crit is present, verifiers MUST
+   reject unless every listed parameter is understood and processed.
+
    *  ctx;
    *  acti;
    *  actp;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 70]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  jti;
    *  inbound_jti;
    *  iat;
@@ -3743,21 +3957,27 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The actc claim value MUST be a compact JWS string {{!RFC7515}}. The
    JWS protected header MUST contain typ=act-commitment+jwt.
 
+   Verifiers MUST require exact typ=act-commitment+jwt matching for this
+   artifact class.  The alg header parameter MUST be present and MUST
+   identify an asymmetric signature algorithm accepted by local policy;
+   alg=none MUST NOT be accepted.  If crit is present, verifiers MUST
+   reject unless every listed parameter is understood and processed.
+
    The JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON
    object with exactly these members:
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 67]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    *  ctx;
    *  iss;
    *  acti;
    *  actp;
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 71]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  halg;
    *  prev;
    *  step_hash; and
@@ -3798,24 +4018,22 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    2.  AS1 issues T_A with a recipient-specific disclosed visible act
        intended for B, or omits act entirely according to local policy.
    3.  A calls B and presents T_A.
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 68]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    4.  B validates the token and uses only the disclosed visible chain,
        if any, for actor-chain authorization.  If act is omitted, this
        specification provides no inline actor-chain input beyond what is
        disclosed; any additional authorization inputs come from local
        policy.
    5.  B exchanges T_A at AS1 for a token to C.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 72]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    6.  AS1 appends B to the accepted workflow state for that hop,
        applies disclosure policy for C, and issues T_B with a recipient-
        specific disclosed visible act, or with no act, according to
@@ -3856,21 +4074,21 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
        act=EncodeVisibleChain([A,B]) and aud=C.
    5.  Because C does not trust AS1 directly, B performs a second
        exchange at AS2.
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 69]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    6.  AS2 preserves actp, acti, act=EncodeVisibleChain([A,B]), and
        actc, and issues a local token trusted by C that still represents
        B.
    7.  C validates the local token, sees the visible chain [A,B], and
        authorizes accordingly.
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 73]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
 
 28.5.  Example 4: Verified Actor-Only Disclosure
 
@@ -3911,17 +4129,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
        policy for C, and issues T_B with a recipient-specific disclosed
        visible act, or with no act, and updated actc.
    6.  B presents T_B to C.
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 70]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    7.  C validates the token and authorizes only on the disclosed
        visible chain, if any.  If act is omitted or does not disclose B,
        this specification provides no inline current- actor disclosure
@@ -3932,6 +4139,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
        any retained Authorization-Server workflow records needed to
        supply hidden continuity context.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 74]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 29.  Appendix C.  Future Considerations (Informative)
 
 29.1.  Terminal Receipts and Result Attestations
@@ -3940,6 +4154,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    order to initialize chain state.  It does not define corresponding
    terminal-hop semantics for a final recipient that performs work
    locally and does not extend the chain further.
+
+   Deployments that need richer terminal execution or result evidence
+   MAY compose this specification with companion SPICE provenance work,
+   such as Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and
+   Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, to provide
+   complementary WHAT and HOW evidence.  However, this specification
+   itself does not define the terminal receipt/execution/result artifact
+   or the precise composition rules by which such companion artifacts
+   satisfy terminal-hop evidence requirements.
 
    Future work MAY define:
 
@@ -3973,7 +4196,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 71]
+
+Prasad, et al.          Expires 26 September 2026              [Page 75]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -4007,7 +4231,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    of ordinary tokens merely as digests or selectively revealable
    placeholders.
 
-29.5.  Branching and Fan-Out
+29.5.  Semantic-Equivalent Commitment Inputs
+
+   This version binds commitment linkage to exact compact-JWS proof
+   bytes.  Future work MAY define an optional semantic-equivalence
+   commitment input, for example by hashing a canonical semantic proof
+   object while still retaining artifact-byte evidence for provenance
+   and non-repudiation.
+
+29.6.  Branching and Fan-Out
 
    This specification defines one visible path per issued token and does
    not standardize merge or sibling-discovery semantics across multiple
@@ -4019,6 +4251,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    structure.  Later reconstruction of the resulting call graph is
    primarily a forensic or legal- audit concern.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 76]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    Future work MAY define explicit branch identifiers, parent-child
    workflow correlation, tree-structured commitment verification,
    inclusion proofs, partial disclosure across branches, and later merge
@@ -4027,14 +4266,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    {{!I-D.draft-mw-spice-intent-chain}}, and Inference Chain {{!I-
    D.draft-mw-spice-inference-chain}} deployments.
 
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 72]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
-29.6.  Evidence Discovery and Governance Interoperability
+29.7.  Evidence Discovery and Governance Interoperability
 
    Proof-bound profiles derive much of their value from later
    verification of step proofs and exchange records.  Future work MAY
@@ -4070,6 +4302,18 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    because they require additional identifiers, validation rules, and
    interoperability work.
 
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 77]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 31.  Appendix E.  Implementation Conformance Checklist (Informative)
 
    An implementation is conformant only if it correctly implements the
@@ -4078,17 +4322,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    At a minimum, implementers should verify that they have addressed the
    following:
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 73]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    +=============================+======================+=============+
    | Requirement                 | Draft section        | Implemented |
@@ -4129,6 +4362,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    | Correct ordered-subsequence | Declared Subset      | [ ]         |
    | validation for subset-      | Disclosure Profile;  |             |
    | disclosure profiles         | Verified Subset      |             |
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 78]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    |                             | Disclosure Profile   |             |
    +-----------------------------+----------------------+-------------+
    | Current-actor-only          | Declared Actor-Only  | [ ]         |
@@ -4138,14 +4379,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    +-----------------------------+----------------------+-------------+
    | Exact commitment            | Commitment Function; | [ ]         |
    | verification for verified   | Verified Full        |             |
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 74]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    | profiles                    | Disclosure Profile;  |             |
    |                             | Verified Subset      |             |
    |                             | Disclosure Profile;  |             |
@@ -4182,6 +4415,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
                                  Table 4
 
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 79]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 32.  Appendix F.  Canonicalization Test Vectors (Informative)
 
    The following illustrative vectors are intended to reduce
@@ -4192,15 +4436,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 32.1.  JWT / JCS ActorID Example
 
    Input object:
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 75]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    {::nomarkdown} <sourcecode type="json">
    {"iss":"https://as.example","sub":"svc:planner"
@@ -4237,6 +4472,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    SHA-256 over those bytes:
 
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 80]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    {::nomarkdown} <sourcecode type="text">
    911427869c76f397e096279057dd1396fe2eda1ac9e313b357d9cecc44aa811e
    </sourcecode> {:/nomarkdown}
@@ -4246,17 +4491,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    This appendix shows one abbreviated decoded JWT payload together with
    one abbreviated decoded actc JWS payload.  The values are
    illustrative and signatures are omitted for readability.
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 76]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 33.1.  Decoded Access Token Payload Example
 
@@ -4293,6 +4527,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    "."  BASE64URL(payload) "."  BASE64URL(signature) </sourcecode>
    {:/nomarkdown}
 
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 81]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 34.  Appendix H.  Problem Statement and Deployment Context (Informative)
 
    defines the top-level act claim for the current actor and allows
@@ -4305,14 +4550,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    {::nomarkdown} <artwork type="ascii-art"> User -> Orchestrator ->
    Planner -> Tool Agent -> Data API </artwork> {:/nomarkdown}
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 77]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    By the time the request reaches the Data API, the immediate caller
    may or may not be visible in the token, and the upstream delegation
@@ -4349,6 +4586,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  binding of each hop to the intended target;
    *  resistance to replay of previously accepted hop state;
    *  audit evidence for later investigation and proof; and
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 82]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  minimization of prior-actor disclosure where privacy-preserving
       profiles are used.
 
@@ -4362,14 +4607,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  a malicious actor colluding with its home Authorization Server;
    *  a malicious downstream recipient attempting to over-interpret or
       misuse an inbound token;
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 78]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  an untrusted or compromised upstream Authorization Server in a
       multi-domain path; and
    *  an unsolicited victim service reached by a validly issued token
@@ -4404,6 +4641,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       for that hop and to cumulative commitment state, while ordinary
       tokens reveal only an ordered subset of that actor-visible chain
       selected by the Authorization Server;
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 83]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    *  in the Verified Full Disclosure profile, the actor-visible chain
       equals the full visible chain at each hop, preserving full visible
       authorization while improving detectability, provability, and non-
@@ -4417,14 +4663,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 35.5.  Non-Goals
 
    This specification does not by itself provide:
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 79]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
    *  integrity or safety guarantees for application payload content;
    *  complete prevention of confused-deputy behavior;
@@ -4455,6 +4693,19 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    state, not over hidden prefix semantics against a rogue or colluding
    Authorization Server.
 
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 84]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 36.  Appendix J.  Trust Boundaries and Audit Guidance (Informative)
 
    The trust model and visible-disclosure properties of the six profiles
@@ -4473,15 +4724,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    For verified profiles, such records SHOULD include:
 
    *  prior token reference;
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 80]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
-
    *  authenticated actor identity accepted for the exchange or proof-
       validation step;
    *  step proof reference or value;
@@ -4513,6 +4755,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    interoperability and security rationale even if the document is later
    split.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 85]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 37.1.  Why visible chain state is carried in nested act
 
    The interoperable JWT form uses nested act as the single
@@ -4529,14 +4778,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Replacing sub with the current actor or with a constant marker would
    make token subject semantics much less clear for recipients and
    auditors.
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 81]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 37.3.  Why privacy-sensitive profiles use stable subject aliases
 
@@ -4569,6 +4810,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Authorization Server may retain richer hidden workflow state for
    later audit or forensics.
 
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 86]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 37.6.  Why branching is represented across tokens, not inside one token
 
    Each token carries one visible path in nested act.  Branching is
@@ -4586,13 +4835,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    ordering rules, sibling proof transmission, or merge semantics.
    Future work can add Merkle-style aggregation if deployments need
    compact set commitments across many branches.
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 82]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
 37.8.  Why actp and actc use short claim names
 
@@ -4625,30 +4867,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the algorithm
    restrictions defined in this document.
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 87]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
 38.1.  JSON Web Token Claims Registration
 
    This document requests registration of the following claims in the
    "JSON Web Token Claims" registry established by {{!RFC7519}}:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 83]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
-
 
       +=======+========================+============+===============+
       | Claim | Claim Description      | Change     | Specification |
@@ -4696,12 +4925,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 84]
+Prasad, et al.          Expires 26 September 2026              [Page 88]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -4757,7 +4981,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 85]
+Prasad, et al.          Expires 26 September 2026              [Page 89]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -4813,7 +5037,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 86]
+Prasad, et al.          Expires 26 September 2026              [Page 90]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -4869,7 +5093,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 87]
+Prasad, et al.          Expires 26 September 2026              [Page 91]
 
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
@@ -4915,19 +5139,115 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
                                  Table 9
 
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 92]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+39.  Appendix X.  Out-of-Scope Use Cases (Informative)
+
+   This appendix is non-normative.  Per-hop request binding —
+   cryptographic evidence that a request physically traversed each
+   claimed hop — is out of scope for this document.  End-to-end path
+   proof in the data plane, such as nested message signatures applied by
+   each actor in turn, requires a companion mechanism such as
+   {{RFC9421}} or {{RFC9449}} and is not addressed here.
+
+40.  Appendix Y.  Relationship to RFC 8693 (Informative)
+
+   This appendix is non-normative. {{RFC8693}} defines token exchange
+   and introduces act for delegation, with nested act described as a
+   convention.  It treats act as optional and defines no normative
+   processing rules for construction, extension, or validation across a
+   sequence of exchanges.  This document does not replace {{RFC8693}};
+   with actp absent, it adds no new requirements.  With actp present,
+   the following constraints apply:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 93]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+       +======================+===================================+
+       | {{RFC8693}} behavior | This document                     |
+       +======================+===================================+
+       | act is optional.     | Processing follows the rules here |
+       |                      | when used; actp makes the         |
+       |                      | governing semantics explicit.     |
+       +----------------------+-----------------------------------+
+       | Nested act is a      | Nested act is normative           |
+       | convention.          | structural form; recipients can   |
+       |                      | rely on its shape.                |
+       +----------------------+-----------------------------------+
+       | No append-only rule. | Prior actors MUST NOT be          |
+       |                      | inserted, reordered, deleted, or  |
+       |                      | modified.                         |
+       +----------------------+-----------------------------------+
+       | No cross-exchange    | acti provides a stable workflow   |
+       | correlation.         | instance identifier across hops.  |
+       +----------------------+-----------------------------------+
+       | No integrity binding | actc provides cumulative          |
+       | beyond the issuing   | commitment verifiable across AS   |
+       | AS's signature.      | boundaries.                       |
+       +----------------------+-----------------------------------+
+       | No prior-actor       | actp profiles scope disclosure;   |
+       | disclosure control.  | the disclosure invariant prevents |
+       |                      | leakage through other claims.     |
+       +----------------------+-----------------------------------+
+       | No disclosure-regime | actp allows recipients to apply   |
+       | signal to the        | the correct interpretation.       |
+       | recipient.           |                                   |
+       +----------------------+-----------------------------------+
+
+                                 Table 10
+
 Authors' Addresses
 
    A Prasad
    Oracle
    Email: a.prasad@oracle.com
-
-
-
-
-
-Prasad, et al.          Expires 28 September 2026              [Page 88]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
    Ram Krishnan
@@ -4938,6 +5258,12 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Diego R. Lopez
    Telefonica
    Email: diego.r.lopez@telefonica.com
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 94]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
    Srinivasa Addepalli
@@ -4981,4 +5307,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 28 September 2026              [Page 89]
+
+
+
+
+
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 95]

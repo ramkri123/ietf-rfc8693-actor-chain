@@ -1,74 +1,77 @@
----
-title: "Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange"
-abbrev: "SPICE-ACTOR-CHAINS"
-category: "std"
-docname: "draft-mw-spice-actor-chain-91"
-ipr: "trust200902"
-area: "Security"
-workgroup: "SPICE"
-keyword:
-  - actor chain
-  - spice
-  - oauth
-  - rfc8693
-  - token exchange
-  - workload identity
-  - delegation
-  - AI agents
-  - MCP
-  - A2A
-date: 2026-03-25
+%%%
+title = "Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange"
+abbrev = "SPICE-ACTOR-CHAINS"
+category = "std"
+docname = "draft-mw-spice-actor-chain-04"
+ipr = "trust200902"
+area = "Security"
+workgroup = "SPICE"
+keyword = ["actor chain", "spice", "oauth", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents", "MCP", "A2A"]
+date = 2026-03-25
 
-author:
- -
-    initials: "A."
-    surname: "Prasad"
-    fullname: "A Prasad"
-    organization: "Oracle"
-    email: "a.prasad@oracle.com"
- -
-    initials: "R."
-    surname: "Krishnan"
-    fullname: "Ram Krishnan"
-    organization: "JPMorgan Chase & Co"
-    email: "ramkri123@gmail.com"
- -
-    initials: "D."
-    surname: "Lopez"
-    fullname: "Diego R. Lopez"
-    organization: "Telefonica"
-    email: "diego.r.lopez@telefonica.com"
- -
-    initials: "S."
-    surname: "Addepalli"
-    fullname: "Srinivasa Addepalli"
-    organization: "Aryaka"
-    email: "srinivasa.addepalli@aryaka.com"
+[seriesInfo]
+name = "Internet-Draft"
+value = "draft-mw-spice-actor-chain-04"
+stream = "IETF"
+status = "standard"
 
-normative:
-  RFC2119:
-  RFC6749:
-  RFC8174:
-  RFC7515:
-  RFC7519:
-  RFC8414:
-  RFC8693:
-  RFC8785:
-  RFC6838:
-  RFC6920:
+[[author]]
+initials = "A."
+surname = "Prasad"
+fullname = "A Prasad"
+organization = "Oracle"
+  [author.address]
+  email = "a.prasad@oracle.com"
 
-informative:
-  RFC9334:
-  RFC9901:
-  RFC7662:
-  I-D.ietf-spice-arch:
-  I-D.ietf-spice-s2s-protocol:
-  I-D.draft-mw-spice-intent-chain:
-  I-D.draft-mw-spice-inference-chain:
-  I-D.draft-mw-spice-transitive-attestation:
----
+[[author]]
+initials = "R."
+surname = "Krishnan"
+fullname = "Ram Krishnan"
+organization = "JPMorgan Chase & Co"
+  [author.address]
+  email = "ramkri123@gmail.com"
 
-# Abstract
+[[author]]
+initials = "D."
+surname = "Lopez"
+fullname = "Diego R. Lopez"
+organization = "Telefonica"
+  [author.address]
+  email = "diego.r.lopez@telefonica.com"
+
+[[author]]
+initials = "S."
+surname = "Addepalli"
+fullname = "Srinivasa Addepalli"
+organization = "Aryaka"
+  [author.address]
+  email = "srinivasa.addepalli@aryaka.com"
+
+[normative]
+RFC2119 = {}
+RFC6749 = {}
+RFC8174 = {}
+RFC7515 = {}
+RFC7519 = {}
+RFC8414 = {}
+RFC8693 = {}
+RFC8785 = {}
+RFC6838 = {}
+RFC6920 = {}
+
+[informative]
+RFC9334 = {}
+RFC9901 = {}
+RFC7662 = {}
+
+[informative."I-D.ietf-spice-arch"]
+[informative."I-D.ietf-spice-s2s-protocol"]
+[informative."I-D.draft-mw-spice-intent-chain"]
+[informative."I-D.draft-mw-spice-inference-chain"]
+[informative."I-D.draft-mw-spice-transitive-attestation"]
+%%%
+
+.# Abstract
 
 Multi-hop service-to-service and agentic workflows need a standardized way to
 preserve and validate delegation-path continuity across successive token
@@ -89,6 +92,8 @@ tradeoffs among visible chain-based authorization, cryptographic
 accountability, auditability, privacy, and long-running workflow support.
 Plain RFC 8693 impersonation-shaped outputs remain valid RFC 8693 behavior but
 are outside this profile family.
+
+{mainmatter}
 
 # Part I. Core Specification
 
