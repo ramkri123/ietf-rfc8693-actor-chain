@@ -63,12 +63,18 @@ RFC6920 = {}
 RFC9334 = {}
 RFC9901 = {}
 RFC7662 = {}
+RFC9421 = {}
+RFC9449 = {}
 
 [informative."I-D.ietf-spice-arch"]
 [informative."I-D.ietf-spice-s2s-protocol"]
 [informative."I-D.draft-mw-spice-intent-chain"]
 [informative."I-D.draft-mw-spice-inference-chain"]
 [informative."I-D.draft-mw-spice-transitive-attestation"]
+[informative."IANA.Hash.Algorithms"]
+  title = "Named Information Hash Algorithm Registry"
+  [informative."IANA.Hash.Algorithms".target]
+    href = "https://www.iana.org/assignments/named-information"
 %%%
 
 .# Abstract
@@ -76,7 +82,7 @@ RFC7662 = {}
 Multi-hop service-to-service and agentic workflows need a standardized way to
 preserve and validate delegation-path continuity across successive token
 exchanges. This document defines six actor-chain profiles for OAuth 2.0 Token
-Exchange {{!RFC8693}}. {{!RFC8693}} permits nested `act` claims, but prior
+Exchange [@RFC8693]. [@RFC8693] permits nested `act` claims, but prior
 actors remain informational only and token exchange does not define how a
 delegation path is preserved and validated across successive exchanges.
 
@@ -102,7 +108,7 @@ are outside this profile family.
 In service-to-service, tool-calling, and agent-to-agent systems, including
 those implementing the Model Context Protocol (MCP) and the Agent2Agent
 (A2A) protocol, one workload often receives a token, performs work, and then
-exchanges that token to call another workload. {{!RFC8693}} defines token
+exchanges that token to call another workload. [@RFC8693] defines token
 exchange and the `act` claim for the current actor, but it does not define a
 standardized way to preserve and validate delegation-path continuity across a
 sequence of exchanges.
@@ -131,12 +137,12 @@ define an equivalent COSE/CBOR binding.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
-document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
+document are to be interpreted as described in BCP 14 [@RFC2119] [@RFC8174]
 when, and only when, they appear in all capitals, as shown here.
 
 This document also leverages terminology from OAuth 2.0 Token Exchange
-{{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS
-Architecture {{!RFC9334}}.
+[@RFC8693], the SPICE Architecture [@I-D.ietf-spice-arch], and the RATS
+Architecture [@RFC9334].
 
 * **Actor**: A workload, service, application component, agent, or other
   authenticated entity that receives a token, performs work, and MAY
@@ -256,14 +262,14 @@ Architecture {{!RFC9334}}.
 
 # Relationship to RFC 8693 Claims
 
-This specification extends OAuth 2.0 Token Exchange {{!RFC8693}} without
+This specification extends OAuth 2.0 Token Exchange [@RFC8693] without
 changing the base meanings of `sub`, `act`, or `may_act`. It profiles
 delegation-chain workflow continuity and profile-controlled disclosure across
 token exchange hops.
 
 When `actp` is absent, `act` has ordinary RFC 8693 semantics. Nested prior
 `act` claims, if present, remain informational only for access-control
-purposes, consistent with {{!RFC8693}}.
+purposes, consistent with [@RFC8693].
 
 The following rules apply when `actp` is present and points to a profile
 defined by this specification:
@@ -529,7 +535,7 @@ This base specification defines interoperable direct claim carriage for
 self-contained ordinary tokens. Deployments that instead use opaque access
 tokens MAY keep authoritative workflow state only at the issuing Authorization
 Server and MAY disclose actor-chain information, if any, through a companion
-token-validation interface such as token introspection {{!RFC7662}}.
+token-validation interface such as token introspection [@RFC7662].
 
 This specification does not define such companion interfaces. If the artifact
 presented for validation does not expose enough information to satisfy the
@@ -656,15 +662,15 @@ All profile-defined signed or hashed inputs MUST use a canonical serialization
 defined by this specification.
 
 In this version of the specification, `CanonicalEncode(x)` means JCS
-{{!RFC8785}} applied to the JSON value `x`.
+[@RFC8785] applied to the JSON value `x`.
 
 `Hash_halg(x)` denotes the raw hash output produced by applying the selected
 commitment hash algorithm `halg` to the octet sequence `x`.
 
 `b64url(x)` denotes the base64url encoding of the octet sequence `x` without
-trailing padding characters, as defined by {{!RFC7515}} Appendix C.
+trailing padding characters, as defined by [@RFC7515] Appendix C.
 
-Canonical profile-defined proof payloads MUST be serialized using JCS {{!RFC8785}}.
+Canonical profile-defined proof payloads MUST be serialized using JCS [@RFC8785].
 
 ## Actor Identity Representation
 
@@ -678,7 +684,7 @@ represented as an ActorID structure containing exactly two members:
   value is defined; and
 * `sub`: the subject identifier of the actor within that issuer namespace.
 
-An ActorID is a JSON object with members `iss` and `sub`, serialized using JCS {{!RFC8785}} when incorporated into profile-defined signed or hashed inputs.
+An ActorID is a JSON object with members `iss` and `sub`, serialized using JCS [@RFC8785] when incorporated into profile-defined signed or hashed inputs.
 
 An ActorID:
 
@@ -723,10 +729,10 @@ VisibleChain(act) = ordered list of ActorID values obtained by recursively
 
 EncodeVisibleChain([A]) = {"iss": A.iss, "sub": A.sub}
 EncodeVisibleChain([A,B]) = {"iss": B.iss, "sub": B.sub, "act":
-                             {"iss": A.iss, "sub": A.sub}}
+                             {"iss": A.iss, "sub": A.sub]
 EncodeVisibleChain([A,B,C]) = {"iss": C.iss, "sub": C.sub, "act":
                                {"iss": B.iss, "sub": B.sub, "act":
-                                {"iss": A.iss, "sub": A.sub}}}
+                                {"iss": A.iss, "sub": A.sub]}
 </sourcecode>
 {:/nomarkdown}
 
@@ -773,7 +779,7 @@ with the underlying representation and deployment.
 
 Proof-bound profiles use a named hash algorithm for construction of
 `actc`. Commitment hash algorithm identifiers are values from the IANA Named
-Information Hash Algorithm Registry {{!RFC6920}} {{IANA.Hash.Algorithms}}.
+Information Hash Algorithm Registry [@RFC6920] [@IANA.Hash.Algorithms].
 
 The following requirements apply:
 
@@ -2379,7 +2385,7 @@ Server:
 # Authorization Server Metadata
 
 Actor-chain capability discovery uses OAuth 2.0 Authorization Server Metadata
-{{!RFC8414}}. This specification does not define a new discovery endpoint.
+[@RFC8414]. This specification does not define a new discovery endpoint.
 Clients retrieve Authorization Server metadata from the RFC 8414 well-known
 metadata endpoint derived from the issuer, verify that the returned `issuer`
 matches the configured issuer, and then process the actor-chain-specific
@@ -2684,7 +2690,7 @@ base-wire format for the disclosed subset.
 
 Deployments MAY additionally use an optional selective-disclosure or
 recipient-protected encoding technique by agreement, including Selective
-Disclosure JWT (SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding,
+Disclosure JWT (SD-JWT) [@RFC9901], a future COSE/CBOR companion binding,
 or an encrypted envelope, but only as an auxiliary overlay. Such an overlay
 MUST NOT replace any required visible subset `act` representation in the
 interoperable base-wire format; it MAY only add an equivalent presentation form
@@ -2720,7 +2726,7 @@ An ActorID is a JSON object with exactly two members:
 * `iss`: a string containing the issuer identifier; and
 * `sub`: a string containing the subject identifier.
 
-The object MUST be serialized using JCS {{!RFC8785}} whenever it is included in
+The object MUST be serialized using JCS [@RFC8785] whenever it is included in
 profile-defined proof or commitment inputs.
 
 When `actp` is present, the visible `act` structure in a JWT is an
@@ -2733,7 +2739,7 @@ issuer context.
 ## Step Proof in JWT
 
 The `actor_chain_step_proof` token request parameter value MUST be a compact JWS
-string {{!RFC7515}}. The JWS protected header MUST contain `typ=act-step-proof+jwt`. The
+string [@RFC7515]. The JWS protected header MUST contain `typ=act-step-proof+jwt`. The
 JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.
 
 Verifiers MUST require exact `typ=act-step-proof+jwt` matching for this
@@ -2777,7 +2783,7 @@ the ActorID represented in the proof.
 
 ## Receiver Acknowledgment in JWT
 
-A `hop_ack`, when used in a JWT deployment, MUST be a compact JWS string {{!RFC7515}}. The
+A `hop_ack`, when used in a JWT deployment, MUST be a compact JWS string [@RFC7515]. The
 JWS protected header MUST contain `typ=act-hop-ack+jwt`. The JWS payload MUST
 be the UTF-8 encoding of a JCS-serialized JSON object with at least these
 members:
@@ -2822,7 +2828,7 @@ ActorID.
 
 ## Commitment Object in JWT
 
-The `actc` claim value MUST be a compact JWS string {{!RFC7515}}. The JWS
+The `actc` claim value MUST be a compact JWS string [@RFC7515]. The JWS
 protected header MUST contain `typ=act-commitment+jwt`.
 
 Verifiers MUST require exact `typ=act-commitment+jwt` matching for this
@@ -2974,8 +2980,8 @@ further.
 
 Deployments that need richer terminal execution or result evidence MAY compose
 this specification with companion SPICE provenance work, such as Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} and Inference Chain
-{{!I-D.draft-mw-spice-inference-chain}}, to provide complementary WHAT and HOW
+[@I-D.draft-mw-spice-intent-chain] and Inference Chain
+[@I-D.draft-mw-spice-inference-chain], to provide complementary WHAT and HOW
 evidence. However, this specification itself does not define the terminal
 receipt/execution/result artifact or the precise composition rules by which
 such companion artifacts satisfy terminal-hop evidence requirements.
@@ -3020,7 +3026,7 @@ This document now defines baseline Declared Subset Disclosure and
 Verified Subset Disclosure profiles at the actor-chain semantics
 layer. Future work MAY define stronger or more standardized subset-disclosure
 encodings and verification techniques, including Selective Disclosure JWT
-(SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding, recipient-bound
+(SD-JWT) [@RFC9901], a future COSE/CBOR companion binding, recipient-bound
 disclosure artifacts, zero-knowledge proofs over the canonical full chain, or
 richer verifier-assisted consistency checks against retained proof state.
 
@@ -3053,8 +3059,8 @@ Future work MAY define explicit branch identifiers, parent-child workflow
 correlation, tree-structured commitment verification, inclusion proofs, partial
 disclosure across branches, and later merge behavior. Such future work could
 also help correlate related **WHO**, **WHAT**, and **HOW** evidence across
-companion Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and
-Inference Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.
+companion Actor Chain, Intent Chain [@I-D.draft-mw-spice-intent-chain], and
+Inference Chain [@I-D.draft-mw-spice-inference-chain] deployments.
 
 ## Evidence Discovery and Governance Interoperability
 
@@ -3068,13 +3074,13 @@ keys such as `jti` or `acti`, error handling, and retention expectations.
 
 # Appendix D. Design Rationale and Relation to Other Work (Informative)
 
-This document complements {{!RFC8693}} by defining chain-aware token-exchange
+This document complements [@RFC8693] by defining chain-aware token-exchange
 profiles. It also fits alongside the broader SPICE service-to-service and
-attestation work {{!I-D.ietf-spice-s2s-protocol}}
-{{!I-D.draft-mw-spice-transitive-attestation}} and composes with companion
+attestation work [@I-D.ietf-spice-s2s-protocol]
+[@I-D.draft-mw-spice-transitive-attestation] and composes with companion
 SPICE provenance work: Actor Chain addresses **WHO** acted, Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} addresses **WHAT** was produced or
-transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+[@I-D.draft-mw-spice-intent-chain] addresses **WHAT** was produced or
+transformed, and Inference Chain [@I-D.draft-mw-spice-inference-chain]
 addresses **HOW** a result was computed.
 
 This specification defines six profiles instead of one deployment mode
@@ -3243,7 +3249,7 @@ BASE64URL(protected-header) "." BASE64URL(payload) "." BASE64URL(signature)
 
 # Appendix H. Problem Statement and Deployment Context (Informative)
 
-{{!RFC8693}} defines the top-level `act` claim for the current actor and allows
+[@RFC8693] defines the top-level `act` claim for the current actor and allows
 nested prior actors. However, prior nested `act` claims are informational only
 for access-control decisions. In multi-hop systems, especially service-to-service and agentic systems, that is not sufficient.
 
@@ -3499,13 +3505,13 @@ than an online authorization requirement.
 
 This specification does not create a new hash-algorithm registry.
 `actc` uses hash algorithm names from the IANA Named
-Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the
+Information Hash Algorithm Registry [@IANA.Hash.Algorithms], subject to the
 algorithm restrictions defined in this document.
 
 ## JSON Web Token Claims Registration
 
 This document requests registration of the following claims in the "JSON Web
-Token Claims" registry established by {{!RFC7519}}:
+Token Claims" registry established by [@RFC7519]:
 
 | Claim Name | Claim Description | Change Controller | Specification Document(s) |
 | --- | --- | --- | --- |
@@ -3516,7 +3522,7 @@ Token Claims" registry established by {{!RFC7519}}:
 ## Media Type Registration
 
 This document requests registration of the following media types in the
-"Media Types" registry established by {{!RFC6838}}:
+"Media Types" registry established by [@RFC6838]:
 
 | Media Type Name | Media Subtype Name | Required Parameters | Optional Parameters | Encoding Considerations | Security Considerations | Interoperability Considerations | Published Specification | Applications that use this media type | Fragment Identifier Considerations | Additional Information | Contact | Intended Usage | Restrictions on Usage | Author | Change Controller |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -3527,7 +3533,7 @@ This document requests registration of the following media types in the
 ## OAuth URI Registration
 
 This document requests registration of the following value in the
-"OAuth URI" registry established by {{!RFC6749}}:
+"OAuth URI" registry established by [@RFC6749]:
 
 | URI | Description | Change Controller | Specification Document(s) |
 | --- | --- | --- | --- |
@@ -3536,7 +3542,7 @@ This document requests registration of the following value in the
 ## OAuth Authorization Server Metadata Registration
 
 This document requests registration of the following metadata names in the
-"OAuth Authorization Server Metadata" registry established by {{!RFC8414}}:
+"OAuth Authorization Server Metadata" registry established by [@RFC8414]:
 
 | Metadata Name | Metadata Description | Change Controller | Specification Document(s) |
 | --- | --- | --- | --- |
@@ -3566,18 +3572,18 @@ This appendix is non-normative. Per-hop request binding — cryptographic
 evidence that a request physically traversed each claimed hop — is out of
 scope for this document. End-to-end path proof in the data plane, such as
 nested message signatures applied by each actor in turn, requires a companion
-mechanism such as {{RFC9421}} or {{RFC9449}} and is not addressed here.
+mechanism such as [@RFC9421] or [@RFC9449] and is not addressed here.
 
 # Appendix Y. Relationship to RFC 8693 (Informative) {#relationship-to-rfc8693}
 
-This appendix is non-normative. {{RFC8693}} defines token exchange and
+This appendix is non-normative. [@RFC8693] defines token exchange and
 introduces `act` for delegation, with nested `act` described as a convention.
 It treats `act` as optional and defines no normative processing rules for
 construction, extension, or validation across a sequence of exchanges. This
-document does not replace {{RFC8693}}; with `actp` absent, it adds no new
+document does not replace [@RFC8693]; with `actp` absent, it adds no new
 requirements. With `actp` present, the following constraints apply:
 
-| {{RFC8693}} behavior | This document |
+| [@RFC8693] behavior | This document |
 | --- | --- |
 | `act` is optional. | Processing follows the rules here when used; `actp` makes the governing semantics explicit. |
 | Nested `act` is a convention. | Nested `act` is normative structural form; recipients can rely on its shape. |

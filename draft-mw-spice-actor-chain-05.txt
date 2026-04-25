@@ -21,11 +21,10 @@ Abstract
    Multi-hop service-to-service and agentic workflows need a
    standardized way to preserve and validate delegation-path continuity
    across successive token exchanges.  This document defines six actor-
-   chain profiles for OAuth 2.0 Token Exchange {{!RFC8693}}.
-   {{!RFC8693}} permits nested act claims, but prior actors remain
-   informational only and token exchange does not define how a
-   delegation path is preserved and validated across successive
-   exchanges.
+   chain profiles for OAuth 2.0 Token Exchange [RFC8693].  [RFC8693]
+   permits nested act claims, but prior actors remain informational only
+   and token exchange does not define how a delegation path is preserved
+   and validated across successive exchanges.
 
    This document profiles delegation-chain tokens and defines profile-
    specific processing for multi-hop workflows.  The six profiles are:
@@ -49,6 +48,7 @@ Status of This Memo
    Task Force (IETF).  Note that other groups may also distribute
    working documents as Internet-Drafts.  The list of current Internet-
    Drafts is at https://datatracker.ietf.org/drafts/current/.
+
 
 
 
@@ -312,7 +312,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
      38.5.  OAuth Parameter Registration . . . . . . . . . . . . . .  92
    39. Appendix X.  Out-of-Scope Use Cases (Informative) . . . . . .  93
    40. Appendix Y.  Relationship to RFC 8693 (Informative) . . . . .  93
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  94
+   41. Informative References  . . . . . . . . . . . . . . . . . . .  94
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  96
 
 1.  Part I.  Core Specification
 
@@ -322,14 +323,13 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    including those implementing the Model Context Protocol (MCP) and the
    Agent2Agent (A2A) protocol, one workload often receives a token,
    performs work, and then exchanges that token to call another
-   workload. {{!RFC8693}} defines token exchange and the act claim for
-   the current actor, but it does not define a standardized way to
-   preserve and validate delegation-path continuity across a sequence of
+   workload.  [RFC8693] defines token exchange and the act claim for the
+   current actor, but it does not define a standardized way to preserve
+   and validate delegation-path continuity across a sequence of
    exchanges.
 
-   This document defines six interoperable actor-chain profiles for
-   OAuth 2.0 Token Exchange.  They preserve the existing meanings of
-   sub, act, and may_act, and they define when nested act becomes
+
+
 
 
 
@@ -338,6 +338,9 @@ Prasad, et al.          Expires 26 September 2026               [Page 6]
 Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
+   This document defines six interoperable actor-chain profiles for
+   OAuth 2.0 Token Exchange.  They preserve the existing meanings of
+   sub, act, and may_act, and they define when nested act becomes
    authoritative visible actor-chain state for profile-controlled
    processing.  Depending on the selected profile, the next hop can see
    the full visible chain, an Authorization-Server- selected subset of
@@ -361,12 +364,12 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
    "OPTIONAL" in this document are to be interpreted as described in BCP
-   14 {{!RFC2119}} {{!RFC8174}} when, and only when, they appear in all
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
    This document also leverages terminology from OAuth 2.0 Token
-   Exchange {{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-
-   arch}}, and the RATS Architecture {{!RFC9334}}.
+   Exchange [RFC8693], the SPICE Architecture [I-D.ietf-spice-arch], and
+   the RATS Architecture [RFC9334].
 
    *  *Actor*: A workload, service, application component, agent, or
       other authenticated entity that receives a token, performs work,
@@ -383,9 +386,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    *  *Presenting actor*: The actor that presents an inbound token to a
       recipient.
-
-
-
 
 
 
@@ -528,14 +528,14 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 4.  Relationship to RFC 8693 Claims
 
-   This specification extends OAuth 2.0 Token Exchange {{!RFC8693}}
-   without changing the base meanings of sub, act, or may_act.  It
-   profiles delegation-chain workflow continuity and profile-controlled
+   This specification extends OAuth 2.0 Token Exchange [RFC8693] without
+   changing the base meanings of sub, act, or may_act.  It profiles
+   delegation-chain workflow continuity and profile-controlled
    disclosure across token exchange hops.
 
    When actp is absent, act has ordinary RFC 8693 semantics.  Nested
    prior act claims, if present, remain informational only for access-
-   control purposes, consistent with {{!RFC8693}}.
+   control purposes, consistent with [RFC8693].
 
    The following rules apply when actp is present and points to a
    profile defined by this specification:
@@ -930,7 +930,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    opaque access tokens MAY keep authoritative workflow state only at
    the issuing Authorization Server and MAY disclose actor-chain
    information, if any, through a companion token-validation interface
-   such as token introspection {{!RFC7662}}.
+   such as token introspection [RFC7662].
 
    This specification does not define such companion interfaces.  If the
    artifact presented for validation does not expose enough information
@@ -1096,17 +1096,17 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    serialization defined by this specification.
 
    In this version of the specification, CanonicalEncode(x) means JCS
-   {{!RFC8785}} applied to the JSON value x.
+   [RFC8785] applied to the JSON value x.
 
    Hash_halg(x) denotes the raw hash output produced by applying the
    selected commitment hash algorithm halg to the octet sequence x.
 
    b64url(x) denotes the base64url encoding of the octet sequence x
-   without trailing padding characters, as defined by {{!RFC7515}}
+   without trailing padding characters, as defined by [RFC7515]
    Appendix C.
 
    Canonical profile-defined proof payloads MUST be serialized using JCS
-   {{!RFC8785}}.
+   [RFC8785].
 
 7.5.  Actor Identity Representation
 
@@ -1131,8 +1131,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
       namespace.
 
    An ActorID is a JSON object with members iss and sub, serialized
-   using JCS {{!RFC8785}} when incorporated into profile-defined signed
-   or hashed inputs.
+   using JCS [RFC8785] when incorporated into profile-defined signed or
+   hashed inputs.
 
    An ActorID:
 
@@ -1184,9 +1184,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    EncodeVisibleChain([A]) = {"iss": A.iss, "sub": A.sub}
    EncodeVisibleChain([A,B]) = {"iss": B.iss, "sub": B.sub, "act":
-   {"iss": A.iss, "sub": A.sub}} EncodeVisibleChain([A,B,C]) = {"iss":
+   {"iss": A.iss, "sub": A.sub] EncodeVisibleChain([A,B,C]) = {"iss":
    C.iss, "sub": C.sub, "act": {"iss": B.iss, "sub": B.sub, "act":
-   {"iss": A.iss, "sub": A.sub}}} </sourcecode> {:/nomarkdown}
+   {"iss": A.iss, "sub": A.sub]} </sourcecode> {:/nomarkdown}
 
    In examples and formulas, [A,B] denotes the ordered visible chain of
    ActorID values for actors A and B, while EncodeVisibleChain([A,B])
@@ -1241,8 +1241,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    Proof-bound profiles use a named hash algorithm for construction of
    actc.  Commitment hash algorithm identifiers are values from the IANA
-   Named Information Hash Algorithm Registry {{!RFC6920}}
-   {{IANA.Hash.Algorithms}}.
+   Named Information Hash Algorithm Registry [RFC6920]
+   [IANA.Hash.Algorithms].
 
    The following requirements apply:
 
@@ -3343,7 +3343,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 21.  Authorization Server Metadata
 
    Actor-chain capability discovery uses OAuth 2.0 Authorization Server
-   Metadata {{!RFC8414}}. This specification does not define a new
+   Metadata [RFC8414].  This specification does not define a new
    discovery endpoint.  Clients retrieve Authorization Server metadata
    from the RFC 8414 well-known metadata endpoint derived from the
    issuer, verify that the returned issuer matches the configured
@@ -3784,7 +3784,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    Deployments MAY additionally use an optional selective-disclosure or
    recipient-protected encoding technique by agreement, including
-   Selective Disclosure JWT (SD-JWT) {{!RFC9901}}, a future COSE/CBOR
+   Selective Disclosure JWT (SD-JWT) [RFC9901], a future COSE/CBOR
    companion binding, or an encrypted envelope, but only as an auxiliary
    overlay.  Such an overlay MUST NOT replace any required visible
    subset act representation in the interoperable base-wire format; it
@@ -3833,7 +3833,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    *  iss: a string containing the issuer identifier; and
    *  sub: a string containing the subject identifier.
 
-   The object MUST be serialized using JCS {{!RFC8785}} whenever it is
+   The object MUST be serialized using JCS [RFC8785] whenever it is
    included in profile-defined proof or commitment inputs.
 
    When actp is present, the visible act structure in a JWT is an
@@ -3846,9 +3846,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 27.2.  Step Proof in JWT
 
    The actor_chain_step_proof token request parameter value MUST be a
-   compact JWS string {{!RFC7515}}. The JWS protected header MUST
-   contain typ=act-step-proof+jwt.  The JWS payload MUST be the UTF-8
-   encoding of a JCS-serialized JSON object.
+   compact JWS string [RFC7515].  The JWS protected header MUST contain
+   typ=act-step-proof+jwt.  The JWS payload MUST be the UTF-8 encoding
+   of a JCS-serialized JSON object.
 
    Verifiers MUST require exact typ=act-step-proof+jwt matching for this
    artifact class.  The alg header parameter MUST be present and MUST
@@ -3901,8 +3901,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 27.3.  Receiver Acknowledgment in JWT
 
    A hop_ack, when used in a JWT deployment, MUST be a compact JWS
-   string {{!RFC7515}}. The JWS protected header MUST contain typ=act-
-   hop-ack+jwt.  The JWS payload MUST be the UTF-8 encoding of a JCS-
+   string [RFC7515].  The JWS protected header MUST contain typ=act-hop-
+   ack+jwt.  The JWS payload MUST be the UTF-8 encoding of a JCS-
    serialized JSON object with at least these members:
 
    Verifiers MUST require exact typ=act-hop-ack+jwt matching for this
@@ -3954,8 +3954,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 27.4.  Commitment Object in JWT
 
-   The actc claim value MUST be a compact JWS string {{!RFC7515}}. The
-   JWS protected header MUST contain typ=act-commitment+jwt.
+   The actc claim value MUST be a compact JWS string [RFC7515].  The JWS
+   protected header MUST contain typ=act-commitment+jwt.
 
    Verifiers MUST require exact typ=act-commitment+jwt matching for this
    artifact class.  The alg header parameter MUST be present and MUST
@@ -4157,12 +4157,12 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    Deployments that need richer terminal execution or result evidence
    MAY compose this specification with companion SPICE provenance work,
-   such as Intent Chain {{!I-D.draft-mw-spice-intent-chain}} and
-   Inference Chain {{!I-D.draft-mw-spice-inference-chain}}, to provide
-   complementary WHAT and HOW evidence.  However, this specification
-   itself does not define the terminal receipt/execution/result artifact
-   or the precise composition rules by which such companion artifacts
-   satisfy terminal-hop evidence requirements.
+   such as Intent Chain [I-D.draft-mw-spice-intent-chain] and Inference
+   Chain [I-D.draft-mw-spice-inference-chain], to provide complementary
+   WHAT and HOW evidence.  However, this specification itself does not
+   define the terminal receipt/execution/result artifact or the precise
+   composition rules by which such companion artifacts satisfy terminal-
+   hop evidence requirements.
 
    Future work MAY define:
 
@@ -4218,7 +4218,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    Verified Subset Disclosure profiles at the actor-chain semantics
    layer.  Future work MAY define stronger or more standardized subset-
    disclosure encodings and verification techniques, including Selective
-   Disclosure JWT (SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion
+   Disclosure JWT (SD-JWT) [RFC9901], a future COSE/CBOR companion
    binding, recipient-bound disclosure artifacts, zero-knowledge proofs
    over the canonical full chain, or richer verifier-assisted
    consistency checks against retained proof state.
@@ -4263,8 +4263,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    inclusion proofs, partial disclosure across branches, and later merge
    behavior.  Such future work could also help correlate related *WHO*,
    *WHAT*, and *HOW* evidence across companion Actor Chain, Intent Chain
-   {{!I-D.draft-mw-spice-intent-chain}}, and Inference Chain {{!I-
-   D.draft-mw-spice-inference-chain}} deployments.
+   [I-D.draft-mw-spice-intent-chain], and Inference Chain
+   [I-D.draft-mw-spice-inference-chain] deployments.
 
 29.7.  Evidence Discovery and Governance Interoperability
 
@@ -4281,14 +4281,15 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 30.  Appendix D.  Design Rationale and Relation to Other Work
      (Informative)
 
-   This document complements {{!RFC8693}} by defining chain-aware token-
+   This document complements [RFC8693] by defining chain-aware token-
    exchange profiles.  It also fits alongside the broader SPICE service-
-   to-service and attestation work {{!I-D.ietf-spice-s2s-protocol}}
-   {{!I-D.draft-mw-spice-transitive-attestation}} and composes with
+   to-service and attestation work [I-D.ietf-spice-s2s-protocol]
+   [I-D.draft-mw-spice-transitive-attestation] and composes with
    companion SPICE provenance work: Actor Chain addresses *WHO* acted,
-   Intent Chain {{!I-D.draft-mw-spice-intent-chain}} addresses *WHAT*
-   was produced or transformed, and Inference Chain {{!I-D.draft-mw-
-   spice-inference-chain}} addresses *HOW* a result was computed.
+   Intent Chain [I-D.draft-mw-spice-intent-chain] addresses *WHAT* was
+   produced or transformed, and Inference Chain
+   [I-D.draft-mw-spice-inference-chain] addresses *HOW* a result was
+   computed.
 
    This specification defines six profiles instead of one deployment
    mode so that implementations can choose among full visible chain-
@@ -4301,7 +4302,6 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    mechanisms, and evidence-discovery protocols remain future work
    because they require additional identifiers, validation rules, and
    interoperability work.
-
 
 
 
@@ -4540,8 +4540,8 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 34.  Appendix H.  Problem Statement and Deployment Context (Informative)
 
-   defines the top-level act claim for the current actor and allows
-   nested prior actors.  However, prior nested act claims are
+   [RFC8693] defines the top-level act claim for the current actor and
+   allows nested prior actors.  However, prior nested act claims are
    informational only for access-control decisions.  In multi-hop
    systems, especially service-to-service and agentic systems, that is
    not sufficient.
@@ -4864,7 +4864,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    This specification does not create a new hash-algorithm registry.
    actc uses hash algorithm names from the IANA Named Information Hash
-   Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the algorithm
+   Algorithm Registry [IANA.Hash.Algorithms], subject to the algorithm
    restrictions defined in this document.
 
 
@@ -4877,7 +4877,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 38.1.  JSON Web Token Claims Registration
 
    This document requests registration of the following claims in the
-   "JSON Web Token Claims" registry established by {{!RFC7519}}:
+   "JSON Web Token Claims" registry established by [RFC7519]:
 
       +=======+========================+============+===============+
       | Claim | Claim Description      | Change     | Specification |
@@ -4902,7 +4902,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 38.2.  Media Type Registration
 
    This document requests registration of the following media types in
-   the "Media Types" registry established by {{!RFC6838}}:
+   the "Media Types" registry established by [RFC6838]:
 
 
 
@@ -4968,7 +4968,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 38.3.  OAuth URI Registration
 
    This document requests registration of the following value in the
-   "OAuth URI" registry established by {{!RFC6749}}:
+   "OAuth URI" registry established by [RFC6749]:
 
 
 
@@ -5006,7 +5006,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
    This document requests registration of the following metadata names
    in the "OAuth Authorization Server Metadata" registry established by
-   {{!RFC8414}}:
+   [RFC8414]:
 
 
 
@@ -5160,16 +5160,16 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    cryptographic evidence that a request physically traversed each
    claimed hop — is out of scope for this document.  End-to-end path
    proof in the data plane, such as nested message signatures applied by
-   each actor in turn, requires a companion mechanism such as
-   {{RFC9421}} or {{RFC9449}} and is not addressed here.
+   each actor in turn, requires a companion mechanism such as [RFC9421]
+   or [RFC9449] and is not addressed here.
 
 40.  Appendix Y.  Relationship to RFC 8693 (Informative)
 
-   This appendix is non-normative. {{RFC8693}} defines token exchange
-   and introduces act for delegation, with nested act described as a
+   This appendix is non-normative.  [RFC8693] defines token exchange and
+   introduces act for delegation, with nested act described as a
    convention.  It treats act as optional and defines no normative
    processing rules for construction, extension, or validation across a
-   sequence of exchanges.  This document does not replace {{RFC8693}};
+   sequence of exchanges.  This document does not replace [RFC8693];
    with actp absent, it adds no new requirements.  With actp present,
    the following constraints apply:
 
@@ -5211,7 +5211,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
        +======================+===================================+
-       | {{RFC8693}} behavior | This document                     |
+       | [RFC8693] behavior   | This document                     |
        +======================+===================================+
        | act is optional.     | Processing follows the rules here |
        |                      | when used; actp makes the         |
@@ -5243,6 +5243,122 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
                                  Table 10
 
+41.  Informative References
+
+   [I-D.draft-mw-spice-inference-chain]
+              Krishnan, R., "Cryptographically Verifiable Inference
+              Chain for AI Agent Computational Provenance", 7 March
+              2026, <https://datatracker.ietf.org/doc/html/draft-mw-
+              spice-inference-chain>.
+
+   [I-D.draft-mw-spice-intent-chain]
+              Krishnan, R., "Cryptographically Verifiable Intent Chain
+              for AI Agent Content Provenance", 7 March 2026,
+              <https://datatracker.ietf.org/doc/html/draft-mw-spice-
+              intent-chain>.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 94]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+   [I-D.draft-mw-spice-transitive-attestation]
+              Krishnan, R., "Transitive Attestation for Workload Proof
+              of Residency", 21 February 2025,
+              <https://datatracker.ietf.org/doc/html/draft-mw-spice-
+              transitive-attestation>.
+
+   [I-D.ietf-spice-arch]
+              Sheffer, Y., "Secure Patterns for Internet CrEdentials
+              (SPICE) Architecture", 21 October 2024,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-spice-
+              arch>.
+
+   [I-D.ietf-spice-s2s-protocol]
+              Howard, P., "SPICE Service to Service Authentication", 21
+              October 2024, <https://datatracker.ietf.org/doc/html/
+              draft-ietf-spice-s2s-protocol>.
+
+   [IANA.Hash.Algorithms]
+              IANA, "Named Information Hash Algorithm Registry",
+              <https://www.iana.org/assignments/named-information>.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC6749]  Hardt, D., "The OAuth 2.0 Authorization Framework",
+              RFC 6749, October 2012,
+              <https://www.rfc-editor.org/info/rfc6749>.
+
+   [RFC6838]  Freed, N., Klensin, J., and T. Hansen, "Media Type
+              Specifications and Registration Procedures", BCP 13,
+              RFC 6838, January 2013,
+              <https://www.rfc-editor.org/info/rfc6838>.
+
+   [RFC6920]  Farrell, S., Kutscher, D., Dannewitz, C., Ohlman, B.,
+              Keranen, A., and P. Hallam-Baker, "Naming Things with
+              Hashes", RFC 6920, April 2013,
+              <https://www.rfc-editor.org/info/rfc6920>.
+
+   [RFC7515]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web
+              Signature (JWS)", RFC 7515, May 2015,
+              <https://www.rfc-editor.org/info/rfc7515>.
+
+   [RFC7519]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web Token
+              (JWT)", RFC 7519, May 2015,
+              <https://www.rfc-editor.org/info/rfc7519>.
+
+
+
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 95]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
+   [RFC7662]  Richer, J., "OAuth 2.0 Token Introspection", RFC 7662,
+              October 2015, <https://www.rfc-editor.org/info/rfc7662>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, May 2017,
+              <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC8414]  Jones, M. and N. Sakimura, "OAuth 2.0 Authorization Server
+              Metadata", RFC 8414, June 2018,
+              <https://www.rfc-editor.org/info/rfc8414>.
+
+   [RFC8693]  Denniss, W., Bradley, J., Tschofenig, H., and T.
+              Lodderstedt, "OAuth 2.0 Token Exchange", RFC 8693, January
+              2020, <https://www.rfc-editor.org/info/rfc8693>.
+
+   [RFC8785]  Rundgren, A., "JSON Canonicalization Scheme (JCS)",
+              RFC 8785, June 2020,
+              <https://www.rfc-editor.org/info/rfc8785>.
+
+   [RFC9334]  Birkholz, H., Fossati, T., Smith, N., Pan, W., and C.
+              Tschofenig, "Remote ATtestation procedureS (RATS)
+              Architecture", RFC 9334, January 2023,
+              <https://www.rfc-editor.org/info/rfc9334>.
+
+   [RFC9421]  Backman, A., Ed., Richer, J., Ed., and M. Sporny, "HTTP
+              Message Signatures", RFC 9421, DOI 10.17487/RFC9421,
+              February 2024, <https://www.rfc-editor.org/info/rfc9421>.
+
+   [RFC9449]  Fett, D., Campbell, B., Bradley, J., Lodderstedt, T.,
+              Jones, M., and D. Waite, "OAuth 2.0 Demonstrating Proof of
+              Possession (DPoP)", RFC 9449, DOI 10.17487/RFC9449,
+              September 2023, <https://www.rfc-editor.org/info/rfc9449>.
+
+   [RFC9901]  Fett, D., Yasuda, K., and B. Campbell, "Selective
+              Disclosure for JSON Web Tokens", RFC 9901, November 2025,
+              <https://www.rfc-editor.org/info/rfc9901>.
+
 Authors' Addresses
 
    A Prasad
@@ -5255,15 +5371,16 @@ Authors' Addresses
    Email: ramkri123@gmail.com
 
 
+
+
+Prasad, et al.          Expires 26 September 2026              [Page 96]
+
+Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+
+
    Diego R. Lopez
    Telefonica
    Email: diego.r.lopez@telefonica.com
-
-
-
-Prasad, et al.          Expires 26 September 2026              [Page 94]
-
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
    Srinivasa Addepalli
@@ -5312,9 +5429,4 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-
-
-
-
-
-Prasad, et al.          Expires 26 September 2026              [Page 95]
+Prasad, et al.          Expires 26 September 2026              [Page 97]

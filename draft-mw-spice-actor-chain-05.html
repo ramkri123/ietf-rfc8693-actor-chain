@@ -13,7 +13,7 @@
        Multi-hop service-to-service and agentic workflows need a standardized way to
 preserve and validate delegation-path continuity across successive token
 exchanges. This document defines six actor-chain profiles for OAuth 2.0 Token
-Exchange {{!RFC8693}}. {{!RFC8693}} permits nested  act  claims, but prior
+Exchange  .   permits nested  act  claims, but prior
 actors remain informational only and token exchange does not define how a
 delegation path is preserved and validated across successive exchanges. 
        This document profiles delegation-chain tokens and defines profile-specific
@@ -1295,7 +1295,7 @@ li > p:last-of-type:only-child {
 <p id="section-abstract-1">Multi-hop service-to-service and agentic workflows need a standardized way to
 preserve and validate delegation-path continuity across successive token
 exchanges. This document defines six actor-chain profiles for OAuth 2.0 Token
-Exchange {{!RFC8693}}. {{!RFC8693}} permits nested <code>act</code> claims, but prior
+Exchange <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>. <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> permits nested <code>act</code> claims, but prior
 actors remain informational only and token exchange does not define how a
 delegation path is preserved and validated across successive exchanges.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 <p id="section-abstract-2">This document profiles delegation-chain tokens and defines profile-specific
@@ -1958,7 +1958,10 @@ are outside this profile family.<a href="#section-abstract-3" class="pilcrow">¶
             <p id="section-toc.1-1.40.1"><a href="#section-40" class="auto internal xref">40</a>. <a href="#name-appendix-y-relationship-to-" class="internal xref">Appendix Y. Relationship to RFC 8693 (Informative)</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.41">
-            <p id="section-toc.1-1.41.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+            <p id="section-toc.1-1.41.1"><a href="#section-41" class="auto internal xref">41</a>. <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.42">
+            <p id="section-toc.1-1.42.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
 </li>
         </ul>
 </nav>
@@ -1979,7 +1982,7 @@ are outside this profile family.<a href="#section-abstract-3" class="pilcrow">¶
 <p id="section-2-1">In service-to-service, tool-calling, and agent-to-agent systems, including
 those implementing the Model Context Protocol (MCP) and the Agent2Agent
 (A2A) protocol, one workload often receives a token, performs work, and then
-exchanges that token to call another workload. {{!RFC8693}} defines token
+exchanges that token to call another workload. <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> defines token
 exchange and the <code>act</code> claim for the current actor, but it does not define a
 standardized way to preserve and validate delegation-path continuity across a
 sequence of exchanges.<a href="#section-2-1" class="pilcrow">¶</a></p>
@@ -2009,11 +2012,11 @@ define an equivalent COSE/CBOR binding.<a href="#section-2-4" class="pilcrow">¶
       </h2>
 <p id="section-3-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
-document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
+document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span>
 when, and only when, they appear in all capitals, as shown here.<a href="#section-3-1" class="pilcrow">¶</a></p>
 <p id="section-3-2">This document also leverages terminology from OAuth 2.0 Token Exchange
-{{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS
-Architecture {{!RFC9334}}.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>, the SPICE Architecture <span>[<a href="#I-D.ietf-spice-arch" class="cite xref">I-D.ietf-spice-arch</a>]</span>, and the RATS
+Architecture <span>[<a href="#RFC9334" class="cite xref">RFC9334</a>]</span>.<a href="#section-3-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-3-3.1">
           <p id="section-3-3.1.1"><strong>Actor</strong>: A workload, service, application component, agent, or other
@@ -2164,13 +2167,13 @@ support, and business or risk controls.<a href="#section-3-12.12.1" class="pilcr
       <h2 id="name-relationship-to-rfc-8693-cl">
 <a href="#section-4" class="section-number selfRef">4. </a><a href="#name-relationship-to-rfc-8693-cl" class="section-name selfRef">Relationship to RFC 8693 Claims</a>
       </h2>
-<p id="section-4-1">This specification extends OAuth 2.0 Token Exchange {{!RFC8693}} without
+<p id="section-4-1">This specification extends OAuth 2.0 Token Exchange <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> without
 changing the base meanings of <code>sub</code>, <code>act</code>, or <code>may_act</code>. It profiles
 delegation-chain workflow continuity and profile-controlled disclosure across
 token exchange hops.<a href="#section-4-1" class="pilcrow">¶</a></p>
 <p id="section-4-2">When <code>actp</code> is absent, <code>act</code> has ordinary RFC 8693 semantics. Nested prior
 <code>act</code> claims, if present, remain informational only for access-control
-purposes, consistent with {{!RFC8693}}.<a href="#section-4-2" class="pilcrow">¶</a></p>
+purposes, consistent with <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>.<a href="#section-4-2" class="pilcrow">¶</a></p>
 <p id="section-4-3">The following rules apply when <code>actp</code> is present and points to a profile
 defined by this specification:<a href="#section-4-3" class="pilcrow">¶</a></p>
 <ul class="compact">
@@ -2579,7 +2582,7 @@ tamper evidence, continuity, and auditability.<a href="#section-7.1-8.6" class="
 self-contained ordinary tokens. Deployments that instead use opaque access
 tokens MAY keep authoritative workflow state only at the issuing Authorization
 Server and MAY disclose actor-chain information, if any, through a companion
-token-validation interface such as token introspection {{!RFC7662}}.<a href="#section-7.1-9" class="pilcrow">¶</a></p>
+token-validation interface such as token introspection <span>[<a href="#RFC7662" class="cite xref">RFC7662</a>]</span>.<a href="#section-7.1-9" class="pilcrow">¶</a></p>
 <p id="section-7.1-10">This specification does not define such companion interfaces. If the artifact
 presented for validation does not expose enough information to satisfy the
 selected profile's requirements, the implementation MUST treat that as a
@@ -2709,12 +2712,12 @@ otherwise rewrite the verified audience structure before signing or comparing
 <p id="section-7.4-1">All profile-defined signed or hashed inputs MUST use a canonical serialization
 defined by this specification.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
 <p id="section-7.4-2">In this version of the specification, <code>CanonicalEncode(x)</code> means JCS
-{{!RFC8785}} applied to the JSON value <code>x</code>.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
+<span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span> applied to the JSON value <code>x</code>.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
 <p id="section-7.4-3"><code>Hash_halg(x)</code> denotes the raw hash output produced by applying the selected
 commitment hash algorithm <code>halg</code> to the octet sequence <code>x</code>.<a href="#section-7.4-3" class="pilcrow">¶</a></p>
 <p id="section-7.4-4"><code>b64url(x)</code> denotes the base64url encoding of the octet sequence <code>x</code> without
-trailing padding characters, as defined by {{!RFC7515}} Appendix C.<a href="#section-7.4-4" class="pilcrow">¶</a></p>
-<p id="section-7.4-5">Canonical profile-defined proof payloads MUST be serialized using JCS {{!RFC8785}}.<a href="#section-7.4-5" class="pilcrow">¶</a></p>
+trailing padding characters, as defined by <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span> Appendix C.<a href="#section-7.4-4" class="pilcrow">¶</a></p>
+<p id="section-7.4-5">Canonical profile-defined proof payloads MUST be serialized using JCS <span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span>.<a href="#section-7.4-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="actor-identity-representation">
@@ -2735,7 +2738,7 @@ value is defined; and<a href="#section-7.5-3.1" class="pilcrow">¶</a>
             <code>sub</code>: the subject identifier of the actor within that issuer namespace.<a href="#section-7.5-3.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-7.5-4">An ActorID is a JSON object with members <code>iss</code> and <code>sub</code>, serialized using JCS {{!RFC8785}} when incorporated into profile-defined signed or hashed inputs.<a href="#section-7.5-4" class="pilcrow">¶</a></p>
+<p id="section-7.5-4">An ActorID is a JSON object with members <code>iss</code> and <code>sub</code>, serialized using JCS <span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span> when incorporated into profile-defined signed or hashed inputs.<a href="#section-7.5-4" class="pilcrow">¶</a></p>
 <p id="section-7.5-5">An ActorID:<a href="#section-7.5-5" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-7.5-6.1">MUST be stable for equality comparison within a workflow instance;<a href="#section-7.5-6.1" class="pilcrow">¶</a>
@@ -2782,10 +2785,10 @@ VisibleChain(act) = ordered list of ActorID values obtained by recursively
                     outermost current actor.<a href="#section-7.5-12" class="pilcrow">¶</a></p>
 <p id="section-7.5-13">EncodeVisibleChain([A]) = {"iss": A.iss, "sub": A.sub}
 EncodeVisibleChain([A,B]) = {"iss": B.iss, "sub": B.sub, "act":
-                             {"iss": A.iss, "sub": A.sub}}
+                             {"iss": A.iss, "sub": A.sub]
 EncodeVisibleChain([A,B,C]) = {"iss": C.iss, "sub": C.sub, "act":
                                {"iss": B.iss, "sub": B.sub, "act":
-                                {"iss": A.iss, "sub": A.sub}}}
+                                {"iss": A.iss, "sub": A.sub]}
 &lt;/sourcecode&gt;
 {:/nomarkdown}<a href="#section-7.5-13" class="pilcrow">¶</a></p>
 <p id="section-7.5-14">In examples and formulas, <code>[A,B]</code> denotes the ordered visible chain of ActorID
@@ -2845,7 +2848,7 @@ with the underlying representation and deployment.<a href="#section-7.7-2" class
         </h3>
 <p id="section-7.8-1">Proof-bound profiles use a named hash algorithm for construction of
 <code>actc</code>. Commitment hash algorithm identifiers are values from the IANA Named
-Information Hash Algorithm Registry {{!RFC6920}} {{IANA.Hash.Algorithms}}.<a href="#section-7.8-1" class="pilcrow">¶</a></p>
+Information Hash Algorithm Registry <span>[<a href="#RFC6920" class="cite xref">RFC6920</a>]</span> <span>[<a href="#IANA.Hash.Algorithms" class="cite xref">IANA.Hash.Algorithms</a>]</span>.<a href="#section-7.8-1" class="pilcrow">¶</a></p>
 <p id="section-7.8-2">The following requirements apply:<a href="#section-7.8-2" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-7.8-3.1">
@@ -5022,7 +5025,7 @@ same-target successors SHOULD distinguish them by including a unique
 <a href="#section-21" class="section-number selfRef">21. </a><a href="#name-authorization-server-metada" class="section-name selfRef">Authorization Server Metadata</a>
       </h2>
 <p id="section-21-1">Actor-chain capability discovery uses OAuth 2.0 Authorization Server Metadata
-{{!RFC8414}}. This specification does not define a new discovery endpoint.
+<span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span>. This specification does not define a new discovery endpoint.
 Clients retrieve Authorization Server metadata from the RFC 8414 well-known
 metadata endpoint derived from the issuer, verify that the returned <code>issuer</code>
 matches the configured issuer, and then process the actor-chain-specific
@@ -5464,7 +5467,7 @@ profile MAY also omit <code>act</code> entirely.<a href="#section-26.1-1" class=
 base-wire format for the disclosed subset.<a href="#section-26.1-2" class="pilcrow">¶</a></p>
 <p id="section-26.1-3">Deployments MAY additionally use an optional selective-disclosure or
 recipient-protected encoding technique by agreement, including Selective
-Disclosure JWT (SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding,
+Disclosure JWT (SD-JWT) <span>[<a href="#RFC9901" class="cite xref">RFC9901</a>]</span>, a future COSE/CBOR companion binding,
 or an encrypted envelope, but only as an auxiliary overlay. Such an overlay
 MUST NOT replace any required visible subset <code>act</code> representation in the
 interoperable base-wire format; it MAY only add an equivalent presentation form
@@ -5517,7 +5520,7 @@ objects.<a href="#section-27-1" class="pilcrow">¶</a></p>
             <code>sub</code>: a string containing the subject identifier.<a href="#section-27.1-2.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-27.1-3">The object MUST be serialized using JCS {{!RFC8785}} whenever it is included in
+<p id="section-27.1-3">The object MUST be serialized using JCS <span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span> whenever it is included in
 profile-defined proof or commitment inputs.<a href="#section-27.1-3" class="pilcrow">¶</a></p>
 <p id="section-27.1-4">When <code>actp</code> is present, the visible <code>act</code> structure in a JWT is an
 ActorChainNode. Newly issued profile-defined nodes MUST contain explicit
@@ -5533,7 +5536,7 @@ issuer context.<a href="#section-27.1-4" class="pilcrow">¶</a></p>
 <a href="#section-27.2" class="section-number selfRef">27.2. </a><a href="#name-step-proof-in-jwt" class="section-name selfRef">Step Proof in JWT</a>
         </h3>
 <p id="section-27.2-1">The <code>actor_chain_step_proof</code> token request parameter value MUST be a compact JWS
-string {{!RFC7515}}. The JWS protected header MUST contain <code>typ=act-step-proof+jwt</code>. The
+string <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>. The JWS protected header MUST contain <code>typ=act-step-proof+jwt</code>. The
 JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.<a href="#section-27.2-1" class="pilcrow">¶</a></p>
 <p id="section-27.2-2">Verifiers MUST require exact <code>typ=act-step-proof+jwt</code> matching for this
 artifact class. The <code>alg</code> header parameter MUST be present and MUST identify
@@ -5589,7 +5592,7 @@ the ActorID represented in the proof.<a href="#section-27.2-7" class="pilcrow">�
         <h3 id="name-receiver-acknowledgment-in-">
 <a href="#section-27.3" class="section-number selfRef">27.3. </a><a href="#name-receiver-acknowledgment-in-" class="section-name selfRef">Receiver Acknowledgment in JWT</a>
         </h3>
-<p id="section-27.3-1">A <code>hop_ack</code>, when used in a JWT deployment, MUST be a compact JWS string {{!RFC7515}}. The
+<p id="section-27.3-1">A <code>hop_ack</code>, when used in a JWT deployment, MUST be a compact JWS string <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>. The
 JWS protected header MUST contain <code>typ=act-hop-ack+jwt</code>. The JWS payload MUST
 be the UTF-8 encoding of a JCS-serialized JSON object with at least these
 members:<a href="#section-27.3-1" class="pilcrow">¶</a></p>
@@ -5660,7 +5663,7 @@ ActorID.<a href="#section-27.3-4" class="pilcrow">¶</a></p>
         <h3 id="name-commitment-object-in-jwt">
 <a href="#section-27.4" class="section-number selfRef">27.4. </a><a href="#name-commitment-object-in-jwt" class="section-name selfRef">Commitment Object in JWT</a>
         </h3>
-<p id="section-27.4-1">The <code>actc</code> claim value MUST be a compact JWS string {{!RFC7515}}. The JWS
+<p id="section-27.4-1">The <code>actc</code> claim value MUST be a compact JWS string <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>. The JWS
 protected header MUST contain <code>typ=act-commitment+jwt</code>.<a href="#section-27.4-1" class="pilcrow">¶</a></p>
 <p id="section-27.4-2">Verifiers MUST require exact <code>typ=act-commitment+jwt</code> matching for this
 artifact class. The <code>alg</code> header parameter MUST be present and MUST identify
@@ -5957,8 +5960,8 @@ for a final recipient that performs work locally and does not extend the chain
 further.<a href="#section-29.1-1" class="pilcrow">¶</a></p>
 <p id="section-29.1-2">Deployments that need richer terminal execution or result evidence MAY compose
 this specification with companion SPICE provenance work, such as Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} and Inference Chain
-{{!I-D.draft-mw-spice-inference-chain}}, to provide complementary WHAT and HOW
+<span>[<a href="#I-D.draft-mw-spice-intent-chain" class="cite xref">I-D.draft-mw-spice-intent-chain</a>]</span> and Inference Chain
+<span>[<a href="#I-D.draft-mw-spice-inference-chain" class="cite xref">I-D.draft-mw-spice-inference-chain</a>]</span>, to provide complementary WHAT and HOW
 evidence. However, this specification itself does not define the terminal
 receipt/execution/result artifact or the precise composition rules by which
 such companion artifacts satisfy terminal-hop evidence requirements.<a href="#section-29.1-2" class="pilcrow">¶</a></p>
@@ -6020,7 +6023,7 @@ accepted hop.<a href="#section-29.3-3.3" class="pilcrow">¶</a>
 Verified Subset Disclosure profiles at the actor-chain semantics
 layer. Future work MAY define stronger or more standardized subset-disclosure
 encodings and verification techniques, including Selective Disclosure JWT
-(SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding, recipient-bound
+(SD-JWT) <span>[<a href="#RFC9901" class="cite xref">RFC9901</a>]</span>, a future COSE/CBOR companion binding, recipient-bound
 disclosure artifacts, zero-knowledge proofs over the canonical full chain, or
 richer verifier-assisted consistency checks against retained proof state.<a href="#section-29.4-1" class="pilcrow">¶</a></p>
 <p id="section-29.4-2">Any future encoding or presentation profile MUST preserve the disclosure
@@ -6058,8 +6061,8 @@ audit concern.<a href="#section-29.6-2" class="pilcrow">¶</a></p>
 correlation, tree-structured commitment verification, inclusion proofs, partial
 disclosure across branches, and later merge behavior. Such future work could
 also help correlate related <strong>WHO</strong>, <strong>WHAT</strong>, and <strong>HOW</strong> evidence across
-companion Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and
-Inference Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.<a href="#section-29.6-3" class="pilcrow">¶</a></p>
+companion Actor Chain, Intent Chain <span>[<a href="#I-D.draft-mw-spice-intent-chain" class="cite xref">I-D.draft-mw-spice-intent-chain</a>]</span>, and
+Inference Chain <span>[<a href="#I-D.draft-mw-spice-inference-chain" class="cite xref">I-D.draft-mw-spice-inference-chain</a>]</span> deployments.<a href="#section-29.6-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="evidence-discovery-and-governance-interoperability">
@@ -6082,13 +6085,13 @@ keys such as <code>jti</code> or <code>acti</code>, error handling, and retentio
       <h2 id="name-appendix-d-design-rationale">
 <a href="#section-30" class="section-number selfRef">30. </a><a href="#name-appendix-d-design-rationale" class="section-name selfRef">Appendix D. Design Rationale and Relation to Other Work (Informative)</a>
       </h2>
-<p id="section-30-1">This document complements {{!RFC8693}} by defining chain-aware token-exchange
+<p id="section-30-1">This document complements <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> by defining chain-aware token-exchange
 profiles. It also fits alongside the broader SPICE service-to-service and
-attestation work {{!I-D.ietf-spice-s2s-protocol}}
-{{!I-D.draft-mw-spice-transitive-attestation}} and composes with companion
+attestation work <span>[<a href="#I-D.ietf-spice-s2s-protocol" class="cite xref">I-D.ietf-spice-s2s-protocol</a>]</span>
+        <span>[<a href="#I-D.draft-mw-spice-transitive-attestation" class="cite xref">I-D.draft-mw-spice-transitive-attestation</a>]</span> and composes with companion
 SPICE provenance work: Actor Chain addresses <strong>WHO</strong> acted, Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} addresses <strong>WHAT</strong> was produced or
-transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+<span>[<a href="#I-D.draft-mw-spice-intent-chain" class="cite xref">I-D.draft-mw-spice-intent-chain</a>]</span> addresses <strong>WHAT</strong> was produced or
+transformed, and Inference Chain <span>[<a href="#I-D.draft-mw-spice-inference-chain" class="cite xref">I-D.draft-mw-spice-inference-chain</a>]</span>
 addresses <strong>HOW</strong> a result was computed.<a href="#section-30-1" class="pilcrow">¶</a></p>
 <p id="section-30-2">This specification defines six profiles instead of one deployment mode
 so that implementations can choose among full visible chain-based
@@ -6344,7 +6347,7 @@ BASE64URL(protected-header) "." BASE64URL(payload) "." BASE64URL(signature)
       <h2 id="name-appendix-h-problem-statemen">
 <a href="#section-34" class="section-number selfRef">34. </a><a href="#name-appendix-h-problem-statemen" class="section-name selfRef">Appendix H. Problem Statement and Deployment Context (Informative)</a>
       </h2>
-<p id="section-34-1">defines the top-level <code>act</code> claim for the current actor and allows
+<p id="section-34-1"><span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> defines the top-level <code>act</code> claim for the current actor and allows
 nested prior actors. However, prior nested <code>act</code> claims are informational only
 for access-control decisions. In multi-hop systems, especially service-to-service and agentic systems, that is not sufficient.<a href="#section-34-1" class="pilcrow">¶</a></p>
 <p id="section-34-2">Consider:<a href="#section-34-2" class="pilcrow">¶</a></p>
@@ -6715,7 +6718,7 @@ than an online authorization requirement.<a href="#section-37.10-1" class="pilcr
       </h2>
 <p id="section-38-1">This specification does not create a new hash-algorithm registry.
 <code>actc</code> uses hash algorithm names from the IANA Named
-Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the
+Information Hash Algorithm Registry <span>[<a href="#IANA.Hash.Algorithms" class="cite xref">IANA.Hash.Algorithms</a>]</span>, subject to the
 algorithm restrictions defined in this document.<a href="#section-38-1" class="pilcrow">¶</a></p>
 <div id="json-web-token-claims-registration">
 <section id="section-38.1">
@@ -6723,7 +6726,7 @@ algorithm restrictions defined in this document.<a href="#section-38-1" class="p
 <a href="#section-38.1" class="section-number selfRef">38.1. </a><a href="#name-json-web-token-claims-regis" class="section-name selfRef">JSON Web Token Claims Registration</a>
         </h3>
 <p id="section-38.1-1">This document requests registration of the following claims in the "JSON Web
-Token Claims" registry established by {{!RFC7519}}:<a href="#section-38.1-1" class="pilcrow">¶</a></p>
+Token Claims" registry established by <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>:<a href="#section-38.1-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-5">
           <caption><a href="#table-5" class="selfRef">Table 5</a></caption>
 <thead>
@@ -6769,7 +6772,7 @@ Token Claims" registry established by {{!RFC7519}}:<a href="#section-38.1-1" cla
 <a href="#section-38.2" class="section-number selfRef">38.2. </a><a href="#name-media-type-registration" class="section-name selfRef">Media Type Registration</a>
         </h3>
 <p id="section-38.2-1">This document requests registration of the following media types in the
-"Media Types" registry established by {{!RFC6838}}:<a href="#section-38.2-1" class="pilcrow">¶</a></p>
+"Media Types" registry established by <span>[<a href="#RFC6838" class="cite xref">RFC6838</a>]</span>:<a href="#section-38.2-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-6">
           <caption><a href="#table-6" class="selfRef">Table 6</a></caption>
 <thead>
@@ -6869,7 +6872,7 @@ Token Claims" registry established by {{!RFC7519}}:<a href="#section-38.1-1" cla
 <a href="#section-38.3" class="section-number selfRef">38.3. </a><a href="#name-oauth-uri-registration" class="section-name selfRef">OAuth URI Registration</a>
         </h3>
 <p id="section-38.3-1">This document requests registration of the following value in the
-"OAuth URI" registry established by {{!RFC6749}}:<a href="#section-38.3-1" class="pilcrow">¶</a></p>
+"OAuth URI" registry established by <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>:<a href="#section-38.3-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-7">
           <caption><a href="#table-7" class="selfRef">Table 7</a></caption>
 <thead>
@@ -6899,7 +6902,7 @@ Token Claims" registry established by {{!RFC7519}}:<a href="#section-38.1-1" cla
 <a href="#section-38.4" class="section-number selfRef">38.4. </a><a href="#name-oauth-authorization-server-" class="section-name selfRef">OAuth Authorization Server Metadata Registration</a>
         </h3>
 <p id="section-38.4-1">This document requests registration of the following metadata names in the
-"OAuth Authorization Server Metadata" registry established by {{!RFC8414}}:<a href="#section-38.4-1" class="pilcrow">¶</a></p>
+"OAuth Authorization Server Metadata" registry established by <span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span>:<a href="#section-38.4-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-8">
           <caption><a href="#table-8" class="selfRef">Table 8</a></caption>
 <thead>
@@ -7036,7 +7039,7 @@ relevant OAuth parameter registry:<a href="#section-38.5-1" class="pilcrow">¶</
 evidence that a request physically traversed each claimed hop — is out of
 scope for this document. End-to-end path proof in the data plane, such as
 nested message signatures applied by each actor in turn, requires a companion
-mechanism such as {{RFC9421}} or {{RFC9449}} and is not addressed here.<a href="#section-39-1" class="pilcrow">¶</a></p>
+mechanism such as <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span> or <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span> and is not addressed here.<a href="#section-39-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="relationship-to-rfc8693">
@@ -7044,17 +7047,18 @@ mechanism such as {{RFC9421}} or {{RFC9449}} and is not addressed here.<a href="
       <h2 id="name-appendix-y-relationship-to-">
 <a href="#section-40" class="section-number selfRef">40. </a><a href="#name-appendix-y-relationship-to-" class="section-name selfRef">Appendix Y. Relationship to RFC 8693 (Informative)</a>
       </h2>
-<p id="section-40-1">This appendix is non-normative. {{RFC8693}} defines token exchange and
+<p id="section-40-1">This appendix is non-normative. <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> defines token exchange and
 introduces <code>act</code> for delegation, with nested <code>act</code> described as a convention.
 It treats <code>act</code> as optional and defines no normative processing rules for
 construction, extension, or validation across a sequence of exchanges. This
-document does not replace {{RFC8693}}; with <code>actp</code> absent, it adds no new
+document does not replace <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>; with <code>actp</code> absent, it adds no new
 requirements. With <code>actp</code> present, the following constraints apply:<a href="#section-40-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-10">
         <caption><a href="#table-10" class="selfRef">Table 10</a></caption>
 <thead>
           <tr>
-            <th class="text-left" rowspan="1" colspan="1">{{RFC8693}} behavior</th>
+            <th class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> behavior</th>
             <th class="text-left" rowspan="1" colspan="1">This document</th>
           </tr>
         </thead>
@@ -7096,6 +7100,97 @@ requirements. With <code>actp</code> present, the following constraints apply:<a
       </table>
 </section>
 </div>
+<section id="section-41">
+      <h2 id="name-informative-references">
+<a href="#section-41" class="section-number selfRef">41. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+      </h2>
+<dl class="references">
+<dt id="I-D.draft-mw-spice-inference-chain">[I-D.draft-mw-spice-inference-chain]</dt>
+      <dd>
+<span class="refAuthor">Krishnan, R.</span>, <span class="refTitle">"Cryptographically Verifiable Inference Chain for AI Agent Computational Provenance"</span>, <time datetime="2026-03-07" class="refDate">7 March 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-mw-spice-inference-chain">https://datatracker.ietf.org/doc/html/draft-mw-spice-inference-chain</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.draft-mw-spice-intent-chain">[I-D.draft-mw-spice-intent-chain]</dt>
+      <dd>
+<span class="refAuthor">Krishnan, R.</span>, <span class="refTitle">"Cryptographically Verifiable Intent Chain for AI Agent Content Provenance"</span>, <time datetime="2026-03-07" class="refDate">7 March 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-mw-spice-intent-chain">https://datatracker.ietf.org/doc/html/draft-mw-spice-intent-chain</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.draft-mw-spice-transitive-attestation">[I-D.draft-mw-spice-transitive-attestation]</dt>
+      <dd>
+<span class="refAuthor">Krishnan, R.</span>, <span class="refTitle">"Transitive Attestation for Workload Proof of Residency"</span>, <time datetime="2025-02-21" class="refDate">21 February 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-mw-spice-transitive-attestation">https://datatracker.ietf.org/doc/html/draft-mw-spice-transitive-attestation</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-spice-arch">[I-D.ietf-spice-arch]</dt>
+      <dd>
+<span class="refAuthor">Sheffer, Y.</span>, <span class="refTitle">"Secure Patterns for Internet CrEdentials (SPICE) Architecture"</span>, <time datetime="2024-10-21" class="refDate">21 October 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch">https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-spice-s2s-protocol">[I-D.ietf-spice-s2s-protocol]</dt>
+      <dd>
+<span class="refAuthor">Howard, P.</span>, <span class="refTitle">"SPICE Service to Service Authentication"</span>, <time datetime="2024-10-21" class="refDate">21 October 2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-spice-s2s-protocol">https://datatracker.ietf.org/doc/html/draft-ietf-spice-s2s-protocol</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="IANA.Hash.Algorithms">[IANA.Hash.Algorithms]</dt>
+      <dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Named Information Hash Algorithm Registry"</span>, <span>&lt;<a href="https://www.iana.org/assignments/named-information">https://www.iana.org/assignments/named-information</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+      <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6749">[RFC6749]</dt>
+      <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework"</span>, <span class="seriesInfo">RFC 6749</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6749">https://www.rfc-editor.org/info/rfc6749</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6838">[RFC6838]</dt>
+      <dd>
+<span class="refAuthor">Freed, N.</span>, <span class="refAuthor">Klensin, J.</span>, and <span class="refAuthor">T. Hansen</span>, <span class="refTitle">"Media Type Specifications and Registration Procedures"</span>, <span class="seriesInfo">BCP 13</span>, <span class="seriesInfo">RFC 6838</span>, <time datetime="2013-01" class="refDate">January 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6838">https://www.rfc-editor.org/info/rfc6838</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6920">[RFC6920]</dt>
+      <dd>
+<span class="refAuthor">Farrell, S.</span>, <span class="refAuthor">Kutscher, D.</span>, <span class="refAuthor">Dannewitz, C.</span>, <span class="refAuthor">Ohlman, B.</span>, <span class="refAuthor">Keranen, A.</span>, and <span class="refAuthor">P. Hallam-Baker</span>, <span class="refTitle">"Naming Things with Hashes"</span>, <span class="seriesInfo">RFC 6920</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6920">https://www.rfc-editor.org/info/rfc6920</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7515">[RFC7515]</dt>
+      <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Signature (JWS)"</span>, <span class="seriesInfo">RFC 7515</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7515">https://www.rfc-editor.org/info/rfc7515</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7519">[RFC7519]</dt>
+      <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7519">https://www.rfc-editor.org/info/rfc7519</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7662">[RFC7662]</dt>
+      <dd>
+<span class="refAuthor">Richer, J.</span>, <span class="refTitle">"OAuth 2.0 Token Introspection"</span>, <span class="seriesInfo">RFC 7662</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7662">https://www.rfc-editor.org/info/rfc7662</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8414">[RFC8414]</dt>
+      <dd>
+<span class="refAuthor">Jones, M.</span> and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"OAuth 2.0 Authorization Server Metadata"</span>, <span class="seriesInfo">RFC 8414</span>, <time datetime="2018-06" class="refDate">June 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8414">https://www.rfc-editor.org/info/rfc8414</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8693">[RFC8693]</dt>
+      <dd>
+<span class="refAuthor">Denniss, W.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Tschofenig, H.</span>, and <span class="refAuthor">T. Lodderstedt</span>, <span class="refTitle">"OAuth 2.0 Token Exchange"</span>, <span class="seriesInfo">RFC 8693</span>, <time datetime="2020-01" class="refDate">January 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8693">https://www.rfc-editor.org/info/rfc8693</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8785">[RFC8785]</dt>
+      <dd>
+<span class="refAuthor">Rundgren, A.</span>, <span class="refTitle">"JSON Canonicalization Scheme (JCS)"</span>, <span class="seriesInfo">RFC 8785</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8785">https://www.rfc-editor.org/info/rfc8785</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9334">[RFC9334]</dt>
+      <dd>
+<span class="refAuthor">Birkholz, H.</span>, <span class="refAuthor">Fossati, T.</span>, <span class="refAuthor">Smith, N.</span>, <span class="refAuthor">Pan, W.</span>, and <span class="refAuthor">C. Tschofenig</span>, <span class="refTitle">"Remote ATtestation procedureS (RATS) Architecture"</span>, <span class="seriesInfo">RFC 9334</span>, <time datetime="2023-01" class="refDate">January 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9334">https://www.rfc-editor.org/info/rfc9334</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9421">[RFC9421]</dt>
+      <dd>
+<span class="refAuthor">Backman, A., Ed.</span>, <span class="refAuthor">Richer, J., Ed.</span>, and <span class="refAuthor">M. Sporny</span>, <span class="refTitle">"HTTP Message Signatures"</span>, <span class="seriesInfo">RFC 9421</span>, <span class="seriesInfo">DOI 10.17487/RFC9421</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9421">https://www.rfc-editor.org/info/rfc9421</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9449">[RFC9449]</dt>
+      <dd>
+<span class="refAuthor">Fett, D.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Lodderstedt, T.</span>, <span class="refAuthor">Jones, M.</span>, and <span class="refAuthor">D. Waite</span>, <span class="refTitle">"OAuth 2.0 Demonstrating Proof of Possession (DPoP)"</span>, <span class="seriesInfo">RFC 9449</span>, <span class="seriesInfo">DOI 10.17487/RFC9449</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9449">https://www.rfc-editor.org/info/rfc9449</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9901">[RFC9901]</dt>
+    <dd>
+<span class="refAuthor">Fett, D.</span>, <span class="refAuthor">Yasuda, K.</span>, and <span class="refAuthor">B. Campbell</span>, <span class="refTitle">"Selective Disclosure for JSON Web Tokens"</span>, <span class="seriesInfo">RFC 9901</span>, <time datetime="2025-11" class="refDate">November 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9901">https://www.rfc-editor.org/info/rfc9901</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
 <div id="authors-addresses">
 <section id="appendix-A">
       <h2 id="name-authors-addresses">

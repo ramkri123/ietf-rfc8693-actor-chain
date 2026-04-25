@@ -30,7 +30,7 @@
 <t>Multi-hop service-to-service and agentic workflows need a standardized way to
 preserve and validate delegation-path continuity across successive token
 exchanges. This document defines six actor-chain profiles for OAuth 2.0 Token
-Exchange {{!RFC8693}}. {{!RFC8693}} permits nested <tt>act</tt> claims, but prior
+Exchange <xref target="RFC8693"></xref>. <xref target="RFC8693"></xref> permits nested <tt>act</tt> claims, but prior
 actors remain informational only and token exchange does not define how a
 delegation path is preserved and validated across successive exchanges.</t>
 <t>This document profiles delegation-chain tokens and defines profile-specific
@@ -57,7 +57,7 @@ are outside this profile family.</t>
 <t>In service-to-service, tool-calling, and agent-to-agent systems, including
 those implementing the Model Context Protocol (MCP) and the Agent2Agent
 (A2A) protocol, one workload often receives a token, performs work, and then
-exchanges that token to call another workload. {{!RFC8693}} defines token
+exchanges that token to call another workload. <xref target="RFC8693"></xref> defines token
 exchange and the <tt>act</tt> claim for the current actor, but it does not define a
 standardized way to preserve and validate delegation-path continuity across a
 sequence of exchanges.</t>
@@ -83,11 +83,11 @@ define an equivalent COSE/CBOR binding.</t>
 <section anchor="terminology"><name>Terminology</name>
 <t>The key words &quot;MUST&quot;, &quot;MUST NOT&quot;, &quot;REQUIRED&quot;, &quot;SHALL&quot;, &quot;SHALL NOT&quot;, &quot;SHOULD&quot;,
 &quot;SHOULD NOT&quot;, &quot;RECOMMENDED&quot;, &quot;NOT RECOMMENDED&quot;, &quot;MAY&quot;, and &quot;OPTIONAL&quot; in this
-document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
+document are to be interpreted as described in BCP 14 <xref target="RFC2119"></xref> <xref target="RFC8174"></xref>
 when, and only when, they appear in all capitals, as shown here.</t>
 <t>This document also leverages terminology from OAuth 2.0 Token Exchange
-{{!RFC8693}}, the SPICE Architecture {{!I-D.ietf-spice-arch}}, and the RATS
-Architecture {{!RFC9334}}.</t>
+<xref target="RFC8693"></xref>, the SPICE Architecture <xref target="I-D.ietf-spice-arch"></xref>, and the RATS
+Architecture <xref target="RFC9334"></xref>.</t>
 
 <ul>
 <li><t><strong>Actor</strong>: A workload, service, application component, agent, or other
@@ -215,13 +215,13 @@ support, and business or risk controls.</t>
 </section>
 
 <section anchor="relationship-to-rfc-8693-claims"><name>Relationship to RFC 8693 Claims</name>
-<t>This specification extends OAuth 2.0 Token Exchange {{!RFC8693}} without
+<t>This specification extends OAuth 2.0 Token Exchange <xref target="RFC8693"></xref> without
 changing the base meanings of <tt>sub</tt>, <tt>act</tt>, or <tt>may_act</tt>. It profiles
 delegation-chain workflow continuity and profile-controlled disclosure across
 token exchange hops.</t>
 <t>When <tt>actp</tt> is absent, <tt>act</tt> has ordinary RFC 8693 semantics. Nested prior
 <tt>act</tt> claims, if present, remain informational only for access-control
-purposes, consistent with {{!RFC8693}}.</t>
+purposes, consistent with <xref target="RFC8693"></xref>.</t>
 <t>The following rules apply when <tt>actp</tt> is present and points to a profile
 defined by this specification:</t>
 
@@ -541,7 +541,7 @@ tamper evidence, continuity, and auditability.</li>
 self-contained ordinary tokens. Deployments that instead use opaque access
 tokens MAY keep authoritative workflow state only at the issuing Authorization
 Server and MAY disclose actor-chain information, if any, through a companion
-token-validation interface such as token introspection {{!RFC7662}}.</t>
+token-validation interface such as token introspection <xref target="RFC7662"></xref>.</t>
 <t>This specification does not define such companion interfaces. If the artifact
 presented for validation does not expose enough information to satisfy the
 selected profile's requirements, the implementation MUST treat that as a
@@ -652,12 +652,12 @@ otherwise rewrite the verified audience structure before signing or comparing
 <t>All profile-defined signed or hashed inputs MUST use a canonical serialization
 defined by this specification.</t>
 <t>In this version of the specification, <tt>CanonicalEncode(x)</tt> means JCS
-{{!RFC8785}} applied to the JSON value <tt>x</tt>.</t>
+<xref target="RFC8785"></xref> applied to the JSON value <tt>x</tt>.</t>
 <t><tt>Hash_halg(x)</tt> denotes the raw hash output produced by applying the selected
 commitment hash algorithm <tt>halg</tt> to the octet sequence <tt>x</tt>.</t>
 <t><tt>b64url(x)</tt> denotes the base64url encoding of the octet sequence <tt>x</tt> without
-trailing padding characters, as defined by {{!RFC7515}} Appendix C.</t>
-<t>Canonical profile-defined proof payloads MUST be serialized using JCS {{!RFC8785}}.</t>
+trailing padding characters, as defined by <xref target="RFC7515"></xref> Appendix C.</t>
+<t>Canonical profile-defined proof payloads MUST be serialized using JCS <xref target="RFC8785"></xref>.</t>
 </section>
 
 <section anchor="actor-identity-representation"><name>Actor Identity Representation</name>
@@ -671,7 +671,7 @@ represented as an ActorID structure containing exactly two members:</t>
 value is defined; and</li>
 <li><tt>sub</tt>: the subject identifier of the actor within that issuer namespace.</li>
 </ul>
-<t>An ActorID is a JSON object with members <tt>iss</tt> and <tt>sub</tt>, serialized using JCS {{!RFC8785}} when incorporated into profile-defined signed or hashed inputs.</t>
+<t>An ActorID is a JSON object with members <tt>iss</tt> and <tt>sub</tt>, serialized using JCS <xref target="RFC8785"></xref> when incorporated into profile-defined signed or hashed inputs.</t>
 <t>An ActorID:</t>
 
 <ul spacing="compact">
@@ -713,10 +713,10 @@ VisibleChain(act) = ordered list of ActorID values obtained by recursively
                     outermost current actor.</t>
 <t>EncodeVisibleChain([A]) = {&quot;iss&quot;: A.iss, &quot;sub&quot;: A.sub}
 EncodeVisibleChain([A,B]) = {&quot;iss&quot;: B.iss, &quot;sub&quot;: B.sub, &quot;act&quot;:
-                             {&quot;iss&quot;: A.iss, &quot;sub&quot;: A.sub}}
+                             {&quot;iss&quot;: A.iss, &quot;sub&quot;: A.sub]
 EncodeVisibleChain([A,B,C]) = {&quot;iss&quot;: C.iss, &quot;sub&quot;: C.sub, &quot;act&quot;:
                                {&quot;iss&quot;: B.iss, &quot;sub&quot;: B.sub, &quot;act&quot;:
-                                {&quot;iss&quot;: A.iss, &quot;sub&quot;: A.sub}}}
+                                {&quot;iss&quot;: A.iss, &quot;sub&quot;: A.sub]}
 &lt;/sourcecode&gt;
 {:/nomarkdown}</t>
 <t>In examples and formulas, <tt>[A,B]</tt> denotes the ordered visible chain of ActorID
@@ -759,7 +759,7 @@ with the underlying representation and deployment.</t>
 <section anchor="commitment-hash-algorithms"><name>Commitment Hash Algorithms</name>
 <t>Proof-bound profiles use a named hash algorithm for construction of
 <tt>actc</tt>. Commitment hash algorithm identifiers are values from the IANA Named
-Information Hash Algorithm Registry {{!RFC6920}} {{IANA.Hash.Algorithms}}.</t>
+Information Hash Algorithm Registry <xref target="RFC6920"></xref> <xref target="IANA.Hash.Algorithms"></xref>.</t>
 <t>The following requirements apply:</t>
 
 <ul spacing="compact">
@@ -2332,7 +2332,7 @@ same-target successors SHOULD distinguish them by including a unique
 
 <section anchor="authorization-server-metadata"><name>Authorization Server Metadata</name>
 <t>Actor-chain capability discovery uses OAuth 2.0 Authorization Server Metadata
-{{!RFC8414}}. This specification does not define a new discovery endpoint.
+<xref target="RFC8414"></xref>. This specification does not define a new discovery endpoint.
 Clients retrieve Authorization Server metadata from the RFC 8414 well-known
 metadata endpoint derived from the issuer, verify that the returned <tt>issuer</tt>
 matches the configured issuer, and then process the actor-chain-specific
@@ -2642,7 +2642,7 @@ profile MAY also omit <tt>act</tt> entirely.</t>
 base-wire format for the disclosed subset.</t>
 <t>Deployments MAY additionally use an optional selective-disclosure or
 recipient-protected encoding technique by agreement, including Selective
-Disclosure JWT (SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding,
+Disclosure JWT (SD-JWT) <xref target="RFC9901"></xref>, a future COSE/CBOR companion binding,
 or an encrypted envelope, but only as an auxiliary overlay. Such an overlay
 MUST NOT replace any required visible subset <tt>act</tt> representation in the
 interoperable base-wire format; it MAY only add an equivalent presentation form
@@ -2680,7 +2680,7 @@ objects.</t>
 <li><tt>iss</tt>: a string containing the issuer identifier; and</li>
 <li><tt>sub</tt>: a string containing the subject identifier.</li>
 </ul>
-<t>The object MUST be serialized using JCS {{!RFC8785}} whenever it is included in
+<t>The object MUST be serialized using JCS <xref target="RFC8785"></xref> whenever it is included in
 profile-defined proof or commitment inputs.</t>
 <t>When <tt>actp</tt> is present, the visible <tt>act</tt> structure in a JWT is an
 ActorChainNode. Newly issued profile-defined nodes MUST contain explicit
@@ -2692,7 +2692,7 @@ issuer context.</t>
 
 <section anchor="step-proof-in-jwt"><name>Step Proof in JWT</name>
 <t>The <tt>actor_chain_step_proof</tt> token request parameter value MUST be a compact JWS
-string {{!RFC7515}}. The JWS protected header MUST contain <tt>typ=act-step-proof+jwt</tt>. The
+string <xref target="RFC7515"></xref>. The JWS protected header MUST contain <tt>typ=act-step-proof+jwt</tt>. The
 JWS payload MUST be the UTF-8 encoding of a JCS-serialized JSON object.</t>
 <t>Verifiers MUST require exact <tt>typ=act-step-proof+jwt</tt> matching for this
 artifact class. The <tt>alg</tt> header parameter MUST be present and MUST identify
@@ -2733,7 +2733,7 @@ the ActorID represented in the proof.</t>
 </section>
 
 <section anchor="receiver-acknowledgment-in-jwt"><name>Receiver Acknowledgment in JWT</name>
-<t>A <tt>hop_ack</tt>, when used in a JWT deployment, MUST be a compact JWS string {{!RFC7515}}. The
+<t>A <tt>hop_ack</tt>, when used in a JWT deployment, MUST be a compact JWS string <xref target="RFC7515"></xref>. The
 JWS protected header MUST contain <tt>typ=act-hop-ack+jwt</tt>. The JWS payload MUST
 be the UTF-8 encoding of a JCS-serialized JSON object with at least these
 members:</t>
@@ -2778,7 +2778,7 @@ ActorID.</t>
 </section>
 
 <section anchor="commitment-object-in-jwt"><name>Commitment Object in JWT</name>
-<t>The <tt>actc</tt> claim value MUST be a compact JWS string {{!RFC7515}}. The JWS
+<t>The <tt>actc</tt> claim value MUST be a compact JWS string <xref target="RFC7515"></xref>. The JWS
 protected header MUST contain <tt>typ=act-commitment+jwt</tt>.</t>
 <t>Verifiers MUST require exact <tt>typ=act-commitment+jwt</tt> matching for this
 artifact class. The <tt>alg</tt> header parameter MUST be present and MUST identify
@@ -2942,8 +2942,8 @@ for a final recipient that performs work locally and does not extend the chain
 further.</t>
 <t>Deployments that need richer terminal execution or result evidence MAY compose
 this specification with companion SPICE provenance work, such as Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} and Inference Chain
-{{!I-D.draft-mw-spice-inference-chain}}, to provide complementary WHAT and HOW
+<xref target="I-D.draft-mw-spice-intent-chain"></xref> and Inference Chain
+<xref target="I-D.draft-mw-spice-inference-chain"></xref>, to provide complementary WHAT and HOW
 evidence. However, this specification itself does not define the terminal
 receipt/execution/result artifact or the precise composition rules by which
 such companion artifacts satisfy terminal-hop evidence requirements.</t>
@@ -2989,7 +2989,7 @@ accepted hop.</li>
 Verified Subset Disclosure profiles at the actor-chain semantics
 layer. Future work MAY define stronger or more standardized subset-disclosure
 encodings and verification techniques, including Selective Disclosure JWT
-(SD-JWT) {{!RFC9901}}, a future COSE/CBOR companion binding, recipient-bound
+(SD-JWT) <xref target="RFC9901"></xref>, a future COSE/CBOR companion binding, recipient-bound
 disclosure artifacts, zero-knowledge proofs over the canonical full chain, or
 richer verifier-assisted consistency checks against retained proof state.</t>
 <t>Any future encoding or presentation profile MUST preserve the disclosure
@@ -3019,8 +3019,8 @@ audit concern.</t>
 correlation, tree-structured commitment verification, inclusion proofs, partial
 disclosure across branches, and later merge behavior. Such future work could
 also help correlate related <strong>WHO</strong>, <strong>WHAT</strong>, and <strong>HOW</strong> evidence across
-companion Actor Chain, Intent Chain {{!I-D.draft-mw-spice-intent-chain}}, and
-Inference Chain {{!I-D.draft-mw-spice-inference-chain}} deployments.</t>
+companion Actor Chain, Intent Chain <xref target="I-D.draft-mw-spice-intent-chain"></xref>, and
+Inference Chain <xref target="I-D.draft-mw-spice-inference-chain"></xref> deployments.</t>
 </section>
 
 <section anchor="evidence-discovery-and-governance-interoperability"><name>Evidence Discovery and Governance Interoperability</name>
@@ -3034,13 +3034,13 @@ keys such as <tt>jti</tt> or <tt>acti</tt>, error handling, and retention expect
 </section>
 
 <section anchor="appendix-d-design-rationale-and-relation-to-other-work-informative"><name>Appendix D. Design Rationale and Relation to Other Work (Informative)</name>
-<t>This document complements {{!RFC8693}} by defining chain-aware token-exchange
+<t>This document complements <xref target="RFC8693"></xref> by defining chain-aware token-exchange
 profiles. It also fits alongside the broader SPICE service-to-service and
-attestation work {{!I-D.ietf-spice-s2s-protocol}}
-{{!I-D.draft-mw-spice-transitive-attestation}} and composes with companion
+attestation work <xref target="I-D.ietf-spice-s2s-protocol"></xref>
+<xref target="I-D.draft-mw-spice-transitive-attestation"></xref> and composes with companion
 SPICE provenance work: Actor Chain addresses <strong>WHO</strong> acted, Intent Chain
-{{!I-D.draft-mw-spice-intent-chain}} addresses <strong>WHAT</strong> was produced or
-transformed, and Inference Chain {{!I-D.draft-mw-spice-inference-chain}}
+<xref target="I-D.draft-mw-spice-intent-chain"></xref> addresses <strong>WHAT</strong> was produced or
+transformed, and Inference Chain <xref target="I-D.draft-mw-spice-inference-chain"></xref>
 addresses <strong>HOW</strong> a result was computed.</t>
 <t>This specification defines six profiles instead of one deployment mode
 so that implementations can choose among full visible chain-based
@@ -3278,7 +3278,7 @@ BASE64URL(protected-header) &quot;.&quot; BASE64URL(payload) &quot;.&quot; BASE6
 </section>
 
 <section anchor="appendix-h-problem-statement-and-deployment-context-informative"><name>Appendix H. Problem Statement and Deployment Context (Informative)</name>
-<t>defines the top-level <tt>act</tt> claim for the current actor and allows
+<t><xref target="RFC8693"></xref> defines the top-level <tt>act</tt> claim for the current actor and allows
 nested prior actors. However, prior nested <tt>act</tt> claims are informational only
 for access-control decisions. In multi-hop systems, especially service-to-service and agentic systems, that is not sufficient.</t>
 <t>Consider:</t>
@@ -3538,12 +3538,12 @@ than an online authorization requirement.</t>
 <section anchor="iana-considerations"><name>IANA Considerations</name>
 <t>This specification does not create a new hash-algorithm registry.
 <tt>actc</tt> uses hash algorithm names from the IANA Named
-Information Hash Algorithm Registry {{IANA.Hash.Algorithms}}, subject to the
+Information Hash Algorithm Registry <xref target="IANA.Hash.Algorithms"></xref>, subject to the
 algorithm restrictions defined in this document.</t>
 
 <section anchor="json-web-token-claims-registration"><name>JSON Web Token Claims Registration</name>
 <t>This document requests registration of the following claims in the &quot;JSON Web
-Token Claims&quot; registry established by {{!RFC7519}}:</t>
+Token Claims&quot; registry established by <xref target="RFC7519"></xref>:</t>
 <table>
 <thead>
 <tr>
@@ -3580,7 +3580,7 @@ Token Claims&quot; registry established by {{!RFC7519}}:</t>
 
 <section anchor="media-type-registration"><name>Media Type Registration</name>
 <t>This document requests registration of the following media types in the
-&quot;Media Types&quot; registry established by {{!RFC6838}}:</t>
+&quot;Media Types&quot; registry established by <xref target="RFC6838"></xref>:</t>
 <table>
 <thead>
 <tr>
@@ -3665,7 +3665,7 @@ Token Claims&quot; registry established by {{!RFC7519}}:</t>
 
 <section anchor="oauth-uri-registration"><name>OAuth URI Registration</name>
 <t>This document requests registration of the following value in the
-&quot;OAuth URI&quot; registry established by {{!RFC6749}}:</t>
+&quot;OAuth URI&quot; registry established by <xref target="RFC6749"></xref>:</t>
 <table>
 <thead>
 <tr>
@@ -3688,7 +3688,7 @@ Token Claims&quot; registry established by {{!RFC7519}}:</t>
 
 <section anchor="oauth-authorization-server-metadata-registration"><name>OAuth Authorization Server Metadata Registration</name>
 <t>This document requests registration of the following metadata names in the
-&quot;OAuth Authorization Server Metadata&quot; registry established by {{!RFC8414}}:</t>
+&quot;OAuth Authorization Server Metadata&quot; registry established by <xref target="RFC8414"></xref>:</t>
 <table>
 <thead>
 <tr>
@@ -3801,20 +3801,20 @@ relevant OAuth parameter registry:</t>
 evidence that a request physically traversed each claimed hop — is out of
 scope for this document. End-to-end path proof in the data plane, such as
 nested message signatures applied by each actor in turn, requires a companion
-mechanism such as {{RFC9421}} or {{RFC9449}} and is not addressed here.</t>
+mechanism such as <xref target="RFC9421"></xref> or <xref target="RFC9449"></xref> and is not addressed here.</t>
 </section>
 
 <section anchor="relationship-to-rfc8693"><name>Appendix Y. Relationship to RFC 8693 (Informative)</name>
-<t>This appendix is non-normative. {{RFC8693}} defines token exchange and
+<t>This appendix is non-normative. <xref target="RFC8693"></xref> defines token exchange and
 introduces <tt>act</tt> for delegation, with nested <tt>act</tt> described as a convention.
 It treats <tt>act</tt> as optional and defines no normative processing rules for
 construction, extension, or validation across a sequence of exchanges. This
-document does not replace {{RFC8693}}; with <tt>actp</tt> absent, it adds no new
+document does not replace <xref target="RFC8693"></xref>; with <tt>actp</tt> absent, it adds no new
 requirements. With <tt>actp</tt> present, the following constraints apply:</t>
 <table>
 <thead>
 <tr>
-<th>{{RFC8693}} behavior</th>
+<th><xref target="RFC8693"></xref> behavior</th>
 <th>This document</th>
 </tr>
 </thead>
@@ -3860,6 +3860,179 @@ requirements. With <tt>actp</tt> present, the following constraints apply:</t>
 </middle>
 
 <back>
+<references><name>Informative References</name>
+<reference anchor="I-D.draft-mw-spice-inference-chain" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-inference-chain">
+  <front>
+    <title>Cryptographically Verifiable Inference Chain for AI Agent Computational Provenance</title>
+    <author fullname="Ram Krishnan" initials="R." surname="Krishnan"></author>
+    <date year="2026" month="March" day="7"></date>
+  </front>
+</reference>
+<reference anchor="I-D.draft-mw-spice-intent-chain" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-intent-chain">
+  <front>
+    <title>Cryptographically Verifiable Intent Chain for AI Agent Content Provenance</title>
+    <author fullname="Ram Krishnan" initials="R." surname="Krishnan"></author>
+    <date year="2026" month="March" day="7"></date>
+  </front>
+</reference>
+<reference anchor="I-D.draft-mw-spice-transitive-attestation" target="https://datatracker.ietf.org/doc/html/draft-mw-spice-transitive-attestation">
+  <front>
+    <title>Transitive Attestation for Workload Proof of Residency</title>
+    <author fullname="Ram Krishnan" initials="R." surname="Krishnan"></author>
+    <date year="2025" month="February" day="21"></date>
+  </front>
+</reference>
+<reference anchor="I-D.ietf-spice-arch" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch">
+  <front>
+    <title>Secure Patterns for Internet CrEdentials (SPICE) Architecture</title>
+    <author fullname="Yaron Sheffer" initials="Y." surname="Sheffer"></author>
+    <date year="2024" month="October" day="21"></date>
+  </front>
+</reference>
+<reference anchor="I-D.ietf-spice-s2s-protocol" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-s2s-protocol">
+  <front>
+    <title>SPICE Service to Service Authentication</title>
+    <author fullname="Pieter Howard" initials="P." surname="Howard"></author>
+    <date year="2024" month="October" day="21"></date>
+  </front>
+</reference>
+<reference anchor="IANA.Hash.Algorithms" target="https://www.iana.org/assignments/named-information">
+  <front>
+    <title>Named Information Hash Algorithm Registry</title>
+    <author fullname="IANA"></author>
+  </front>
+</reference>
+<reference anchor="RFC2119" target="https://www.rfc-editor.org/info/rfc2119">
+  <front>
+    <title>Key words for use in RFCs to Indicate Requirement Levels</title>
+    <author fullname="Scott Bradner" initials="S." surname="Bradner"></author>
+    <date year="1997" month="March"></date>
+  </front>
+  <seriesInfo name="BCP" value="14"></seriesInfo>
+  <seriesInfo name="RFC" value="2119"></seriesInfo>
+</reference>
+<reference anchor="RFC6749" target="https://www.rfc-editor.org/info/rfc6749">
+  <front>
+    <title>The OAuth 2.0 Authorization Framework</title>
+    <author fullname="Dick Hardt" initials="D." surname="Hardt"></author>
+    <date year="2012" month="October"></date>
+  </front>
+  <seriesInfo name="RFC" value="6749"></seriesInfo>
+</reference>
+<reference anchor="RFC6838" target="https://www.rfc-editor.org/info/rfc6838">
+  <front>
+    <title>Media Type Specifications and Registration Procedures</title>
+    <author fullname="Ned Freed" initials="N." surname="Freed"></author>
+    <author fullname="John Klensin" initials="J." surname="Klensin"></author>
+    <author fullname="Tony Hansen" initials="T." surname="Hansen"></author>
+    <date year="2013" month="January"></date>
+  </front>
+  <seriesInfo name="BCP" value="13"></seriesInfo>
+  <seriesInfo name="RFC" value="6838"></seriesInfo>
+</reference>
+<reference anchor="RFC6920" target="https://www.rfc-editor.org/info/rfc6920">
+  <front>
+    <title>Naming Things with Hashes</title>
+    <author fullname="Stephen Farrell" initials="S." surname="Farrell"></author>
+    <author fullname="Dirk Kutscher" initials="D." surname="Kutscher"></author>
+    <author fullname="Christian Dannewitz" initials="C." surname="Dannewitz"></author>
+    <author fullname="Bengt Ohlman" initials="B." surname="Ohlman"></author>
+    <author fullname="Ari Keranen" initials="A." surname="Keranen"></author>
+    <author fullname="Phill Hallam-Baker" initials="P." surname="Hallam-Baker"></author>
+    <date year="2013" month="April"></date>
+  </front>
+  <seriesInfo name="RFC" value="6920"></seriesInfo>
+</reference>
+<reference anchor="RFC7515" target="https://www.rfc-editor.org/info/rfc7515">
+  <front>
+    <title>JSON Web Signature (JWS)</title>
+    <author fullname="Michael B. Jones" initials="M." surname="Jones"></author>
+    <author fullname="John Bradley" initials="J." surname="Bradley"></author>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura"></author>
+    <date year="2015" month="May"></date>
+  </front>
+  <seriesInfo name="RFC" value="7515"></seriesInfo>
+</reference>
+<reference anchor="RFC7519" target="https://www.rfc-editor.org/info/rfc7519">
+  <front>
+    <title>JSON Web Token (JWT)</title>
+    <author fullname="Michael B. Jones" initials="M." surname="Jones"></author>
+    <author fullname="John Bradley" initials="J." surname="Bradley"></author>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura"></author>
+    <date year="2015" month="May"></date>
+  </front>
+  <seriesInfo name="RFC" value="7519"></seriesInfo>
+</reference>
+<reference anchor="RFC7662" target="https://www.rfc-editor.org/info/rfc7662">
+  <front>
+    <title>OAuth 2.0 Token Introspection</title>
+    <author fullname="Justin Richer" initials="J." surname="Richer"></author>
+    <date year="2015" month="October"></date>
+  </front>
+  <seriesInfo name="RFC" value="7662"></seriesInfo>
+</reference>
+<reference anchor="RFC8174" target="https://www.rfc-editor.org/info/rfc8174">
+  <front>
+    <title>Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</title>
+    <author fullname="Barry Leiba" initials="B." surname="Leiba"></author>
+    <date year="2017" month="May"></date>
+  </front>
+  <seriesInfo name="BCP" value="14"></seriesInfo>
+  <seriesInfo name="RFC" value="8174"></seriesInfo>
+</reference>
+<reference anchor="RFC8414" target="https://www.rfc-editor.org/info/rfc8414">
+  <front>
+    <title>OAuth 2.0 Authorization Server Metadata</title>
+    <author fullname="Michael B. Jones" initials="M." surname="Jones"></author>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura"></author>
+    <date year="2018" month="June"></date>
+  </front>
+  <seriesInfo name="RFC" value="8414"></seriesInfo>
+</reference>
+<reference anchor="RFC8693" target="https://www.rfc-editor.org/info/rfc8693">
+  <front>
+    <title>OAuth 2.0 Token Exchange</title>
+    <author fullname="William Denniss" initials="W." surname="Denniss"></author>
+    <author fullname="John Bradley" initials="J." surname="Bradley"></author>
+    <author fullname="Hannes Tschofenig" initials="H." surname="Tschofenig"></author>
+    <author fullname="Torsten Lodderstedt" initials="T." surname="Lodderstedt"></author>
+    <date year="2020" month="January"></date>
+  </front>
+  <seriesInfo name="RFC" value="8693"></seriesInfo>
+</reference>
+<reference anchor="RFC8785" target="https://www.rfc-editor.org/info/rfc8785">
+  <front>
+    <title>JSON Canonicalization Scheme (JCS)</title>
+    <author fullname="Anders Rundgren" initials="A." surname="Rundgren"></author>
+    <date year="2020" month="June"></date>
+  </front>
+  <seriesInfo name="RFC" value="8785"></seriesInfo>
+</reference>
+<reference anchor="RFC9334" target="https://www.rfc-editor.org/info/rfc9334">
+  <front>
+    <title>Remote ATtestation procedureS (RATS) Architecture</title>
+    <author fullname="Henk Birkholz" initials="H." surname="Birkholz"></author>
+    <author fullname="Thomas Fossati" initials="T." surname="Fossati"></author>
+    <author fullname="Nancy Cam-Winget" initials="N." surname="Smith"></author>
+    <author fullname="Wei Pan" initials="W." surname="Pan"></author>
+    <author fullname="Carsten Tschofenig" initials="C." surname="Tschofenig"></author>
+    <date year="2023" month="January"></date>
+  </front>
+  <seriesInfo name="RFC" value="9334"></seriesInfo>
+</reference>
+<xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9421.xml"/>
+<xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9449.xml"/>
+<reference anchor="RFC9901" target="https://www.rfc-editor.org/info/rfc9901">
+  <front>
+    <title>Selective Disclosure for JSON Web Tokens</title>
+    <author fullname="Daniel Fett" initials="D." surname="Fett"></author>
+    <author fullname="Kristina Yasuda" initials="K." surname="Yasuda"></author>
+    <author fullname="Brian Campbell" initials="B." surname="Campbell"></author>
+    <date year="2025" month="November"></date>
+  </front>
+  <seriesInfo name="RFC" value="9901"></seriesInfo>
+</reference>
+</references>
 
 </back>
 
