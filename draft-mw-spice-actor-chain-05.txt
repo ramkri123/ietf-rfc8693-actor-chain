@@ -5,12 +5,12 @@
 SPICE                                                          A. Prasad
 Internet-Draft                                                    Oracle
 Intended status: Standards Track                             R. Krishnan
-Expires: 26 September 2026                           JPMorgan Chase & Co
+Expires: 27 October 2026                             JPMorgan Chase & Co
                                                                 D. Lopez
                                                               Telefonica
                                                             S. Addepalli
                                                                   Aryaka
-                                                           25 March 2026
+                                                           25 April 2026
 
 
  Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange
@@ -53,9 +53,9 @@ Status of This Memo
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 1]
+Prasad, et al.           Expires 27 October 2026                [Page 1]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Internet-Drafts are draft documents valid for a maximum of six months
@@ -63,7 +63,7 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 26 September 2026.
+   This Internet-Draft will expire on 27 October 2026.
 
 Copyright Notice
 
@@ -109,9 +109,9 @@ Table of Contents
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 2]
+Prasad, et al.           Expires 27 October 2026                [Page 2]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
      9.1.  Recipient Validation of an Inbound Token  . . . . . . . .  27
@@ -165,9 +165,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 3]
+Prasad, et al.           Expires 27 October 2026                [Page 3]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
      16.1.  Profile Identifier . . . . . . . . . . . . . . . . . . .  45
@@ -221,9 +221,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 4]
+Prasad, et al.           Expires 27 October 2026                [Page 4]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
      25.5.  Verified Profiles Depend on Proof Retention  . . . . . .  65
@@ -277,9 +277,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 5]
+Prasad, et al.           Expires 27 October 2026                [Page 5]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
      35.3.  Assumptions  . . . . . . . . . . . . . . . . . . . . . .  83
@@ -333,9 +333,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 6]
+Prasad, et al.           Expires 27 October 2026                [Page 6]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    This document defines six interoperable actor-chain profiles for
@@ -389,9 +389,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 7]
+Prasad, et al.           Expires 27 October 2026                [Page 7]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Example: when B exchanges a token at the Authorization Server, B is
@@ -445,9 +445,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 8]
+Prasad, et al.           Expires 27 October 2026                [Page 8]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    In the full-disclosure profiles, the visible chain, the actor-visible
@@ -501,9 +501,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026               [Page 9]
+Prasad, et al.           Expires 27 October 2026                [Page 9]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  *Append-only processing*: The rule that a new actor is appended to
@@ -557,9 +557,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 10]
+Prasad, et al.           Expires 27 October 2026               [Page 10]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  Plain RFC 8693 outputs that do not carry this specification's
@@ -613,9 +613,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 11]
+Prasad, et al.           Expires 27 October 2026               [Page 11]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 5.1.  Workflow Model
@@ -669,9 +669,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 12]
+Prasad, et al.           Expires 27 October 2026               [Page 12]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Each derived profile inherits all requirements of its branch root or
@@ -725,9 +725,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 13]
+Prasad, et al.           Expires 27 October 2026               [Page 13]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    |          |         |    |          | continuity     | chain       |
@@ -781,9 +781,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 14]
+Prasad, et al.           Expires 27 October 2026               [Page 14]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 5.3.  Branching and Non-Goals
@@ -837,9 +837,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 15]
+Prasad, et al.           Expires 27 October 2026               [Page 15]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    If A calls B, and B later calls C, then:
@@ -893,9 +893,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 16]
+Prasad, et al.           Expires 27 October 2026               [Page 16]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
       -  an audience value aud; and
@@ -949,9 +949,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 17]
+Prasad, et al.           Expires 27 October 2026               [Page 17]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    At workflow bootstrap, the issuing Authorization Server MUST
@@ -1005,9 +1005,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 18]
+Prasad, et al.           Expires 27 October 2026               [Page 18]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Profile selection MUST be signaled explicitly using the token request
@@ -1061,9 +1061,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 19]
+Prasad, et al.           Expires 27 October 2026               [Page 19]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    When a deployment expects multiple distinct successors under the same
@@ -1117,9 +1117,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 20]
+Prasad, et al.           Expires 27 October 2026               [Page 20]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Each canonical actor identifier used by this specification MUST be
@@ -1173,9 +1173,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 21]
+Prasad, et al.           Expires 27 October 2026               [Page 21]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    {::nomarkdown} <sourcecode type="text"> VisibleChain(act) = ordered
@@ -1229,9 +1229,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 22]
+Prasad, et al.           Expires 27 October 2026               [Page 22]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Token exchange responses MUST use the RFC 8693 token type fields
@@ -1285,9 +1285,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 23]
+Prasad, et al.           Expires 27 October 2026               [Page 23]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  halg: the hash algorithm identifier;
@@ -1341,9 +1341,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 24]
+Prasad, et al.           Expires 27 October 2026               [Page 24]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 7.10.  Common Cryptographic Operations
@@ -1397,9 +1397,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 25]
+Prasad, et al.           Expires 27 October 2026               [Page 25]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    These strings remain distinct even though the verified branch step-
@@ -1453,9 +1453,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 26]
+Prasad, et al.           Expires 27 October 2026               [Page 26]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    For a given workflow instance identified by acti, actp is immutable.
@@ -1509,9 +1509,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 27]
+Prasad, et al.           Expires 27 October 2026               [Page 27]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  presence and correct format of profile-required structural claims
@@ -1565,9 +1565,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 28]
+Prasad, et al.           Expires 27 October 2026               [Page 28]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    This specification does not define validation or handling rules for
@@ -1621,9 +1621,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 29]
+Prasad, et al.           Expires 27 October 2026               [Page 29]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    visible chain is an ordered subsequence of the exact verified actor-
@@ -1677,9 +1677,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 30]
+Prasad, et al.           Expires 27 October 2026               [Page 30]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    If AS1 accepts the request, AS1 MUST establish the workflow subject
@@ -1733,9 +1733,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 31]
+Prasad, et al.           Expires 27 October 2026               [Page 31]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  actp=declared-full
@@ -1789,9 +1789,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 32]
+Prasad, et al.           Expires 27 October 2026               [Page 32]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 12.2.  Objective
@@ -1845,9 +1845,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 33]
+Prasad, et al.           Expires 27 October 2026               [Page 33]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  actor_chain_profile=declared-subset; and
@@ -1901,9 +1901,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 34]
+Prasad, et al.           Expires 27 October 2026               [Page 34]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    If an inbound token under this profile discloses act, the current
@@ -1957,9 +1957,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 35]
+Prasad, et al.           Expires 27 October 2026               [Page 35]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 13.2.  Objective
@@ -2013,9 +2013,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 36]
+Prasad, et al.           Expires 27 October 2026               [Page 36]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  actor_chain_profile=declared-actor-only;
@@ -2069,9 +2069,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 37]
+Prasad, et al.           Expires 27 October 2026               [Page 37]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 14.1.  Common Parameters
@@ -2125,9 +2125,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 38]
+Prasad, et al.           Expires 27 October 2026               [Page 38]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    The profile identifier, step-proof domain-separation string, and the
@@ -2181,9 +2181,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 39]
+Prasad, et al.           Expires 27 October 2026               [Page 39]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    For a given canonical chosen initial target_context, the
@@ -2237,9 +2237,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 40]
+Prasad, et al.           Expires 27 October 2026               [Page 40]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    The Authorization Server MUST verify the bootstrap context and verify
@@ -2293,9 +2293,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 41]
+Prasad, et al.           Expires 27 October 2026               [Page 41]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  actor_chain_step_proof; and
@@ -2349,9 +2349,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 42]
+Prasad, et al.           Expires 27 October 2026               [Page 42]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Because actc is cumulative commitment state carried inline in
@@ -2405,9 +2405,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 43]
+Prasad, et al.           Expires 27 October 2026               [Page 43]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    The evidentiary value of this profile depends on retention or
@@ -2461,9 +2461,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 44]
+Prasad, et al.           Expires 27 October 2026               [Page 44]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 16.1.  Profile Identifier
@@ -2517,9 +2517,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 45]
+Prasad, et al.           Expires 27 October 2026               [Page 45]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    returned token is permitted to learn that broader disclosure, or by
@@ -2573,9 +2573,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 46]
+Prasad, et al.           Expires 27 October 2026               [Page 46]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 16.5.  Attack Handling
@@ -2629,9 +2629,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 47]
+Prasad, et al.           Expires 27 October 2026               [Page 47]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 17.2.  Objective
@@ -2685,9 +2685,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 48]
+Prasad, et al.           Expires 27 October 2026               [Page 48]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 17.5.  Attack Handling
@@ -2741,9 +2741,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 49]
+Prasad, et al.           Expires 27 October 2026               [Page 49]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  actor_chain_profile set to the active profile identifier carried
@@ -2797,9 +2797,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 50]
+Prasad, et al.           Expires 27 October 2026               [Page 50]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  for the Full Disclosure profiles and the Actor-Only profiles, the
@@ -2853,9 +2853,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 51]
+Prasad, et al.           Expires 27 October 2026               [Page 51]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Future companion specifications MAY define privacy-preserving
@@ -2909,9 +2909,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 52]
+Prasad, et al.           Expires 27 October 2026               [Page 52]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 18.1.5.  Returned-Token Validation
@@ -2965,9 +2965,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 53]
+Prasad, et al.           Expires 27 October 2026               [Page 53]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    A Refresh-Exchange request MUST NOT broaden the active profile,
@@ -3021,9 +3021,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 54]
+Prasad, et al.           Expires 27 October 2026               [Page 54]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    A recipient or coordinating component MUST treat a token obtained by
@@ -3077,9 +3077,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 55]
+Prasad, et al.           Expires 27 October 2026               [Page 55]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    A hop_ack is ordinarily returned to the presenting actor or to a
@@ -3133,9 +3133,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 56]
+Prasad, et al.           Expires 27 October 2026               [Page 56]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  inbound_jti, copied from the acknowledged inbound token;
@@ -3189,9 +3189,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 57]
+Prasad, et al.           Expires 27 October 2026               [Page 57]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  the ack member is present and its value equals accepted.
@@ -3245,9 +3245,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 58]
+Prasad, et al.           Expires 27 October 2026               [Page 58]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    When deployment policy depends on a specific presenter-binding or
@@ -3301,9 +3301,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 59]
+Prasad, et al.           Expires 27 October 2026               [Page 59]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    previously established chain state.
@@ -3357,9 +3357,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 60]
+Prasad, et al.           Expires 27 October 2026               [Page 60]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    This specification defines the following Authorization Server
@@ -3413,9 +3413,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 61]
+Prasad, et al.           Expires 27 October 2026               [Page 61]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
     +=================+==============================================+
@@ -3469,9 +3469,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 62]
+Prasad, et al.           Expires 27 October 2026               [Page 62]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Recipients and Authorization Servers MUST return protocol-appropriate
@@ -3525,9 +3525,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 63]
+Prasad, et al.           Expires 27 October 2026               [Page 63]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 24.2.  Subset Disclosure: Regulated M&A Review
@@ -3581,9 +3581,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 64]
+Prasad, et al.           Expires 27 October 2026               [Page 64]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 25.1.  Actor Authentication and Presenter Binding Are Deployment-
@@ -3637,9 +3637,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 65]
+Prasad, et al.           Expires 27 October 2026               [Page 65]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 25.6.  Subset-Disclosure Profiles Reveal Only a Verified Subset
@@ -3693,9 +3693,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 66]
+Prasad, et al.           Expires 27 October 2026               [Page 66]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Retained Authorization Server records, timestamps, commitment state,
@@ -3749,9 +3749,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 67]
+Prasad, et al.           Expires 27 October 2026               [Page 67]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Even in the privacy-preserving profiles, the Authorization Server
@@ -3805,9 +3805,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 68]
+Prasad, et al.           Expires 27 October 2026               [Page 68]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  if the selected profile uses step proofs or chain commitments,
@@ -3861,9 +3861,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 69]
+Prasad, et al.           Expires 27 October 2026               [Page 69]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  ctx;
@@ -3917,9 +3917,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 70]
+Prasad, et al.           Expires 27 October 2026               [Page 70]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  jti;
@@ -3973,9 +3973,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 71]
+Prasad, et al.           Expires 27 October 2026               [Page 71]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  halg;
@@ -4029,9 +4029,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 72]
+Prasad, et al.           Expires 27 October 2026               [Page 72]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    6.  AS1 appends B to the accepted workflow state for that hop,
@@ -4085,9 +4085,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 73]
+Prasad, et al.           Expires 27 October 2026               [Page 73]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 28.5.  Example 4: Verified Actor-Only Disclosure
@@ -4141,9 +4141,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 74]
+Prasad, et al.           Expires 27 October 2026               [Page 74]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 29.  Appendix C.  Future Considerations (Informative)
@@ -4197,9 +4197,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 75]
+Prasad, et al.           Expires 27 October 2026               [Page 75]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    However, this specification still does not by itself prevent a
@@ -4253,9 +4253,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 76]
+Prasad, et al.           Expires 27 October 2026               [Page 76]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Future work MAY define explicit branch identifiers, parent-child
@@ -4309,9 +4309,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 77]
+Prasad, et al.           Expires 27 October 2026               [Page 77]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 31.  Appendix E.  Implementation Conformance Checklist (Informative)
@@ -4365,9 +4365,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 78]
+Prasad, et al.           Expires 27 October 2026               [Page 78]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    |                             | Disclosure Profile   |             |
@@ -4421,9 +4421,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 79]
+Prasad, et al.           Expires 27 October 2026               [Page 79]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 32.  Appendix F.  Canonicalization Test Vectors (Informative)
@@ -4477,9 +4477,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 80]
+Prasad, et al.           Expires 27 October 2026               [Page 80]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    {::nomarkdown} <sourcecode type="text">
@@ -4533,9 +4533,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 81]
+Prasad, et al.           Expires 27 October 2026               [Page 81]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 34.  Appendix H.  Problem Statement and Deployment Context (Informative)
@@ -4589,9 +4589,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 82]
+Prasad, et al.           Expires 27 October 2026               [Page 82]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  minimization of prior-actor disclosure where privacy-preserving
@@ -4645,9 +4645,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 83]
+Prasad, et al.           Expires 27 October 2026               [Page 83]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    *  in the Verified Full Disclosure profile, the actor-visible chain
@@ -4701,9 +4701,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 84]
+Prasad, et al.           Expires 27 October 2026               [Page 84]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 36.  Appendix J.  Trust Boundaries and Audit Guidance (Informative)
@@ -4757,9 +4757,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 85]
+Prasad, et al.           Expires 27 October 2026               [Page 85]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 37.1.  Why visible chain state is carried in nested act
@@ -4813,9 +4813,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 86]
+Prasad, et al.           Expires 27 October 2026               [Page 86]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 37.6.  Why branching is represented across tokens, not inside one token
@@ -4869,9 +4869,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 87]
+Prasad, et al.           Expires 27 October 2026               [Page 87]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 38.1.  JSON Web Token Claims Registration
@@ -4925,9 +4925,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 88]
+Prasad, et al.           Expires 27 October 2026               [Page 88]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    +===========+==============+==========+==========+==============+==============+================+=============+===============+==============+=============+=======+========+============+======+==========+
@@ -4981,9 +4981,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 89]
+Prasad, et al.           Expires 27 October 2026               [Page 89]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
     +============================+===========+==========+=============+
@@ -5037,9 +5037,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 90]
+Prasad, et al.           Expires 27 October 2026               [Page 90]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    +=======================================+===============+==========+=============+
@@ -5093,9 +5093,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 91]
+Prasad, et al.           Expires 27 October 2026               [Page 91]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 38.5.  OAuth Parameter Registration
@@ -5149,9 +5149,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 92]
+Prasad, et al.           Expires 27 October 2026               [Page 92]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
 39.  Appendix X.  Out-of-Scope Use Cases (Informative)
@@ -5205,9 +5205,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 93]
+Prasad, et al.           Expires 27 October 2026               [Page 93]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
        +======================+===================================+
@@ -5261,9 +5261,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 94]
+Prasad, et al.           Expires 27 October 2026               [Page 94]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    [I-D.draft-mw-spice-transitive-attestation]
@@ -5317,9 +5317,9 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 95]
+Prasad, et al.           Expires 27 October 2026               [Page 95]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    [RFC7662]  Richer, J., "OAuth 2.0 Token Introspection", RFC 7662,
@@ -5373,9 +5373,9 @@ Authors' Addresses
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 96]
+Prasad, et al.           Expires 27 October 2026               [Page 96]
 
-Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
+Internet-Draft             SPICE-ACTOR-CHAINS                 April 2026
 
 
    Diego R. Lopez
@@ -5429,4 +5429,4 @@ Internet-Draft             SPICE-ACTOR-CHAINS                 March 2026
 
 
 
-Prasad, et al.          Expires 26 September 2026              [Page 97]
+Prasad, et al.           Expires 27 October 2026               [Page 97]
