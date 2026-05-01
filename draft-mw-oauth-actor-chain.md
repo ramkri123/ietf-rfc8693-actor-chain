@@ -1,17 +1,17 @@
 %%%
 title = "Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange"
-abbrev = "SPICE-ACTOR-CHAINS"
+abbrev = "OAUTH-ACTOR-CHAINS"
 category = "std"
-docname = "draft-mw-spice-actor-chain-05"
+docname = "draft-mw-oauth-actor-chain-00"
 ipr = "trust200902"
 area = "Security"
-workgroup = "SPICE"
-keyword = ["actor chain", "spice", "oauth", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents", "MCP", "A2A"]
-date = 2026-04-25
+workgroup = "OAuth"
+keyword = ["actor chain", "oauth", "rfc8693", "token exchange", "workload identity", "delegation", "AI agents", "MCP", "A2A"]
+date = 2026-05-01
 
 [seriesInfo]
 name = "Internet-Draft"
-value = "draft-mw-spice-actor-chain-05"
+value = "draft-mw-oauth-actor-chain-00"
 stream = "IETF"
 status = "standard"
 

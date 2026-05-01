@@ -1,6 +1,6 @@
 # Makefile for IETF Draft
 
-DRAFT := draft-mw-spice-actor-chain-05
+DRAFT := draft-mw-oauth-actor-chain-00
 MMARK := $(HOME)/go/bin/mmark
 XML2RFC := $(HOME)/local/bin/xml2rfc
 
@@ -19,7 +19,7 @@ txt: $(DRAFT).txt
 html: $(DRAFT).html
 xml: $(DRAFT).xml
 
-$(DRAFT).xml: draft-mw-spice-actor-chain.md
+$(DRAFT).xml: draft-mw-oauth-actor-chain.md
 	$(MMARK) $< > $@
 
 $(DRAFT).txt: $(DRAFT).xml
