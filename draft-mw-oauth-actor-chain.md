@@ -3595,6 +3595,12 @@ requirements. With `actp` present, the following constraints apply:
 
 {backmatter}
 
+# Contributors
+
+Michael Epley  
+Red Hat  
+Email: mepley@redhat.com
+
 <reference anchor="I-D.ietf-spice-arch" target="https://datatracker.ietf.org/doc/html/draft-ietf-spice-arch">
   <front>
     <title>Secure Patterns for Internet CrEdentials (SPICE) Architecture</title>

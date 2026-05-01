@@ -313,6 +313,7 @@ Internet-Draft             OAUTH-ACTOR-CHAINS                   May 2026
    39. Appendix X.  Out-of-Scope Use Cases (Informative) . . . . . .  93
    40. Appendix Y.  Relationship to RFC 8693 (Informative) . . . . .  93
    41. Informative References  . . . . . . . . . . . . . . . . . . .  94
+   Appendix A.  Contributors . . . . . . . . . . . . . . . . . . . .  96
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  96
 
 1.  Part I.  Core Specification
@@ -327,7 +328,6 @@ Internet-Draft             OAUTH-ACTOR-CHAINS                   May 2026
    current actor, but it does not define a standardized way to preserve
    and validate delegation-path continuity across a sequence of
    exchanges.
-
 
 
 
@@ -5359,6 +5359,12 @@ Internet-Draft             OAUTH-ACTOR-CHAINS                   May 2026
               Disclosure for JSON Web Tokens", RFC 9901, November 2025,
               <https://www.rfc-editor.org/info/rfc9901>.
 
+Appendix A.  Contributors
+
+   Michael Epley
+   Red Hat
+   Email: mepley@redhat.com
+
 Authors' Addresses
 
    A Prasad
@@ -5366,16 +5372,15 @@ Authors' Addresses
    Email: a.prasad@oracle.com
 
 
-   Ram Krishnan
-   JPMorgan Chase & Co
-   Email: ramkri123@gmail.com
-
-
-
 
 Prasad, et al.           Expires 2 November 2026               [Page 96]
 
 Internet-Draft             OAUTH-ACTOR-CHAINS                   May 2026
+
+
+   Ram Krishnan
+   JPMorgan Chase & Co
+   Email: ramkri123@gmail.com
 
 
    Diego R. Lopez
@@ -5386,11 +5391,6 @@ Internet-Draft             OAUTH-ACTOR-CHAINS                   May 2026
    Srinivasa Addepalli
    Aryaka
    Email: srinivasa.addepalli@aryaka.com
-
-
-
-
-
 
 
 
