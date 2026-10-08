@@ -93,7 +93,7 @@ For the A → B → C → D illustrative workflow:
 | **Disclosure** | **History visible to D** | **Assurance** |
 | -------------- | ------------------------ | ------------- |
 | Full           | A, B, C                  | Declared or Verified |
-| Subset         | A and C, if authorized   | Declared or Verified |
+| Subset         | A and C, (illustrative, if authorized)   | Declared or Verified |
 | Actor-Only     | C                        | Declared or Verified |
 
 ## Token Claims and Example
