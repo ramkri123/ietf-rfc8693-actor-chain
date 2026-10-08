@@ -82,20 +82,20 @@ from B's accepted step. The AS checks the proof and authority, then signs an
 acceptance. C signs the request; the AS signs its acceptance.
 
 ## Assurance and Disclosure
-"Declared" assurance relies on the AS's signed history assertion.
-"Verified" adds actor proofs and AS acceptances. Evidence policy determines
-which proofs the recipient independently checks.
+**Assurance models:**
 
-For A, B, C:
+- **Declared:** The Authorization Server asserts actor-chain history and continuity.
+- **Verified:** Actor-generated cryptographic evidence supports verification of actor participation and chain continuity.
 
-| Disclosure | History visible to D |
-| --- | --- |
-| "Full" | A, B, C |
-| "Subset" | A and C, if authorized |
-| "Actor-Only" | C |
+**Disclosure** determines what actor history is visible to the recipient, while assurance determines how that history is substantiated. Verified assurance does not require the recipient to see or independently verify the complete chain.
 
-A/C does not imply adjacency or B's absence. The six assurance/disclosure
-profiles are selected at workflow start and remain fixed.
+For the A → B → C → D illustrative workflow:
+
+| **Disclosure** | **History visible to D** | **Assurance** |
+| -------------- | ------------------------ | ------------- |
+| Full           | A, B, C                  | Declared or Verified |
+| Subset         | A and C, if authorized   | Declared or Verified |
+| Actor-Only     | C                        | Declared or Verified |
 
 ## Token Claims and Example
 This example uses "Verified" assurance and "Actor-Only" disclosure:
