@@ -225,10 +225,10 @@ live dependencies.
 
 ## Design Evolution
 The authors' SPICE `-00` (25 February 2026) carried actor signatures in
-self-attested tokens [SPICE-ACTOR-CHAIN-00](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/00/). SPICE `-01` (16 March 2026) moved
+self-attested tokens [SPICE-ACTOR-CHAIN](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain). SPICE `-01` (16 March 2026) moved
 them to exchange-time proofs with hash-linked AS acceptances
-[SPICE-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/01/). OAuth `-01` (15 June 2026) continued this work
-[OAUTH-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain/01/). The companion protocol `-` continues that series
+[SPICE-ACTOR-CHAIN](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain). OAuth 15 June 2026 continued this work
+[OAUTH-ACTOR-CHAIN](https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain). The companion protocol `-` continues that series
 and specifies evidence delivery.
 
 ## IANA Considerations
