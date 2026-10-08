@@ -3,7 +3,7 @@
 **Draft:** `draft-mw-oauth-actor-chain-overview-00`  
 **Intended category:** Informational  
 **Authors:** A Prasad, Ram Krishnan, Diego R. Lopez, Srinivasa Addepalli  
-**Date:** 26-10-04  
+**Date:** 2026-10-04  
 **Contact:** A Prasad, ap1729@gmail.com
 
 Markdown reading copy. Standalone XML and text submission copies are maintained separately; this revision has not been submitted to the IETF portal.
@@ -18,7 +18,7 @@ proposes those rules while keeping the Authorization Server responsible for
 issuing tokens and applying policy.
 
 This document provides a new overview of the authors' Actor Chain proposal,
-whose Internet-Draft lineage began in SPICE in February 26. The companion
+whose Internet-Draft lineage began in SPICE in February 2026. The companion
 OAuth Actor Chain: Protocol and Interoperability specification continues the
 existing OAuth draft series and defines complete wire formats and processing
 requirements.
@@ -63,7 +63,7 @@ For a report request, orchestrator A asks planner B to select documents;
 B invokes connector C, which retrieves records from API D.
 
 For illustration, A/B use Agent2Agent (A2A) [A2A-SPEC](https://a2a-protocol.org/v1.0.0/specification/), B/C use remote Model
-Context Protocol (MCP) [MCP-AUTH](https://modelcontextprotocol.io/specification/26-07-28/basic/authorization), and D runs on Kubernetes. These are
+Context Protocol (MCP) [MCP-AUTH](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization), and D runs on Kubernetes. These are
 optional deployment choices.
 
 ~~~ text
@@ -207,7 +207,7 @@ collude. Evidence does not
 prove correct execution or faithful interpretation of user intent.
 
 C's exchange-time signature does not establish who presents the token now.
-The protocol specification [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain-.md) uses Demonstrating Proof
+The protocol specification [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain.md) uses Demonstrating Proof
 of Possession (DPoP) [RFC9449](https://www.rfc-editor.org/rfc/rfc9449.html) to check control of the token-bound key.
 Other sender-binding mechanisms need explicit agreement.
 
@@ -224,24 +224,24 @@ live dependencies.
 4. Does cross-domain preservation accurately describe mappings' assurance?
 
 ## Design Evolution
-The authors' SPICE `-00` (25 February 26) carried actor signatures in
-self-attested tokens [SPICE-ACTOR-CHAIN-00](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/00/). SPICE `-01` (16 March 26) moved
+The authors' SPICE `-00` (25 February 2026) carried actor signatures in
+self-attested tokens [SPICE-ACTOR-CHAIN-00](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/00/). SPICE `-01` (16 March 2026) moved
 them to exchange-time proofs with hash-linked AS acceptances
-[SPICE-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/01/). OAuth `-01` (15 June 26) continued this work
+[SPICE-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/01/). OAuth `-01` (15 June 2026) continued this work
 [OAUTH-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain/01/). The companion protocol `-` continues that series
 and specifies evidence delivery.
 
 ## IANA Considerations
 This overview requests no IANA action. Registration requests are defined in
-[ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain-.md).
+[ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain.md).
 
 ## Informative References
 
 - [A2A-SPEC](https://a2a-protocol.org/v1.0.0/specification/): Agent2Agent Protocol Specification, version 1.0.0.
-- [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain-.md): OAuth Actor Chain: Protocol and Interoperability.
+- [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain.md): OAuth Actor Chain: Protocol and Interoperability.
 - [K8S-SA](https://kubernetes.io/docs/concepts/security/service-accounts/): Kubernetes Service Accounts.
-- [MCP-AUTH](https://modelcontextprotocol.io/specification/26-07-28/basic/authorization): Model Context Protocol Authorization, revision 26-07-28.
-- [OAUTH-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain/01/): Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange.
+- [MCP-AUTH](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization): Model Context Protocol Authorization, revision 2026-07-28.
+- [OAUTH-ACTOR-CHAIN](https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain/): Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange.
 - [RFC7662](https://www.rfc-editor.org/rfc/rfc7662.html): OAuth 2.0 Token Introspection.
 - [RFC8693](https://www.rfc-editor.org/rfc/rfc8693.html): OAuth 2.0 Token Exchange.
 - [RFC8705](https://www.rfc-editor.org/rfc/rfc8705.html): OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens.
