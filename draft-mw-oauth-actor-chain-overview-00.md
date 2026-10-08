@@ -52,8 +52,7 @@ need different parts of that history. These examples illustrate why:
 | "Subset" | A connector checks the request agent and planner. The repository checks the agent and connector without needing the planner's identity. |
 | "Actor-Only" | An external payroll API authorizes the registered payroll connector without learning the internal HR agents that prepared the request. |
 
-Each recipient checks evidence for the actors its own authorization policy
-requires. Participation does not prove business approval or successful execution.
+Each recipient applies its authorization policy to the disclosed actor history and any required verification evidence. Participation does not prove business approval or successful execution.
 
 Workflow accountability is a separate need. Retained records can help an
 authorized auditor correlate accepted actor steps across a workflow, even
