@@ -248,5 +248,4 @@ This overview requests no IANA action. Registration requests are defined in
 - [RFC9449](https://www.rfc-editor.org/rfc/rfc9449.html): OAuth 2.0 Demonstrating Proof of Possession (DPoP).
 - [RFC9728](https://www.rfc-editor.org/rfc/rfc9728.html): OAuth 2.0 Protected Resource Metadata.
 - [RFC9901](https://www.rfc-editor.org/rfc/rfc9901.html): Selective Disclosure for JSON Web Tokens.
-- [SPICE-ACTOR-CHAIN-00](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/00/): Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange.
-- [SPICE-ACTOR-CHAIN-01](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain/01/): Cryptographically Verifiable Actor Chains for OAuth 2.0 Token Exchange.
+- [SPICE-ACTOR-CHAIN](https://datatracker.ietf.org/doc/draft-mw-spice-actor-chain): Cryptographically Verifiable Actor Chain for OAuth 2.0 Token Exchange.
