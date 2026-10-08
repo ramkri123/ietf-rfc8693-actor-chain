@@ -38,7 +38,7 @@ and verification. A workflow is a sequence of related authorization
 transitions. The AS authenticates each new actor, checks authority, and
 issues the next token.
 
-The companion protocol specification, [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain-02.md), defines the
+The companion protocol specification, [ACTOR-CHAIN-PROTOCOL](draft-mw-oauth-actor-chain.md), defines the
 complete implementation and interoperability requirements.
 
 ### Motivation
@@ -93,7 +93,7 @@ For the A → B → C → D illustrative workflow:
 | **Disclosure** | **History visible to D** | **Assurance** |
 | -------------- | ------------------------ | ------------- |
 | Full           | A, B, C                  | Declared or Verified |
-| Subset         | A and C, (illustrative, if authorized)   | Declared or Verified |
+| Subset         | A and C (illustrative, if authorized)   | Declared or Verified |
 | Actor-Only     | C                        | Declared or Verified |
 
 ## Token Claims and Example
