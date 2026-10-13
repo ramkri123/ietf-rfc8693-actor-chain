@@ -92,7 +92,7 @@ and verification. A workflow is a sequence of related authorization
 transitions. The AS authenticates each new actor, checks authority, and
 issues the next token.
 
-The companion protocol specification, [@ACTOR-CHAIN-PROTOCOL], defines the
+The companion protocol specification, [https://datatracker.ietf.org/doc/draft-mw-oauth-actor-chain/], defines the
 implementation and interoperability requirements.
 
 ## Motivation {#motivation}
