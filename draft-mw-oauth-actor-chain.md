@@ -51,6 +51,13 @@ fullname = "Srinivasa Addepalli"
   [author.address]
   email = "srinivasa.addepalli@aryaka.com"
 
+[[author]]
+initials = "S."
+surname = "Krishnan"
+fullname = "Suresh Krishnan"
+  [author.address]
+  email = "suresh.krishnan@gmail.com"
+
 [normative]
 RFC2119 = {}
 RFC3986 = {}
